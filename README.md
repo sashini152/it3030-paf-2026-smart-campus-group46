@@ -59,3 +59,4 @@ GitHub Actions (`.github/workflows/ci.yml`) runs Maven tests for the backend and
 
 If you use AI-assisted tooling, disclose it in your report and progress reviews as required by the module.
 "# it3030-paf-2026-smart-campus-group" 
+"# it3030-paf-2026-smart-campus-group" 
