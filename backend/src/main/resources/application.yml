@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: hub
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/smartcampus}
+
+server:
+  port: 8080
