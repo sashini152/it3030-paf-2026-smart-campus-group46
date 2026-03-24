@@ -5,7 +5,7 @@ spring:
     mongodb:
       # Default DB name appears in Compass as a database once documents exist.
       # Override: set env MONGODB_URI (e.g. Atlas connection string).
-      uri: ${MONGODB_URI:mongodb://localhost:27017/SmartCampus_Local}
+      uri: ${MONGODB_URI:mongodb://localhost:27017/smartcampus}
 
 server:
   port: 8080
