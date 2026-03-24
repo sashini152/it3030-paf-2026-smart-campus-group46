@@ -1,0 +1,9 @@
+com\smartcampus\incidentticket\model\IncidentTicket.class
+com\smartcampus\incidentticket\IncidentTicketServiceApplication.class
+com\smartcampus\incidentticket\repository\IncidentTicketRepository.class
+com\smartcampus\incidentticket\exception\ResourceNotFoundException.class
+com\smartcampus\incidentticket\dto\IncidentTicketDto.class
+com\smartcampus\incidentticket\exception\GlobalExceptionHandler.class
+com\smartcampus\incidentticket\controller\IncidentTicketController.class
+com\smartcampus\incidentticket\service\IncidentTicketService.class
+com\smartcampus\incidentticket\config\SecurityConfiguration.class
