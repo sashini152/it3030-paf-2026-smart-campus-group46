@@ -1,4 +1,5 @@
 C:\Users\Hafzan\Desktop\Hafzan\it3030-paf-2026-smart-campus-group\incident-ticket-service\src\main\java\com\smartcampus\incidentticket\config\SecurityConfiguration.java
+C:\Users\Hafzan\Desktop\Hafzan\it3030-paf-2026-smart-campus-group\incident-ticket-service\src\main\java\com\smartcampus\incidentticket\config\UploadConfig.java
 C:\Users\Hafzan\Desktop\Hafzan\it3030-paf-2026-smart-campus-group\incident-ticket-service\src\main\java\com\smartcampus\incidentticket\controller\IncidentTicketController.java
 C:\Users\Hafzan\Desktop\Hafzan\it3030-paf-2026-smart-campus-group\incident-ticket-service\src\main\java\com\smartcampus\incidentticket\dto\CommentDto.java
 C:\Users\Hafzan\Desktop\Hafzan\it3030-paf-2026-smart-campus-group\incident-ticket-service\src\main\java\com\smartcampus\incidentticket\dto\IncidentTicketDto.java
@@ -12,5 +13,6 @@ C:\Users\Hafzan\Desktop\Hafzan\it3030-paf-2026-smart-campus-group\incident-ticke
 C:\Users\Hafzan\Desktop\Hafzan\it3030-paf-2026-smart-campus-group\incident-ticket-service\src\main\java\com\smartcampus\incidentticket\repository\IncidentTicketRepository.java
 C:\Users\Hafzan\Desktop\Hafzan\it3030-paf-2026-smart-campus-group\incident-ticket-service\src\main\java\com\smartcampus\incidentticket\repository\TicketRepository.java
 C:\Users\Hafzan\Desktop\Hafzan\it3030-paf-2026-smart-campus-group\incident-ticket-service\src\main\java\com\smartcampus\incidentticket\service\CommentService.java
+C:\Users\Hafzan\Desktop\Hafzan\it3030-paf-2026-smart-campus-group\incident-ticket-service\src\main\java\com\smartcampus\incidentticket\service\FileUploadService.java
 C:\Users\Hafzan\Desktop\Hafzan\it3030-paf-2026-smart-campus-group\incident-ticket-service\src\main\java\com\smartcampus\incidentticket\service\IncidentTicketService.java
 C:\Users\Hafzan\Desktop\Hafzan\it3030-paf-2026-smart-campus-group\incident-ticket-service\src\main\java\com\smartcampus\incidentticket\service\TicketService.java
