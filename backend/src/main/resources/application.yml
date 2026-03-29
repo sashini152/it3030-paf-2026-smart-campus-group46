@@ -8,4 +8,4 @@ spring:
       uri: ${MONGODB_URI:mongodb://localhost:27017/smartcampus}
 
 server:
-  port: 8080
+  port: 8081
