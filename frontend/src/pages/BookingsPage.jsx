@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { buildQuery, deleteRequest, getJson, postJson, putJson } from '../api/client'
+import '../styles/home.css'
 
 const USER_STORAGE_KEY = 'smartcampusUserId'
 
 function loadUserId() {
   return localStorage.getItem(USER_STORAGE_KEY) || ''
 }
+
 
 function saveUserId(id) {
   localStorage.setItem(USER_STORAGE_KEY, id)

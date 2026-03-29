@@ -21,10 +21,10 @@ Pick one approach.
 2. Run the installer. Choose **Complete** setup and install **MongoDB as a Service** so it starts on boot.
 3. By default the server listens on **`mongodb://localhost:27017`**.
 4. No username/password is required for local dev unless you enabled auth.
-5. The app uses database name **`SmartCampus_Local`** (created automatically on first write).  
+5. The app uses database name **`smartcampus`** (created automatically on first write).  
    Connection string (default in `application.yml`):
 
-   `mongodb://localhost:27017/SmartCampus_Local`
+   `mongodb://localhost:27017/smartcampus`
 
 ### B. MongoDB with Docker
 
@@ -34,7 +34,7 @@ docker run -d --name smart-campus-mongo -p 27017:27017 mongo:7
 
 Then set (optional, this matches the default):
 
-`MONGODB_URI=mongodb://localhost:27017/SmartCampus_Local`
+`MONGODB_URI=mongodb://localhost:27017/smartcampus`
 
 ### C. MongoDB Atlas (cloud)
 
@@ -43,7 +43,7 @@ Then set (optional, this matches the default):
 3. **Database** → **Connect** → **Drivers** and copy the SRV connection string.
 4. Set the environment variable before starting the backend (replace user, password, and cluster host):
 
-   `MONGODB_URI=mongodb+srv://USER:PASSWORD@CLUSTER.mongodb.net/SmartCampus_Local?retryWrites=true&w=majority`
+   `MONGODB_URI=mongodb+srv://USER:PASSWORD@CLUSTER.mongodb.net/smartcampus?retryWrites=true&w=majority`
 
 ### Verify MongoDB is running
 
@@ -109,3 +109,4 @@ Document **which member owns which endpoints and UI** in your report and/or `CON
 ## Academic integrity
 
 Disclose AI-assisted tooling in your report and progress reviews if required by the module.
+
