@@ -37,3 +37,6 @@ export async function deleteJson(path) {
   const { data } = await api.delete(path)
   return data
 }
+
+export { api }
+

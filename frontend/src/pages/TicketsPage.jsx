@@ -1,11 +1,13 @@
 import { useTickets } from '../hooks/useTickets'
+import TicketForm from '../components/TicketForm'
 
 export default function TicketsPage() {
-  const { tickets, loading, error } = useTickets()
+  const { tickets, loading, error, reload } = useTickets()
 
   return (
     <div className="hub-page hub-page--narrow">
       <h1>Tickets</h1>
+      <TicketForm onCreated={reload} />
       {loading && <p>Loading tickets...</p>}
       {error && <p className="text-red-500">Error: {error.message}</p>}
       {!loading && !error && tickets.length === 0 && <p>No tickets found yet.</p>}

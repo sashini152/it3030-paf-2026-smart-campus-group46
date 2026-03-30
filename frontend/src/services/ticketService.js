@@ -1,4 +1,4 @@
-import { getJson, postJson, putJson, deleteJson } from '../api/client'
+import { api, getJson, postJson, putJson, deleteJson } from '../api/client'
 
 export function fetchTickets() {
   return getJson('/api/tickets')
@@ -26,4 +26,20 @@ export function assignTechnician(ticketId, technicianId) {
 
 export function updateStatus(ticketId, status) {
   return putJson(`/api/tickets/${ticketId}/status`, { status })
+}
+
+export async function uploadTicketImages(ticketId, files) {
+  if (!files?.length) return []
+
+  const formData = new FormData()
+  for (const file of files) {
+    formData.append('images', file)
+  }
+
+  const { data } = await api.post(`/api/tickets/${ticketId}/upload`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+  return data
 }
