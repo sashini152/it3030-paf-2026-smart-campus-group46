@@ -1,18 +1,27 @@
+import { useTickets } from '../hooks/useTickets'
+
 export default function TicketsPage() {
+  const { tickets, loading, error } = useTickets()
+
   return (
     <div className="hub-page hub-page--narrow">
       <h1>Tickets</h1>
-      <p className="hub-lead">
-        Module C — incident reports with category, priority, description, and up
-        to three images. Workflow: OPEN → IN_PROGRESS → RESOLVED → CLOSED (and
-        REJECTED where applicable). Comments and technician assignment.
-      </p>
-      <div className="hub-placeholder">
-        <p>
-          Next: creation form with file upload, tracking view, comment thread,
-          and ticket API integration.
-        </p>
-      </div>
+      {loading && <p>Loading tickets...</p>}
+      {error && <p className="text-red-500">Error: {error.message}</p>}
+      {!loading && !error && tickets.length === 0 && <p>No tickets found yet.</p>}
+      {tickets.length > 0 && (
+        <ul className="space-y-3">
+          {tickets.map((ticket) => (
+            <li key={ticket.id} className="rounded-lg p-3 border border-slate-700 bg-slate-800">
+              <p className="font-semibold">{ticket.title}</p>
+              <p>{ticket.description}</p>
+              <div className="mt-2">
+                <span className="text-xs text-slate-400">{ticket.status}</span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

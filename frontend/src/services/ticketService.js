@@ -1,0 +1,29 @@
+import { getJson, postJson, putJson, deleteJson } from '../api/client'
+
+export function fetchTickets() {
+  return getJson('/api/tickets')
+}
+
+export function fetchTicket(ticketId) {
+  return getJson(`/api/tickets/${ticketId}`)
+}
+
+export function createTicket(data) {
+  return postJson('/api/tickets', data)
+}
+
+export function updateTicket(ticketId, data) {
+  return putJson(`/api/tickets/${ticketId}`, data)
+}
+
+export function deleteTicket(ticketId) {
+  return deleteJson(`/api/tickets/${ticketId}`)
+}
+
+export function assignTechnician(ticketId, technicianId) {
+  return postJson(`/api/tickets/${ticketId}/assign`, { technicianId })
+}
+
+export function updateStatus(ticketId, status) {
+  return putJson(`/api/tickets/${ticketId}/status`, { status })
+}
