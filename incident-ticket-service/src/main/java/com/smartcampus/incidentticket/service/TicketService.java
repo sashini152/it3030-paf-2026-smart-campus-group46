@@ -96,7 +96,7 @@ public class TicketService {
 
         Ticket.Status currentStatus = existing.getStatus();
         if (!isValidTransition(currentStatus, newStatus)) {
-            throw new IllegalArgumentException("Invalid status transition from " + currentStatus + " to " + newStatus);
+            throw new InvalidWorkflowTransitionException("Invalid status transition from " + currentStatus + " to " + newStatus);
         }
 
         existing.setStatus(newStatus);

@@ -13,25 +13,55 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Map<String, String>> handleNotFound(ResourceNotFoundException ex) {
-        Map<String, String> body = new HashMap<>();
+    public ResponseEntity<Map<String, Object>> handleNotFound(ResourceNotFoundException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", java.time.OffsetDateTime.now().toString());
         body.put("message", ex.getMessage());
+        body.put("status", HttpStatus.NOT_FOUND.value());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidation(MethodArgumentNotValidException ex) {
+    public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getFieldErrors().forEach(fieldError ->
             errors.put(fieldError.getField(), fieldError.getDefaultMessage())
         );
-        return ResponseEntity.badRequest().body(errors);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", java.time.OffsetDateTime.now().toString());
+        body.put("message", "Validation failed");
+        body.put("status", HttpStatus.BAD_REQUEST.value());
+        body.put("errors", errors);
+
+        return ResponseEntity.badRequest().body(body);
+    }
+
+    @ExceptionHandler(InvalidWorkflowTransitionException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidWorkflow(InvalidWorkflowTransitionException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", java.time.OffsetDateTime.now().toString());
+        body.put("message", ex.getMessage());
+        body.put("status", HttpStatus.BAD_REQUEST.value());
+        return ResponseEntity.badRequest().body(body);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", java.time.OffsetDateTime.now().toString());
+        body.put("message", ex.getMessage());
+        body.put("status", HttpStatus.BAD_REQUEST.value());
+        return ResponseEntity.badRequest().body(body);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleGeneral(Exception ex) {
-        Map<String, String> body = new HashMap<>();
+    public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", java.time.OffsetDateTime.now().toString());
         body.put("message", ex.getMessage());
+        body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
     }
 }
