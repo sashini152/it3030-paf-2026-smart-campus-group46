@@ -45,6 +45,29 @@ public class IncidentTicketService {
         return mapToDto(repository.save(existing));
     }
 
+    public IncidentTicketDto updateStatus(String id, String newStatus) {
+        IncidentTicket existing = repository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Incident ticket not found with id " + id));
+
+        String oldStatus = existing.getStatus();
+        existing.setStatus(newStatus);
+
+        LocalDateTime now = LocalDateTime.now();
+
+        // Track first response when moving to IN_PROGRESS
+        if ("OPEN".equals(oldStatus) && "IN_PROGRESS".equals(newStatus)) {
+            existing.setFirstResponseAt(now);
+        }
+
+        // Track resolution when moving to RESOLVED or CLOSED
+        if (("IN_PROGRESS".equals(oldStatus) || "OPEN".equals(oldStatus)) && 
+            ("RESOLVED".equals(newStatus) || "CLOSED".equals(newStatus))) {
+            existing.setResolvedAt(now);
+        }
+
+        return mapToDto(repository.save(existing));
+    }
+
     public void delete(String id) {
         if (!repository.existsById(id)) {
             throw new ResourceNotFoundException("Incident ticket not found with id " + id);
@@ -59,6 +82,9 @@ public class IncidentTicketService {
         dto.setDescription(entity.getDescription());
         dto.setStatus(entity.getStatus());
         dto.setCreatedBy(entity.getCreatedBy());
+        dto.setCreatedAt(entity.getCreatedAt());
+        dto.setFirstResponseAt(entity.getFirstResponseAt());
+        dto.setResolvedAt(entity.getResolvedAt());
         return dto;
     }
 

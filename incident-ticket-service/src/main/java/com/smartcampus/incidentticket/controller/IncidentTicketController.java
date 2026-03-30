@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/incident-tickets")
@@ -36,6 +37,12 @@ public class IncidentTicketController {
     @PutMapping("/{id}")
     public ResponseEntity<IncidentTicketDto> update(@PathVariable String id, @Valid @RequestBody IncidentTicketDto dto) {
         return ResponseEntity.ok(service.update(id, dto));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<IncidentTicketDto> updateStatus(@PathVariable String id, @RequestBody Map<String, String> request) {
+        String newStatus = request.get("status");
+        return ResponseEntity.ok(service.updateStatus(id, newStatus));
     }
 
     @DeleteMapping("/{id}")

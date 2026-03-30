@@ -26,4 +26,18 @@ public class IncidentTicket {
     private String createdBy;
 
     private LocalDateTime createdAt;
+
+    private LocalDateTime firstResponseAt;
+
+    private LocalDateTime resolvedAt;
+
+    public long getFirstResponseTimeMinutes() {
+        if (createdAt == null || firstResponseAt == null) return -1;
+        return java.time.temporal.ChronoUnit.MINUTES.between(createdAt, firstResponseAt);
+    }
+
+    public long getResolutionTimeMinutes() {
+        if (createdAt == null || resolvedAt == null) return -1;
+        return java.time.temporal.ChronoUnit.MINUTES.between(createdAt, resolvedAt);
+    }
 }

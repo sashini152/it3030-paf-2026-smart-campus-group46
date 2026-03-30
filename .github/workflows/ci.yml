@@ -8,7 +8,7 @@ on:
 
 jobs:
   backend:
-    name: Backend (Maven)
+    name: Backend - Hub (Maven)
     runs-on: ubuntu-latest
     services:
       mongodb:
@@ -23,9 +23,29 @@ jobs:
           java-version: "21"
           cache: maven
           cache-dependency-path: backend/pom.xml
-      - name: Test with Maven Wrapper
+      - name: Build and test Hub backend
         working-directory: backend
-        run: chmod +x mvnw && ./mvnw -B -q test
+        run: chmod +x mvnw && ./mvnw -B clean package
+
+  incident-ticket-service:
+    name: Backend - Incident Ticket Service (Maven)
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: incident-ticket-service/pom.xml
+      - name: Build and test Incident Ticket Service
+        working-directory: incident-ticket-service
+        run: chmod +x mvnw && ./mvnw -B clean package
 
   frontend:
     name: Frontend (npm)
@@ -37,6 +57,9 @@ jobs:
           node-version: "22"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - name: Install and build
+      - name: Install dependencies
         working-directory: frontend
-        run: npm ci && npm run build
+        run: npm install
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
