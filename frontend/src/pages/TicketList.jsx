@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { useTickets } from '../hooks/useTickets'
 
 const statusOptions = ['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']
@@ -61,7 +62,11 @@ export default function TicketList() {
             <tbody>
               {filteredTickets.map(ticket => (
                 <tr key={ticket.id} className="border-t border-slate-600">
-                  <td className="px-4 py-2 text-sm">{ticket.title}</td>
+                  <td className="px-4 py-2 text-sm">
+                    <Link to={`/ticket-details/${ticket.id}`} className="text-blue-400 hover:text-blue-300">
+                      {ticket.title}
+                    </Link>
+                  </td>
                   <td className="px-4 py-2">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[ticket.status] || 'bg-gray-100 text-gray-800'}`}>
                       {ticket.status}

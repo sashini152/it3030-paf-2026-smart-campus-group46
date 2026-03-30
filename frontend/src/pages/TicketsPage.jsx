@@ -1,5 +1,6 @@
 import { useTickets } from '../hooks/useTickets'
 import TicketForm from '../components/TicketForm'
+import { Link } from 'react-router-dom'
 
 export default function TicketsPage() {
   const { tickets, loading, error, reload } = useTickets()
@@ -15,7 +16,11 @@ export default function TicketsPage() {
         <ul className="space-y-3">
           {tickets.map((ticket) => (
             <li key={ticket.id} className="rounded-lg p-3 border border-slate-700 bg-slate-800">
-              <p className="font-semibold">{ticket.title}</p>
+              <p className="font-semibold">
+                <Link to={`/ticket-details/${ticket.id}`} className="text-blue-400 hover:text-blue-300">
+                  {ticket.title}
+                </Link>
+              </p>
               <p>{ticket.description}</p>
               <div className="mt-2">
                 <span className="text-xs text-slate-400">{ticket.status}</span>
