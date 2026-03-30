@@ -38,5 +38,10 @@ export async function deleteJson(path) {
   return data
 }
 
+export async function patchJson(path, payload) {
+  const { data } = await api.patch(path, payload)
+  return data
+}
+
 export { api }
 

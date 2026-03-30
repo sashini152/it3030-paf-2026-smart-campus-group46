@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useComments } from '../hooks/useComments'
 import * as ticketService from '../services/ticketService'
@@ -17,6 +17,13 @@ const priorityColors = {
   HIGH: 'text-red-600',
 }
 
+const statusWorkflow = {
+  OPEN: ['IN_PROGRESS'],
+  IN_PROGRESS: ['RESOLVED', 'OPEN'],
+  RESOLVED: ['CLOSED', 'IN_PROGRESS'],
+  CLOSED: ['OPEN', 'RESOLVED'],
+}
+
 export default function TicketDetails() {
   const { id } = useParams()
   const [ticket, setTicket] = useState(null)
@@ -25,8 +32,9 @@ export default function TicketDetails() {
   const { comments, loading: commentsLoading, error: commentsError, reload: reloadComments } = useComments(id)
   const [newComment, setNewComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [statusUpdating, setStatusUpdating] = useState(false)
 
-  useState(() => {
+  useEffect(() => {
     ticketService
       .fetchTicket(id)
       .then(setTicket)
@@ -61,6 +69,18 @@ export default function TicketDetails() {
     }
   }
 
+  const handleStatusChange = async (newStatus) => {
+    setStatusUpdating(true)
+    try {
+      await ticketService.updateStatus(id, newStatus)
+      setTicket(prev => ({ ...prev, status: newStatus }))
+    } catch (err) {
+      alert('Failed to update status')
+    } finally {
+      setStatusUpdating(false)
+    }
+  }
+
   if (loading) return <div className="hub-page hub-page--narrow"><p>Loading ticket...</p></div>
   if (error) return <div className="hub-page hub-page--narrow"><p className="text-red-500">Error: {error.message}</p></div>
   if (!ticket) return <div className="hub-page hub-page--narrow"><p>Ticket not found</p></div>
@@ -74,7 +94,25 @@ export default function TicketDetails() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <p><strong>Status:</strong> <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[ticket.status] || 'bg-gray-100 text-gray-800'}`}>{ticket.status}</span></p>
+            <p className="mb-3">
+              <strong>Status:</strong> <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[ticket.status] || 'bg-gray-100 text-gray-800'}`}>{ticket.status}</span>
+            </p>
+            {statusWorkflow[ticket.status]?.length > 0 && (
+              <div className="mb-3">
+                <label className="block text-sm font-medium mb-2">Update Status</label>
+                <select
+                  onChange={(e) => e.target.value && handleStatusChange(e.target.value)}
+                  defaultValue=""
+                  disabled={statusUpdating}
+                  className="rounded-md border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white disabled:opacity-50"
+                >
+                  <option value="">Change to...</option>
+                  {statusWorkflow[ticket.status].map(status => (
+                    <option key={status} value={status}>{status}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <p><strong>Priority:</strong> <span className={priorityColors[ticket.priority] || 'text-gray-600'}>{ticket.priority}</span></p>
             <p><strong>Category:</strong> {ticket.category}</p>
           </div>
@@ -89,6 +127,32 @@ export default function TicketDetails() {
           <strong>Description:</strong>
           <p className="mt-2 text-slate-300">{ticket.description}</p>
         </div>
+
+        {ticket.firstResponseAt || ticket.resolvedAt ? (
+          <div className="bg-slate-700 p-4 rounded mb-4 border border-slate-600">
+            <strong>SLA Metrics</strong>
+            {ticket.firstResponseAt && (
+              <p className="text-sm text-slate-300 mt-2">
+                <span>First Response: {new Date(ticket.firstResponseAt).toLocaleString()}</span>
+                {ticket.createdAt && (
+                  <span className="ml-4">
+                    (Response time: {Math.round((new Date(ticket.firstResponseAt) - new Date(ticket.createdAt)) / 60000)} minutes)
+                  </span>
+                )}
+              </p>
+            )}
+            {ticket.resolvedAt && (
+              <p className="text-sm text-slate-300">
+                <span>Resolved: {new Date(ticket.resolvedAt).toLocaleString()}</span>
+                {ticket.createdAt && (
+                  <span className="ml-4">
+                    (Resolution time: {Math.round((new Date(ticket.resolvedAt) - new Date(ticket.createdAt)) / 60000)} minutes)
+                  </span>
+                )}
+              </p>
+            )}
+          </div>
+        ) : null}
 
         {ticket.imageUrls && ticket.imageUrls.length > 0 && (
           <div>

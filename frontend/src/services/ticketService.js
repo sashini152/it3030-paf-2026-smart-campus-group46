@@ -1,4 +1,4 @@
-import { api, getJson, postJson, putJson, deleteJson } from '../api/client'
+import { api, getJson, postJson, putJson, deleteJson, patchJson } from '../api/client'
 
 export function fetchTickets() {
   return getJson('/api/tickets')
@@ -25,7 +25,7 @@ export function assignTechnician(ticketId, technicianId) {
 }
 
 export function updateStatus(ticketId, status) {
-  return putJson(`/api/tickets/${ticketId}/status`, { status })
+  return patchJson(`/api/tickets/${ticketId}/status`, { status })
 }
 
 export async function uploadTicketImages(ticketId, files) {
