@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import com.smartcampus.hub.common.ConflictException;
 import com.smartcampus.hub.common.NotFoundException;
 import com.smartcampus.hub.resource.ResourceService;
-import com.smartcampus.hub.resource.ResourceStatus;
 
 @Service
 public class BookingService {
@@ -27,7 +26,7 @@ public class BookingService {
 	public Booking create(CreateBookingRequest req) {
 		validateRange(req.getStartDateTime(), req.getEndDateTime());
 		var resource = resourceService.getById(req.getResourceId());
-		if (resource.getStatus() != ResourceStatus.ACTIVE) {
+		if (!"ACTIVE".equals(resource.getStatus())) {
 			throw new IllegalStateException("Resource is not available for booking");
 		}
 		List<Booking> clashes = bookingRepository.findOverlappingPendingOrApproved(

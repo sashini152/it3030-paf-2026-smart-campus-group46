@@ -3,9 +3,36 @@ spring:
     name: hub
   data:
     mongodb:
-      # Default DB name appears in Compass as a database once documents exist.
-      # Override: set env MONGODB_URI (e.g. Atlas connection string).
       uri: ${MONGODB_URI:mongodb://localhost:27017/smartcampus}
+  main:
+    allow-bean-definition-overriding: true
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: 698958812390-85rb4i9ce3l95fcfrtkff7lh72dpei6e.apps.googleusercontent.com
+            client-secret: GOCSPX-VupfOEv3WPDIJ0_sYhwU_3fJjmI # ✅ NEW CLIENT SECRET
+            redirect-uri: "http://localhost:5173/login" # ✅ FIXED: Redirect to frontend
+            scope:
+              - email
+              - profile
+        provider:
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/auth
+            token-uri: https://oauth2.googleapis.com/token
+            user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
+            user-name-attribute: sub # ✅ FIXED: was 'subemail'
 
 server:
   port: 8081
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:mySecretKey123456789012345678901234567890}
+  expiration: 86400000 # 24 hours in milliseconds
+
+# File upload configuration
+spring.servlet.multipart:
+  max-file-size: 10MB
+  max-request-size: 10MB

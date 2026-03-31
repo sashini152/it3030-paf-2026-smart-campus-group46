@@ -75,30 +75,30 @@ Then set (optional, this matches the default):
    npm run dev
    ```
 
-   App: `http://localhost:5173` — Vite proxies `/api` to the backend.
+   App: `http://localhost:5175` — Vite proxies `/api` to the backend.
 
 ## API highlights (Modules A & B)
 
-| Area        | Endpoints |
-|------------|-----------|
-| Resources  | `GET/POST /api/resources`, `GET/PUT/DELETE /api/resources/{id}` — query: `type`, `location`, `minCapacity`, `q` |
-| Bookings   | `GET/POST /api/bookings`, `GET /api/bookings/{id}`, `PUT .../approve`, `PUT .../reject` (JSON `reason`), `PUT .../cancel`, `DELETE .../{id}` |
+| Area      | Endpoints                                                                                                                                    |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Resources | `GET/POST /api/resources`, `GET/PUT/DELETE /api/resources/{id}` — query: `type`, `location`, `minCapacity`, `q`                              |
+| Bookings  | `GET/POST /api/bookings`, `GET /api/bookings/{id}`, `PUT .../approve`, `PUT .../reject` (JSON `reason`), `PUT .../cancel`, `DELETE .../{id}` |
 
 Bookings block overlapping **PENDING** or **APPROVED** slots on the same resource. Only **ACTIVE** resources accept new requests.
 
 ## Configuration
 
-| Variable       | Purpose |
-|----------------|---------|
-| `MONGODB_URI`  | Full MongoDB connection string (overrides default local URI) |
-| Google OAuth   | Configure when Module E is integrated (`spring.security.oauth2.client.*`) |
+| Variable      | Purpose                                                                   |
+| ------------- | ------------------------------------------------------------------------- |
+| `MONGODB_URI` | Full MongoDB connection string (overrides default local URI)              |
+| Google OAuth  | Configure when Module E is integrated (`spring.security.oauth2.client.*`) |
 
 ## Project layout
 
-| Path         | Role |
-|-------------|------|
+| Path        | Role                 |
+| ----------- | -------------------- |
 | `backend/`  | Spring Boot REST API |
-| `frontend/` | React SPA |
+| `frontend/` | React SPA            |
 
 Document **which member owns which endpoints and UI** in your report and/or `CONTRIBUTORS.md`.
 
@@ -109,4 +109,3 @@ Document **which member owns which endpoints and UI** in your report and/or `CON
 ## Academic integrity
 
 Disclose AI-assisted tooling in your report and progress reviews if required by the module.
-

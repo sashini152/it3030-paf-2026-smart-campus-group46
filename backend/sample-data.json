@@ -1,0 +1,35 @@
+[
+  {
+    "_id": "resource-1",
+    "name": "Computer Lab 101",
+    "type": "LAB",
+    "description": "Computer lab with 30 PCs and projector",
+    "capacity": 30,
+    "location": "Building A, Floor 2",
+    "status": "ACTIVE",
+    "createdAt": "2026-03-31T10:00:00Z",
+    "updatedAt": "2026-03-31T10:00:00Z"
+  },
+  {
+    "_id": "resource-2",
+    "name": "Lecture Hall A",
+    "type": "LECTURE_HALL",
+    "description": "Large lecture hall with projector and sound system",
+    "capacity": 100,
+    "location": "Building B, Floor 1",
+    "status": "ACTIVE",
+    "createdAt": "2026-03-31T10:00:00Z",
+    "updatedAt": "2026-03-31T10:00:00Z"
+  },
+  {
+    "_id": "resource-3",
+    "name": "Meeting Room 201",
+    "type": "MEETING_ROOM",
+    "description": "Conference room with video conferencing",
+    "capacity": 20,
+    "location": "Building C, Floor 3",
+    "status": "ACTIVE",
+    "createdAt": "2026-03-31T10:00:00Z",
+    "updatedAt": "2026-03-31T10:00:00Z"
+  }
+]
