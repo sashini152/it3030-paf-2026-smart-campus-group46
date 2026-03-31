@@ -1,20 +1,30 @@
-name: CI
+name: CI Pipeline
 
 on:
-  push:
-    branches: [main, master]
   pull_request:
     branches: [main, master]
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   backend:
-    name: Backend (Maven)
+    name: Backend - Hub (Maven)
     runs-on: ubuntu-latest
     services:
       mongodb:
         image: mongo:7
         ports:
           - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -23,9 +33,34 @@ jobs:
           java-version: "21"
           cache: maven
           cache-dependency-path: backend/pom.xml
-      - name: Test with Maven Wrapper
+      - name: Build and test Hub backend
         working-directory: backend
-        run: chmod +x mvnw && ./mvnw -B -q test
+        run: chmod +x mvnw && ./mvnw -B clean package
+
+  incident-ticket-service:
+    name: Backend - Incident Ticket Service (Maven)
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: incident-ticket-service/pom.xml
+      - name: Build and test Incident Ticket Service
+        working-directory: incident-ticket-service
+        run: chmod +x mvnw && ./mvnw -B clean package
 
   frontend:
     name: Frontend (npm)
@@ -34,9 +69,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "20"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - name: Install and build
+      - name: Install dependencies
         working-directory: frontend
-        run: npm ci && npm run build
+        run: npm ci
+      - name: Lint frontend
+        working-directory: frontend
+        run: npm run lint
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
