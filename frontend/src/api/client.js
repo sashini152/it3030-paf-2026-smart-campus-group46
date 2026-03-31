@@ -18,6 +18,16 @@ api.interceptors.response.use(
   }
 )
 
+// Build query string from params
+export function buildQuery(params) {
+  const esc = encodeURIComponent
+  const query = Object.entries(params)
+    .filter(([, v]) => v !== undefined && v !== '')
+    .map(([k, v]) => `${esc(k)}=${esc(v)}`)
+    .join('&')
+  return query ? `?${query}` : ''
+}
+
 export async function getJson(path) {
   const { data } = await api.get(path)
   return data
@@ -37,6 +47,9 @@ export async function deleteJson(path) {
   const { data } = await api.delete(path)
   return data
 }
+
+// Alias for DELETE request (for backward compatibility)
+export const deleteRequest = deleteJson
 
 export async function patchJson(path, payload) {
   const { data } = await api.patch(path, payload)
