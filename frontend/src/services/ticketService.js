@@ -1,45 +1,55 @@
 import { api, getJson, postJson, putJson, deleteJson, patchJson } from '../api/client'
 
+const TICKET_BASE_PATH = '/api/incident-tickets'
+const STANDARD_TICKET_BASE_PATH = '/api/tickets'
+
 export function fetchTickets() {
-  return getJson('/api/tickets')
+  return getJson(TICKET_BASE_PATH)
 }
 
 export function fetchTicket(ticketId) {
-  return getJson(`/api/tickets/${ticketId}`)
+  return getJson(`${TICKET_BASE_PATH}/${ticketId}`)
 }
 
 export function createTicket(data) {
-  return postJson('/api/tickets', data)
+  return postJson(TICKET_BASE_PATH, {
+    title: data.title,
+    description: data.description,
+    createdBy: data.createdBy,
+    status: data.status || 'OPEN',
+  })
+}
+
+export function createStandardTicket(data) {
+  return postJson(STANDARD_TICKET_BASE_PATH, {
+    title: data.title,
+    description: data.description,
+    category: data.category,
+    priority: data.priority,
+    createdBy: data.createdBy,
+    status: data.status || 'OPEN',
+    imageUrls: data.imageUrls || [],
+  })
 }
 
 export function updateTicket(ticketId, data) {
-  return putJson(`/api/tickets/${ticketId}`, data)
+  return putJson(`${TICKET_BASE_PATH}/${ticketId}`, data)
 }
 
 export function deleteTicket(ticketId) {
-  return deleteJson(`/api/tickets/${ticketId}`)
+  return deleteJson(`${TICKET_BASE_PATH}/${ticketId}`)
 }
 
 export function assignTechnician(ticketId, technicianId) {
-  return postJson(`/api/tickets/${ticketId}/assign`, { technicianId })
+  return postJson(`${TICKET_BASE_PATH}/${ticketId}/assign`, { technicianId })
 }
 
 export function updateStatus(ticketId, status) {
-  return patchJson(`/api/tickets/${ticketId}/status`, { status })
+  return patchJson(`${TICKET_BASE_PATH}/${ticketId}/status`, { status })
 }
 
 export async function uploadTicketImages(ticketId, files) {
   if (!files?.length) return []
-
-  const formData = new FormData()
-  for (const file of files) {
-    formData.append('images', file)
-  }
-
-  const { data } = await api.post(`/api/tickets/${ticketId}/upload`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  })
-  return data
+  // Image upload is not exposed by the current incident ticket controller yet.
+  return []
 }

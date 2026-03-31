@@ -6,14 +6,23 @@ export function useTickets() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
+  const loadTickets = () => {
     setLoading(true)
-    ticketService
+    setError(null)
+    return ticketService
       .fetchTickets()
       .then((data) => setTickets(data))
-      .catch((err) => setError(err))
+      .catch((err) => {
+        setTickets([])
+        setError(err)
+        throw err
+      })
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    loadTickets().catch(() => {})
   }, [])
 
-  return { tickets, loading, error, setTickets, reload: () => ticketService.fetchTickets().then(setTickets) }
+  return { tickets, loading, error, setTickets, reload: loadTickets }
 }
