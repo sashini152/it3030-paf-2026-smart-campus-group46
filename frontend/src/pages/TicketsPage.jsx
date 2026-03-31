@@ -62,18 +62,24 @@ export default function TicketsPage() {
   }, [tickets])
 
   return (
-    <div className="hub-page space-y-8">
+    <div className="hub-page hub-ticket-flow space-y-8 rounded-[36px] bg-[linear-gradient(180deg,#181A2F_0%,#242E49_52%,#37415C_100%)] p-6 text-white sm:p-8">
       <Reveal className="grid gap-4 sm:grid-cols-3" delay={20}>
         {queueStats.map((stat, index) => (
           <ParallaxPanel
             key={stat.label}
             strength={8 + index}
-            className="hub-lift rounded-[24px] border border-[#d8e0ea] bg-[linear-gradient(180deg,#ffffff_0%,#f6f9fc_100%)] p-5 shadow-[0_18px_42px_rgba(15,23,42,0.08)]"
+            className={`hub-lift rounded-[24px] border p-5 shadow-none ${
+              index === 0
+                ? 'border-[#37415C] bg-white text-[#181A2F]'
+                : index === 1
+                  ? 'border-[#242E49] bg-[#242E49] text-white'
+                  : 'border-[#FDA481] bg-[#FDA481] text-[#181A2F]'
+            }`}
           >
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#64748b]">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em]">
               {stat.label}
             </p>
-            <p className="mt-3 text-3xl font-semibold text-[#0f172a]">{stat.value}</p>
+            <p className="mt-3 text-3xl font-semibold">{stat.value}</p>
           </ParallaxPanel>
         ))}
       </Reveal>
@@ -86,22 +92,22 @@ export default function TicketsPage() {
         <aside className="space-y-6 xl:sticky xl:top-24 xl:self-start">
           <Reveal delay={110}>
             <ParallaxPanel>
-              <SurfaceCard className="space-y-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#327f7d]">Student Help</p>
+              <SurfaceCard className="space-y-5 !border-[#54162B] !bg-[#54162B] !text-white shadow-none">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#FDA481]">Student Help</p>
             <div className="space-y-3">
               {helpItems.map((item, index) => {
                 const open = openHelpIndex === index
                 return (
-                  <div key={item.title} className="rounded-[22px] border border-[#dde5ef] bg-[#f8fbff] px-4 py-3">
+                  <div key={item.title} className="rounded-[22px] border border-[#B4182D] bg-[#242E49] px-4 py-3">
                     <button
                       type="button"
                       onClick={() => setOpenHelpIndex(open ? -1 : index)}
                       className="flex w-full items-center justify-between gap-3 text-left"
                     >
-                      <span className="text-sm font-semibold text-[#0f172a]">{item.title}</span>
+                      <span className="text-sm font-semibold text-white">{item.title}</span>
                       <span
-                        className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#d8e0ea] text-sm text-[#475569] transition ${
-                          open ? 'rotate-45 bg-white' : 'bg-[#f3f7fb]'
+                        className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#FDA481] text-sm text-[#FDA481] transition ${
+                          open ? 'rotate-45 bg-[#B4182D]' : 'bg-[#181A2F]'
                         }`}
                       >
                         +
@@ -112,7 +118,7 @@ export default function TicketsPage() {
                         open ? 'mt-3 grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-60'
                       }`}
                     >
-                      <div className="overflow-hidden text-sm leading-6 text-[#475569]">{item.copy}</div>
+                      <div className="overflow-hidden text-sm leading-6 text-white">{item.copy}</div>
                     </div>
                   </div>
                 )
@@ -130,41 +136,43 @@ export default function TicketsPage() {
 
           <Reveal delay={230}>
             <ParallaxPanel strength={10}>
-              <SurfaceCard className="space-y-5">
+              <SurfaceCard className="space-y-5 !border-[#FDA481] !bg-white !text-[#181A2F] shadow-none">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#327f7d]">Ticket Tracker</p>
-                  <Tooltip text="This panel shows your latest four matching tickets and their current progress.">
-                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#d8e0ea] bg-white text-[11px] font-semibold text-[#64748b]">
+                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#B4182D]">Ticket Tracker</p>
+              <Tooltip text="This panel shows your latest four matching tickets and their current progress." tone="ticket">
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#B4182D] bg-white text-[11px] font-semibold text-[#B4182D]">
                       i
                     </span>
                   </Tooltip>
                 </div>
                 <h2 className="mt-2 text-xl font-semibold">Track your status</h2>
               </div>
-              <Link to="/ticket-list" className="text-sm font-semibold text-[#327f7d] hover:text-[#286765]">
+              <Link to="/ticket-list" className="text-sm font-semibold text-[#54162B] hover:text-[#B4182D]">
                 View all
               </Link>
             </div>
 
             {studentName && (
-              <p className="mt-3 text-sm text-[#64748b]">
-                Showing tickets submitted by <span className="font-semibold text-[#0f172a]">{studentName}</span>.
+              <p className="mt-3 text-sm text-[#37415C]">
+                Showing tickets submitted by <span className="font-semibold text-[#181A2F]">{studentName}</span>.
               </p>
             )}
 
-            {loading && <LoadingSpinner label="Loading ticket tracker..." className="min-h-[140px]" />}
+            {loading && <LoadingSpinner label="Loading ticket tracker..." tone="ticket" className="min-h-[140px]" />}
             {error && (
               <EmptyState
                 title="Ticket tracking is unavailable"
                 description="The incident ticket service did not respond successfully."
+                tone="ticket"
               />
             )}
             {!loading && !error && trackedTickets.length === 0 && (
               <EmptyState
                 title="No tickets to track yet"
                 description="Submit your first ticket and it will appear here for status tracking and replies."
+                tone="ticket"
               />
             )}
 
@@ -172,16 +180,16 @@ export default function TicketsPage() {
               <div className="space-y-3">
                 {trackedTickets.map((ticket) => {
                   return (
-                    <article key={ticket.id} className="hub-lift rounded-[24px] border border-[#dde5ef] bg-[#f8fbff] p-4 shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
+                    <article key={ticket.id} className="hub-lift rounded-[24px] border border-[#242E49] bg-[#242E49] p-4 text-white shadow-none">
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <Link
                             to={`/ticket-details/${ticket.id}`}
-                            className="text-sm font-semibold text-[#0f172a] hover:text-[#327f7d]"
+                            className="text-sm font-semibold text-white hover:text-[#FDA481]"
                           >
                             {ticket.title}
                           </Link>
-                          <p className="mt-1 text-xs text-[#64748b]">
+                          <p className="mt-1 text-xs text-[#FDA481]">
                             {ticket.createdBy || 'Anonymous'} / {formatTicketDate(ticket.createdAt)}
                           </p>
                         </div>
@@ -190,7 +198,7 @@ export default function TicketsPage() {
 
                       <TicketProgress status={ticket.status} compact className="mt-4" />
 
-                      <p className="mt-4 line-clamp-2 text-sm leading-6 text-[#475569]">
+                      <p className="mt-4 line-clamp-2 text-sm leading-6 text-white">
                         {ticket.description}
                       </p>
                     </article>

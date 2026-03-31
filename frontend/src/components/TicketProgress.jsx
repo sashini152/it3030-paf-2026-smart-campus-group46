@@ -11,10 +11,10 @@ export default function TicketProgress({ status, compact = false, className = ''
         const complete = index <= currentStep
         return (
           <div key={step} className="space-y-2">
-            <div className={`h-2 rounded-full ${complete ? 'bg-[#327f7d]' : 'bg-[#d9e2ec]'}`} />
+            <div className={`h-2 rounded-full ${complete ? 'bg-[#FDA481]' : 'bg-[#37415C]'}`} />
             <p
               className={`${compact ? 'text-[11px]' : 'text-sm'} font-medium ${
-                complete ? 'text-[#0f172a]' : 'text-[#94a3b8]'
+                complete ? 'text-white' : 'text-[#FDA481]'
               }`}
             >
               {step}

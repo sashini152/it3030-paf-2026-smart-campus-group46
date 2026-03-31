@@ -78,14 +78,14 @@ export default function ChatBot() {
   }
 
   return (
-    <SurfaceCard className="space-y-5">
+    <SurfaceCard className="space-y-5 !border-[#FDA481] !bg-[#181A2F] !text-white shadow-none">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#327f7d]">Support Assistant</p>
-          <h2 className="mt-2 text-xl font-semibold">Ticket help board</h2>
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#FDA481]">Support Assistant</p>
+          <h2 className="mt-2 text-xl font-semibold text-white">Ticket help board</h2>
         </div>
-        <span className="inline-flex items-center gap-2 rounded-full border border-[#b9d7d6] bg-white px-3 py-1 text-xs font-semibold text-[#327f7d]">
-          <span className="h-2.5 w-2.5 rounded-full bg-[#327f7d]" />
+        <span className="inline-flex items-center gap-2 rounded-full border border-[#FDA481] bg-[#242E49] px-3 py-1 text-xs font-semibold text-[#FDA481]">
+          <span className="h-2.5 w-2.5 rounded-full bg-[#FDA481]" />
           Guide
         </span>
       </div>
@@ -96,7 +96,7 @@ export default function ChatBot() {
             key={prompt}
             type="button"
             onClick={() => applyPrompt(prompt)}
-            className="hub-button-pop whitespace-nowrap rounded-full border border-[#d8e0ea] bg-[#f8fbff] px-3 py-2 text-xs font-semibold text-[#475569]"
+            className="hub-button-pop whitespace-nowrap rounded-full border border-[#37415C] bg-[#242E49] px-3 py-2 text-xs font-semibold text-white"
           >
             {prompt}
           </button>
@@ -105,44 +105,44 @@ export default function ChatBot() {
 
       <div
         ref={bodyRef}
-        className="mt-5 flex h-80 flex-col gap-3 overflow-y-auto rounded-[24px] border border-[#dde5ef] bg-[#f8fbff] p-4"
+        className="mt-5 flex h-80 flex-col gap-3 overflow-y-auto rounded-[24px] border border-[#37415C] bg-[#242E49] p-4"
       >
         {messages.map((message, index) => (
           <div
             key={`${message.role}-${index}`}
-            className={`hub-message-enter ${message.role === 'bot' ? 'mr-8 rounded-[20px] bg-white p-3 shadow-sm' : 'ml-8 rounded-[20px] bg-[#18314f] p-3 text-white shadow-sm'}`}
+            className={`hub-message-enter ${message.role === 'bot' ? 'mr-8 rounded-[20px] bg-white p-3 shadow-none' : 'ml-8 rounded-[20px] bg-[#54162B] p-3 text-white shadow-none'}`}
           >
-            <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${message.role === 'bot' ? 'text-[#327f7d]' : 'text-[#b9d7d6]'}`}>
+            <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${message.role === 'bot' ? 'text-[#B4182D]' : 'text-[#FDA481]'}`}>
               {message.role === 'bot' ? 'Support' : 'You'}
             </p>
-            <p className={`mt-2 text-sm leading-6 ${message.role === 'bot' ? 'text-[#475569]' : 'text-white'}`}>{message.text}</p>
+            <p className={`mt-2 text-sm leading-6 ${message.role === 'bot' ? 'text-[#181A2F]' : 'text-white'}`}>{message.text}</p>
           </div>
         ))}
 
         {typing && (
-          <div className="mr-8 rounded-[20px] bg-white p-3 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#327f7d]">Support</p>
-            <p className="mt-2 text-sm text-[#64748b]">Typing...</p>
+          <div className="mr-8 rounded-[20px] bg-white p-3 shadow-none">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#B4182D]">Support</p>
+            <p className="mt-2 text-sm text-[#181A2F]">Typing...</p>
           </div>
         )}
       </div>
 
-      <div className="mt-4 rounded-[24px] border border-[#dde5ef] bg-white p-3">
+      <div className="mt-4 rounded-[24px] border border-[#37415C] bg-white p-3">
         <textarea
           value={input}
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={onKeyDown}
           rows={3}
           placeholder="Ask about ticket status, urgency, hardware, software, or campus support."
-          className="w-full resize-none border-0 bg-transparent text-sm text-[#0f172a] outline-none placeholder:text-[#94a3b8]"
+          className="w-full resize-none border-0 bg-transparent text-sm text-[#181A2F] outline-none placeholder:text-[#37415C]"
         />
         <div className="mt-3 flex items-center justify-between gap-3">
-          <p className="text-xs text-[#64748b]">Press Enter to send</p>
+          <p className="text-xs text-[#37415C]">Press Enter to send</p>
           <button
             type="button"
             onClick={sendMessage}
             disabled={!input.trim() || typing}
-            className="hub-button-pop inline-flex items-center justify-center rounded-2xl border border-[#327f7d] bg-[linear-gradient(180deg,#274c77_0%,#163455_100%)] px-4 py-2 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(50,127,125,0.18)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+            className="hub-button-pop inline-flex items-center justify-center rounded-2xl border border-[#181A2F] bg-[#181A2F] px-4 py-2 text-sm font-semibold text-white shadow-none transition hover:bg-[#242E49] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Send message
           </button>

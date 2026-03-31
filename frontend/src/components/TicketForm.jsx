@@ -20,9 +20,9 @@ const priorityCopy = {
 }
 
 const priorityTone = {
-  LOW: 'border-[#b9d7d6] bg-[#f7fbfb] text-[#327f7d]',
-  MEDIUM: 'border-[#d7dee8] bg-[#eef2f7] text-[#334155]',
-  HIGH: 'border-[#1e3a5f] bg-[#18314f] text-[#f8fbff]',
+  LOW: 'border-[#37415C] bg-[#37415C] text-white',
+  MEDIUM: 'border-[#FDA481] bg-[#FDA481] text-[#181A2F]',
+  HIGH: 'border-[#B4182D] bg-[#B4182D] text-white',
 }
 
 function cls(...values) {
@@ -30,14 +30,14 @@ function cls(...values) {
 }
 
 const inputClass =
-  'mt-2 w-full rounded-2xl border border-[#d9e2ec] bg-[#fbfdff] px-4 py-3 text-sm text-[#0f172a] outline-none transition placeholder:text-[#94a3b8] focus:border-[#327f7d] focus:ring-4 focus:ring-[rgba(50,127,125,0.14)]'
+  'mt-2 w-full rounded-2xl border border-[#37415C] bg-white px-4 py-3 text-sm text-[#181A2F] outline-none transition placeholder:text-[#37415C] focus:border-[#B4182D] focus:ring-2 focus:ring-[#B4182D]'
 
 function FieldHint({ children }) {
-  return <p className="mt-2 text-xs leading-5 text-[#64748b]">{children}</p>
+  return <p className="mt-2 text-xs leading-5 text-[#37415C]">{children}</p>
 }
 
 function FieldError({ children }) {
-  return <p className="mt-2 text-sm text-[#8a3f32]">{children}</p>
+  return <p className="mt-2 text-sm text-[#B4182D]">{children}</p>
 }
 
 function sanitizeWhitespace(value) {
@@ -198,22 +198,22 @@ export default function TicketForm({ onCreated }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="overflow-hidden rounded-[36px] border border-[#d9e2ec] bg-[linear-gradient(180deg,#ffffff_0%,#f3f7fb_100%)] text-[#0f172a] shadow-[0_38px_90px_rgba(15,23,42,0.12)]"
+      className="overflow-hidden rounded-[36px] border border-[#54162B] bg-white text-[#181A2F] shadow-none"
     >
-      <div className="border-b border-[#dde5ef] bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.12),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(148,163,184,0.12),_transparent_34%),linear-gradient(135deg,#ffffff_0%,#f4f8fc_100%)] px-6 py-8 sm:px-8">
+      <div className="border-b border-[#54162B] bg-[linear-gradient(135deg,#181A2F_0%,#242E49_62%,#37415C_100%)] px-6 py-8 text-white sm:px-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#327f7d]">Support Intake</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-[#0f172a]">Submit a campus support ticket</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#475569]">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#FDA481]">Support Intake</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white">Submit a campus support ticket</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-white">
               Report the issue clearly, attach evidence if needed, and give the admin team enough context to respond without chasing missing details.
             </p>
           </div>
-          <div className="hub-lift rounded-2xl border border-[#b9d7d6] bg-white px-4 py-3 text-sm text-[#327f7d] shadow-sm">
+          <div className="hub-lift rounded-2xl border border-[#FDA481] bg-[#FDA481] px-4 py-3 text-sm text-[#181A2F] shadow-none">
             <div className="flex items-center gap-2">
               <span>Typical response: same working day</span>
-              <Tooltip text="High-priority incidents may move faster depending on queue load.">
-                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#b9d7d6] text-[11px] font-semibold">
+              <Tooltip text="High-priority incidents may move faster depending on queue load." tone="ticket">
+                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#181A2F] text-[11px] font-semibold">
                   i
                 </span>
               </Tooltip>
@@ -224,27 +224,27 @@ export default function TicketForm({ onCreated }) {
 
       <div className="space-y-6 px-6 py-6 sm:px-8 sm:py-8">
         {serverError && (
-          <div className="hub-fade-slide rounded-2xl border border-[#d3b7ab] bg-[#f6ece7] px-4 py-3 text-sm text-[#8a3f32]">
+          <div className="hub-fade-slide rounded-2xl border border-[#B4182D] bg-white px-4 py-3 text-sm text-[#B4182D]">
             {serverError}
           </div>
         )}
 
         {successMessage && (
-          <div className="hub-fade-slide rounded-2xl border border-[#b9d7d6] bg-white px-4 py-3 text-sm text-[#327f7d]">
+          <div className="hub-fade-slide rounded-2xl border border-[#54162B] bg-[#54162B] px-4 py-3 text-sm text-white">
             {successMessage}
           </div>
         )}
 
         <Reveal delay={40}>
-          <section className="hub-lift rounded-[30px] border border-[#dde5ef] bg-white/85 p-5 shadow-[0_10px_26px_rgba(15,23,42,0.05)] sm:p-6">
+          <section className="hub-lift rounded-[30px] border border-[#37415C] bg-white p-5 shadow-none sm:p-6">
           <div className="mb-5">
-            <h3 className="text-lg font-semibold text-[#0f172a]">Reporter details</h3>
-            <p className="mt-1 text-sm text-[#64748b]">These details help the team identify who reported the issue and where to reply.</p>
+            <h3 className="text-lg font-semibold text-[#181A2F]">Reporter details</h3>
+            <p className="mt-1 text-sm text-[#37415C]">These details help the team identify who reported the issue and where to reply.</p>
           </div>
 
           <div className="grid gap-5 md:grid-cols-2">
             <label className="block">
-              <span className="text-sm font-medium text-[#1e293b]">Full name</span>
+              <span className="text-sm font-medium text-[#181A2F]">Full name</span>
               <input
                 type="text"
                 value={userName}
@@ -259,7 +259,7 @@ export default function TicketForm({ onCreated }) {
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-[#1e293b]">Campus email</span>
+              <span className="text-sm font-medium text-[#181A2F]">Campus email</span>
               <input
                 type="email"
                 value={userEmail}
@@ -277,15 +277,15 @@ export default function TicketForm({ onCreated }) {
         </Reveal>
 
         <Reveal delay={110}>
-          <section className="hub-lift rounded-[30px] border border-[#dde5ef] bg-white/85 p-5 shadow-[0_10px_26px_rgba(15,23,42,0.05)] sm:p-6">
+          <section className="hub-lift rounded-[30px] border border-[#37415C] bg-white p-5 shadow-none sm:p-6">
           <div className="mb-5">
-            <h3 className="text-lg font-semibold text-[#0f172a]">Issue details</h3>
-            <p className="mt-1 text-sm text-[#64748b]">Describe where the problem happened and what the support team should inspect first.</p>
+            <h3 className="text-lg font-semibold text-[#181A2F]">Issue details</h3>
+            <p className="mt-1 text-sm text-[#37415C]">Describe where the problem happened and what the support team should inspect first.</p>
           </div>
 
           <div className="space-y-5">
             <label className="block">
-              <span className="text-sm font-medium text-[#1e293b]">Resource or location</span>
+              <span className="text-sm font-medium text-[#181A2F]">Resource or location</span>
               <input
                 type="text"
                 value={resource}
@@ -297,10 +297,10 @@ export default function TicketForm({ onCreated }) {
             </label>
 
             <label className="block">
-              <span className="flex items-center gap-2 text-sm font-medium text-[#1e293b]">
+              <span className="flex items-center gap-2 text-sm font-medium text-[#181A2F]">
                 <span>Short title</span>
-                <Tooltip text="Keep it simple and readable. Numbers and special characters are not allowed in the title.">
-                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#d9e2ec] text-[11px] font-semibold text-[#64748b]">
+                <Tooltip text="Keep it simple and readable. Numbers and special characters are not allowed in the title." tone="ticket">
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#54162B] text-[11px] font-semibold text-[#54162B]">
                     ?
                   </span>
                 </Tooltip>
@@ -316,9 +316,9 @@ export default function TicketForm({ onCreated }) {
             </label>
 
             <label className="block">
-              <span className="flex items-center justify-between text-sm font-medium text-[#1e293b]">
+              <span className="flex items-center justify-between text-sm font-medium text-[#181A2F]">
                 <span>Description</span>
-                <span className={description.length > 280 ? 'text-[#8a3f32]' : 'text-[#64748b]'}>{description.length}/300</span>
+                <span className={description.length > 280 ? 'text-[#B4182D]' : 'text-[#37415C]'}>{description.length}/300</span>
               </span>
               <textarea
                 value={description}
@@ -335,15 +335,15 @@ export default function TicketForm({ onCreated }) {
         </Reveal>
 
         <Reveal delay={170}>
-          <section className="hub-lift rounded-[30px] border border-[#dde5ef] bg-white/85 p-5 shadow-[0_10px_26px_rgba(15,23,42,0.05)] sm:p-6">
+          <section className="hub-lift rounded-[30px] border border-[#37415C] bg-white p-5 shadow-none sm:p-6">
           <div className="mb-5">
-            <h3 className="text-lg font-semibold text-[#0f172a]">Routing and urgency</h3>
-            <p className="mt-1 text-sm text-[#64748b]">These selections help the dashboard group your ticket correctly and prioritize the queue.</p>
+            <h3 className="text-lg font-semibold text-[#181A2F]">Routing and urgency</h3>
+            <p className="mt-1 text-sm text-[#37415C]">These selections help the dashboard group your ticket correctly and prioritize the queue.</p>
           </div>
 
           <div className="grid gap-5 lg:grid-cols-2">
             <div>
-              <p className="text-sm font-medium text-[#1e293b]">Category</p>
+              <p className="text-sm font-medium text-[#181A2F]">Category</p>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 {categories.map((option) => {
                   const active = category === option
@@ -355,12 +355,12 @@ export default function TicketForm({ onCreated }) {
                       className={cls(
                         'hub-button-pop rounded-2xl border px-4 py-4 text-left transition',
                         active
-                          ? 'border-[#327f7d] bg-[linear-gradient(180deg,#ffffff_0%,#f2fbfa_100%)] shadow-[0_14px_30px_rgba(50,127,125,0.10)]'
-                          : 'border-[#e2e8f0] bg-[#ffffff] hover:border-[#b9d7d6] hover:bg-[#f7fbfb]'
+                          ? 'border-[#181A2F] bg-[#242E49] text-white shadow-none'
+                          : 'border-[#37415C] bg-white text-[#181A2F] hover:border-[#FDA481] hover:bg-[#FDA481]'
                       )}
                     >
-                      <p className="text-sm font-semibold text-[#0f172a]">{option}</p>
-                      <p className="mt-2 text-xs leading-5 text-[#64748b]">{categoryCopy[option]}</p>
+                      <p className="text-sm font-semibold">{option}</p>
+                      <p className="mt-2 text-xs leading-5">{categoryCopy[option]}</p>
                     </button>
                   )
                 })}
@@ -369,7 +369,7 @@ export default function TicketForm({ onCreated }) {
             </div>
 
             <div>
-              <p className="text-sm font-medium text-[#1e293b]">Priority</p>
+              <p className="text-sm font-medium text-[#181A2F]">Priority</p>
               <div className="mt-3 space-y-3">
                 {priorities.map((option) => {
                   const active = priority === option
@@ -380,14 +380,14 @@ export default function TicketForm({ onCreated }) {
                       onClick={() => setPriority(option)}
                       className={cls(
                         'hub-button-pop flex w-full items-start justify-between gap-4 rounded-2xl border px-4 py-4 text-left transition',
-                        active ? priorityTone[option] : 'border-[#e2e8f0] bg-[#ffffff] text-[#1e293b] hover:border-[#b8cce4] hover:bg-[#f7fbff]'
+                        active ? priorityTone[option] : 'border-[#37415C] bg-white text-[#181A2F] hover:border-[#FDA481] hover:bg-[#FDA481]'
                       )}
                     >
                       <div>
                         <p className="text-sm font-semibold">{option}</p>
                         <p className="mt-1 text-xs leading-5 opacity-80">{priorityCopy[option]}</p>
                       </div>
-                      <span className={cls('mt-0.5 h-4 w-4 rounded-full border', active ? 'border-current bg-current/15' : 'border-[#b8c4d2]')} />
+                      <span className={cls('mt-0.5 h-4 w-4 rounded-full border', active ? 'border-current bg-white/20' : 'border-[#37415C]')} />
                     </button>
                   )
                 })}
@@ -399,10 +399,10 @@ export default function TicketForm({ onCreated }) {
         </Reveal>
 
         <Reveal delay={240}>
-          <section className="hub-lift rounded-[30px] border border-[#dde5ef] bg-white/85 p-5 shadow-[0_10px_26px_rgba(15,23,42,0.05)] sm:p-6">
+          <section className="hub-lift rounded-[30px] border border-[#37415C] bg-white p-5 shadow-none sm:p-6">
           <div className="mb-5">
-            <h3 className="text-lg font-semibold text-[#0f172a]">Attachments</h3>
-            <p className="mt-1 text-sm text-[#64748b]">Upload up to three images if visuals will help the support team identify the problem faster.</p>
+            <h3 className="text-lg font-semibold text-[#181A2F]">Attachments</h3>
+            <p className="mt-1 text-sm text-[#37415C]">Upload up to three images if visuals will help the support team identify the problem faster.</p>
           </div>
 
           <div
@@ -418,12 +418,12 @@ export default function TicketForm({ onCreated }) {
             onDrop={handleDrop}
             className={cls(
               'hub-lift rounded-[28px] border border-dashed px-6 py-10 text-center transition',
-              dragActive ? 'border-[#327f7d] bg-[#f2fbfa]' : 'border-[#d9e2ec] bg-[#f8fbff]'
+              dragActive ? 'border-[#FDA481] bg-[#FDA481] text-[#181A2F]' : 'border-[#37415C] bg-white'
             )}
           >
-            <p className="text-base font-semibold text-[#0f172a]">Drag and drop images here</p>
-            <p className="mt-2 text-sm text-[#64748b]">Or choose files manually. PNG and JPG only, up to 5MB each.</p>
-            <input type="file" accept="image/*" multiple onChange={handleFiles} className="mx-auto mt-5 block text-sm text-[#475569]" />
+            <p className="text-base font-semibold text-[#181A2F]">Drag and drop images here</p>
+            <p className="mt-2 text-sm text-[#37415C]">Or choose files manually. PNG and JPG only, up to 5MB each.</p>
+            <input type="file" accept="image/*" multiple onChange={handleFiles} className="mx-auto mt-5 block text-sm text-[#181A2F]" />
           </div>
 
           {errors.files ? <FieldError>{errors.files}</FieldError> : <FieldHint>Screenshots and device photos often reduce back-and-forth.</FieldHint>}
@@ -431,11 +431,11 @@ export default function TicketForm({ onCreated }) {
           {previews.length > 0 && (
             <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {previews.map((preview) => (
-                <div key={preview.url} className="hub-lift overflow-hidden rounded-[24px] border border-[#dde5ef] bg-[#fbfdff] shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
+                <div key={preview.url} className="hub-lift overflow-hidden rounded-[24px] border border-[#37415C] bg-white shadow-none">
                   <img src={preview.url} alt={preview.name} className="h-36 w-full object-cover" />
                   <div className="px-4 py-3">
-                    <p className="truncate text-sm font-medium text-[#0f172a]">{preview.name}</p>
-                    <p className="mt-1 text-xs text-[#64748b]">{Math.round(preview.size / 1024)} KB</p>
+                    <p className="truncate text-sm font-medium text-[#181A2F]">{preview.name}</p>
+                    <p className="mt-1 text-xs text-[#37415C]">{Math.round(preview.size / 1024)} KB</p>
                   </div>
                 </div>
               ))}
@@ -444,14 +444,14 @@ export default function TicketForm({ onCreated }) {
           </section>
         </Reveal>
 
-        <div className="flex flex-col gap-4 border-t border-[#dde5ef] pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="max-w-xl text-sm leading-6 text-[#475569]">
+        <div className="flex flex-col gap-4 border-t border-[#54162B] pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <p className="max-w-xl text-sm leading-6 text-[#37415C]">
             Submit only one ticket per issue. If the situation changes later, update it through comments instead of opening duplicates.
           </p>
           <button
             type="submit"
             disabled={submitDisabled}
-            className="hub-button-pop inline-flex items-center justify-center rounded-2xl border border-[#327f7d] bg-[linear-gradient(180deg,#274c77_0%,#163455_100%)] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_36px_rgba(50,127,125,0.18)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+            className="hub-button-pop inline-flex items-center justify-center rounded-2xl border border-[#181A2F] bg-[#181A2F] px-6 py-3 text-sm font-semibold text-white shadow-none transition hover:bg-[#242E49] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? 'Submitting ticket...' : 'Submit Ticket'}
           </button>

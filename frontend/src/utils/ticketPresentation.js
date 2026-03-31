@@ -17,17 +17,17 @@ export function formatTicketStatus(status = 'OPEN') {
 export function getTicketStatusTone(status = 'OPEN') {
   switch (status) {
     case 'IN_PROGRESS':
-      return 'border-[#d7e6f7] bg-[#eef6ff] text-[#1d4f91]'
+      return 'border-[#242E49] bg-[#242E49] text-white'
     case 'RESOLVED':
-      return 'border-[#b9d7d6] bg-[#f7fbfb] text-[#327f7d]'
+      return 'border-[#FDA481] bg-[#FDA481] text-[#181A2F]'
     case 'CLOSED':
-      return 'border-[#d8e0ea] bg-[#eef2f7] text-[#334155]'
+      return 'border-[#54162B] bg-[#54162B] text-white'
     case 'WAITING_FOR_CLIENT':
-      return 'border-[#e5dcfb] bg-[#f6f1ff] text-[#6d4ca8]'
+      return 'border-[#B4182D] bg-[#B4182D] text-white'
     case 'WAITING_FOR_SUPPORT':
-      return 'border-[#f5ddcf] bg-[#fff4ee] text-[#a44a1a]'
+      return 'border-[#37415C] bg-[#37415C] text-white'
     default:
-      return 'border-[#dbe4ef] bg-white text-[#334155]'
+      return 'border-[#37415C] bg-white text-[#181A2F]'
   }
 }
 
@@ -49,11 +49,11 @@ export function getTicketStatusIndex(status) {
 export function getTicketPriorityTone(priority = 'LOW') {
   switch (priority) {
     case 'HIGH':
-      return 'text-[#8a3f32]'
+      return 'text-[#B4182D]'
     case 'MEDIUM':
-      return 'text-[#1d4f91]'
+      return 'text-[#FDA481]'
     default:
-      return 'text-[#327f7d]'
+      return 'text-[#37415C]'
   }
 }
 
