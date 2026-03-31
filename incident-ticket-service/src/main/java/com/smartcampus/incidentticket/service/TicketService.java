@@ -1,7 +1,11 @@
 package com.smartcampus.incidentticket.service;
 
+import com.smartcampus.incidentticket.dto.CommentDto;
+import com.smartcampus.incidentticket.exception.InvalidWorkflowTransitionException;
 import com.smartcampus.incidentticket.exception.ResourceNotFoundException;
+import com.smartcampus.incidentticket.model.Comment;
 import com.smartcampus.incidentticket.model.Ticket;
+import com.smartcampus.incidentticket.repository.CommentRepository;
 import com.smartcampus.incidentticket.repository.TicketRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +20,7 @@ import java.util.Map;
 public class TicketService {
 
     private final TicketRepository ticketRepository;
+    private final CommentRepository commentRepository;
 
     private static final int MAX_IMAGE_URLS = 3;
     private static final Map<Ticket.Status, Ticket.Status> statusTransitionMap = new EnumMap<>(Ticket.Status.class);
@@ -52,6 +57,10 @@ public class TicketService {
         return ticketRepository.findAll();
     }
 
+    public Ticket getTicket(String id) {
+        return getTicketById(id);
+    }
+
     public Ticket updateTicket(String id, Ticket updateData) {
         Ticket existing = getTicketById(id);
 
@@ -77,7 +86,50 @@ public class TicketService {
             throw new ResourceNotFoundException("Ticket not found with id " + id);
         }
 
+        commentRepository.deleteByTicketId(id);
         ticketRepository.deleteById(id);
+    }
+
+    public List<CommentDto> getComments(String id) {
+        getTicketById(id);
+        return commentRepository.findByTicketIdOrderByCreatedAtAsc(id)
+                .stream()
+                .map(this::mapCommentToDto)
+                .toList();
+    }
+
+    public CommentDto addComment(String id, String author, String content) {
+        Ticket ticket = getTicketById(id);
+
+        if (author == null || author.trim().isEmpty()) {
+            throw new IllegalArgumentException("Author cannot be null or empty");
+        }
+
+        if (content == null || content.trim().isEmpty()) {
+            throw new IllegalArgumentException("Content cannot be null or empty");
+        }
+
+        Comment comment = Comment.builder()
+                .ticketId(ticket.getId())
+                .userId(author.trim())
+                .content(content.trim())
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        return mapCommentToDto(commentRepository.save(comment));
+    }
+
+    public void deleteComment(String id, String commentId) {
+        getTicketById(id);
+
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Comment not found with id " + commentId));
+
+        if (!id.equals(comment.getTicketId())) {
+            throw new IllegalArgumentException("Comment does not belong to this ticket");
+        }
+
+        commentRepository.deleteById(commentId);
     }
 
     public Ticket assignTechnician(String id, String technicianId) {
@@ -126,5 +178,15 @@ public class TicketService {
 
         Ticket.Status expected = statusTransitionMap.get(from);
         return expected == to;
+    }
+
+    private CommentDto mapCommentToDto(Comment comment) {
+        CommentDto dto = new CommentDto();
+        dto.setId(comment.getId());
+        dto.setTicketId(comment.getTicketId());
+        dto.setAuthor(comment.getUserId());
+        dto.setContent(comment.getContent());
+        dto.setCreatedAt(comment.getCreatedAt());
+        return dto;
     }
 }

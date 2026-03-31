@@ -1,5 +1,8 @@
 package com.smartcampus.incidentticket.model;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
@@ -18,8 +21,13 @@ public class Ticket {
     @Id
     private String id;
 
+    @NotBlank(message = "Title is required")
+    @Size(min = 5, max = 80, message = "Title must be between 5 and 80 characters")
+    @Pattern(regexp = "^[A-Za-z ]+$", message = "Title can contain letters and spaces only")
     private String title;
 
+    @NotBlank(message = "Description is required")
+    @Size(min = 20, max = 300, message = "Description must be between 20 and 300 characters")
     private String description;
 
     private Category category;
@@ -30,6 +38,9 @@ public class Ticket {
 
     private String resourceId;
 
+    @NotBlank(message = "CreatedBy is required")
+    @Size(min = 3, max = 60, message = "CreatedBy must be between 3 and 60 characters")
+    @Pattern(regexp = "^[A-Za-z ]+$", message = "CreatedBy can contain letters and spaces only")
     private String createdBy;
 
     private String assignedTo;

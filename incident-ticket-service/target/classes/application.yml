@@ -4,10 +4,6 @@ spring:
       host: localhost
       port: 27017
       database: incident_ticket_db
-  security:
-    user:
-      name: user
-      password: password
 
 server:
   port: 8081
