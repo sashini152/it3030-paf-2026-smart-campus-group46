@@ -81,6 +81,23 @@ export default function HomePage() {
           </article>
         ))}
       </section>
+
+      <footer className="hub-home-footer" aria-label="SLIIT campus footer">
+        <div className="hub-home-footer__inner">
+          <div>
+            <p className="hub-home-footer__title">SLIIT Campus</p>
+            <p className="hub-home-footer__text">
+              Smart Campus Hub for student services, bookings, resources, and
+              support access.
+            </p>
+          </div>
+          <div className="hub-home-footer__meta">
+            <span>Student services</span>
+            <span>Campus operations</span>
+            <span>Digital support</span>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

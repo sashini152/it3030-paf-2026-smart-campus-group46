@@ -1,4 +1,5 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import AdminRoute from './components/AdminRoute'
 import Layout from './layout/Layout'
 import HomePage from './pages/HomePage'
 import ResourcesPage from './pages/ResourcesPage'
@@ -9,11 +10,6 @@ import TicketDetails from './pages/TicketDetails'
 import AdminDashboard from './pages/AdminDashboard'
 import NotificationsPage from './pages/NotificationsPage'
 import LoginPage from './pages/LoginPage'
-import { isAdminRole } from './utils/session'
-
-function AdminRoute({ children }) {
-  return isAdminRole() ? children : <Navigate to="/login" replace />
-}
 
 export default function App() {
   return (

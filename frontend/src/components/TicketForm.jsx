@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import Reveal from './Reveal'
+import Tooltip from './Tooltip'
 import * as ticketService from '../services/ticketService'
 
 const categories = ['HARDWARE', 'SOFTWARE', 'NETWORK', 'OTHER']
@@ -42,10 +44,6 @@ function sanitizeWhitespace(value) {
   return value.replace(/\s+/g, ' ').trim()
 }
 
-function hasLettersOnly(value) {
-  return /^[A-Za-z ]+$/.test(value)
-}
-
 function hasLettersAndSpacesOnly(value) {
   return /^[A-Za-z ]+$/.test(value)
 }
@@ -86,7 +84,7 @@ export default function TicketForm({ onCreated }) {
     if (!normalizedName) nextErrors.userName = 'Name is required.'
     else if (normalizedName.length < 3) nextErrors.userName = 'Name must be at least 3 characters.'
     else if (normalizedName.length > 60) nextErrors.userName = 'Name must be 60 characters or less.'
-    else if (!hasLettersOnly(normalizedName)) nextErrors.userName = 'Name can contain letters and spaces only.'
+    else if (!hasLettersAndSpacesOnly(normalizedName)) nextErrors.userName = 'Name can contain letters and spaces only.'
 
     if (!userEmail.trim() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(userEmail)) {
       nextErrors.userEmail = 'Valid email is required.'
@@ -211,26 +209,34 @@ export default function TicketForm({ onCreated }) {
               Report the issue clearly, attach evidence if needed, and give the admin team enough context to respond without chasing missing details.
             </p>
           </div>
-          <div className="rounded-2xl border border-[#b9d7d6] bg-white px-4 py-3 text-sm text-[#327f7d] shadow-sm">
-            Typical response: same working day
+          <div className="hub-lift rounded-2xl border border-[#b9d7d6] bg-white px-4 py-3 text-sm text-[#327f7d] shadow-sm">
+            <div className="flex items-center gap-2">
+              <span>Typical response: same working day</span>
+              <Tooltip text="High-priority incidents may move faster depending on queue load.">
+                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#b9d7d6] text-[11px] font-semibold">
+                  i
+                </span>
+              </Tooltip>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="space-y-6 px-6 py-6 sm:px-8 sm:py-8">
         {serverError && (
-          <div className="rounded-2xl border border-[#d3b7ab] bg-[#f6ece7] px-4 py-3 text-sm text-[#8a3f32]">
+          <div className="hub-fade-slide rounded-2xl border border-[#d3b7ab] bg-[#f6ece7] px-4 py-3 text-sm text-[#8a3f32]">
             {serverError}
           </div>
         )}
 
         {successMessage && (
-          <div className="rounded-2xl border border-[#b9d7d6] bg-white px-4 py-3 text-sm text-[#327f7d]">
+          <div className="hub-fade-slide rounded-2xl border border-[#b9d7d6] bg-white px-4 py-3 text-sm text-[#327f7d]">
             {successMessage}
           </div>
         )}
 
-        <section className="rounded-[30px] border border-[#dde5ef] bg-white/85 p-5 shadow-[0_10px_26px_rgba(15,23,42,0.05)] sm:p-6">
+        <Reveal delay={40}>
+          <section className="hub-lift rounded-[30px] border border-[#dde5ef] bg-white/85 p-5 shadow-[0_10px_26px_rgba(15,23,42,0.05)] sm:p-6">
           <div className="mb-5">
             <h3 className="text-lg font-semibold text-[#0f172a]">Reporter details</h3>
             <p className="mt-1 text-sm text-[#64748b]">These details help the team identify who reported the issue and where to reply.</p>
@@ -267,9 +273,11 @@ export default function TicketForm({ onCreated }) {
               {errors.userEmail ? <FieldError>{errors.userEmail}</FieldError> : <FieldHint>This is used for follow-up and status updates.</FieldHint>}
             </label>
           </div>
-        </section>
+          </section>
+        </Reveal>
 
-        <section className="rounded-[30px] border border-[#dde5ef] bg-white/85 p-5 shadow-[0_10px_26px_rgba(15,23,42,0.05)] sm:p-6">
+        <Reveal delay={110}>
+          <section className="hub-lift rounded-[30px] border border-[#dde5ef] bg-white/85 p-5 shadow-[0_10px_26px_rgba(15,23,42,0.05)] sm:p-6">
           <div className="mb-5">
             <h3 className="text-lg font-semibold text-[#0f172a]">Issue details</h3>
             <p className="mt-1 text-sm text-[#64748b]">Describe where the problem happened and what the support team should inspect first.</p>
@@ -289,7 +297,14 @@ export default function TicketForm({ onCreated }) {
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-[#1e293b]">Short title</span>
+              <span className="flex items-center gap-2 text-sm font-medium text-[#1e293b]">
+                <span>Short title</span>
+                <Tooltip text="Keep it simple and readable. Numbers and special characters are not allowed in the title.">
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#d9e2ec] text-[11px] font-semibold text-[#64748b]">
+                    ?
+                  </span>
+                </Tooltip>
+              </span>
               <input
                 type="text"
                 value={title}
@@ -316,9 +331,11 @@ export default function TicketForm({ onCreated }) {
               {errors.description ? <FieldError>{errors.description}</FieldError> : <FieldHint>Good reports mention symptoms, timing, and impact.</FieldHint>}
             </label>
           </div>
-        </section>
+          </section>
+        </Reveal>
 
-        <section className="rounded-[30px] border border-[#dde5ef] bg-white/85 p-5 shadow-[0_10px_26px_rgba(15,23,42,0.05)] sm:p-6">
+        <Reveal delay={170}>
+          <section className="hub-lift rounded-[30px] border border-[#dde5ef] bg-white/85 p-5 shadow-[0_10px_26px_rgba(15,23,42,0.05)] sm:p-6">
           <div className="mb-5">
             <h3 className="text-lg font-semibold text-[#0f172a]">Routing and urgency</h3>
             <p className="mt-1 text-sm text-[#64748b]">These selections help the dashboard group your ticket correctly and prioritize the queue.</p>
@@ -336,7 +353,7 @@ export default function TicketForm({ onCreated }) {
                       type="button"
                       onClick={() => setCategory(option)}
                       className={cls(
-                        'rounded-2xl border px-4 py-4 text-left transition',
+                        'hub-button-pop rounded-2xl border px-4 py-4 text-left transition',
                         active
                           ? 'border-[#327f7d] bg-[linear-gradient(180deg,#ffffff_0%,#f2fbfa_100%)] shadow-[0_14px_30px_rgba(50,127,125,0.10)]'
                           : 'border-[#e2e8f0] bg-[#ffffff] hover:border-[#b9d7d6] hover:bg-[#f7fbfb]'
@@ -362,7 +379,7 @@ export default function TicketForm({ onCreated }) {
                       type="button"
                       onClick={() => setPriority(option)}
                       className={cls(
-                        'flex w-full items-start justify-between gap-4 rounded-2xl border px-4 py-4 text-left transition',
+                        'hub-button-pop flex w-full items-start justify-between gap-4 rounded-2xl border px-4 py-4 text-left transition',
                         active ? priorityTone[option] : 'border-[#e2e8f0] bg-[#ffffff] text-[#1e293b] hover:border-[#b8cce4] hover:bg-[#f7fbff]'
                       )}
                     >
@@ -378,9 +395,11 @@ export default function TicketForm({ onCreated }) {
               {errors.priority && <FieldError>{errors.priority}</FieldError>}
             </div>
           </div>
-        </section>
+          </section>
+        </Reveal>
 
-        <section className="rounded-[30px] border border-[#dde5ef] bg-white/85 p-5 shadow-[0_10px_26px_rgba(15,23,42,0.05)] sm:p-6">
+        <Reveal delay={240}>
+          <section className="hub-lift rounded-[30px] border border-[#dde5ef] bg-white/85 p-5 shadow-[0_10px_26px_rgba(15,23,42,0.05)] sm:p-6">
           <div className="mb-5">
             <h3 className="text-lg font-semibold text-[#0f172a]">Attachments</h3>
             <p className="mt-1 text-sm text-[#64748b]">Upload up to three images if visuals will help the support team identify the problem faster.</p>
@@ -398,7 +417,7 @@ export default function TicketForm({ onCreated }) {
             }}
             onDrop={handleDrop}
             className={cls(
-              'rounded-[28px] border border-dashed px-6 py-10 text-center transition',
+              'hub-lift rounded-[28px] border border-dashed px-6 py-10 text-center transition',
               dragActive ? 'border-[#327f7d] bg-[#f2fbfa]' : 'border-[#d9e2ec] bg-[#f8fbff]'
             )}
           >
@@ -412,7 +431,7 @@ export default function TicketForm({ onCreated }) {
           {previews.length > 0 && (
             <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {previews.map((preview) => (
-                <div key={preview.url} className="overflow-hidden rounded-[24px] border border-[#dde5ef] bg-[#fbfdff] shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
+                <div key={preview.url} className="hub-lift overflow-hidden rounded-[24px] border border-[#dde5ef] bg-[#fbfdff] shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
                   <img src={preview.url} alt={preview.name} className="h-36 w-full object-cover" />
                   <div className="px-4 py-3">
                     <p className="truncate text-sm font-medium text-[#0f172a]">{preview.name}</p>
@@ -422,7 +441,8 @@ export default function TicketForm({ onCreated }) {
               ))}
             </div>
           )}
-        </section>
+          </section>
+        </Reveal>
 
         <div className="flex flex-col gap-4 border-t border-[#dde5ef] pt-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="max-w-xl text-sm leading-6 text-[#475569]">
@@ -431,7 +451,7 @@ export default function TicketForm({ onCreated }) {
           <button
             type="submit"
             disabled={submitDisabled}
-            className="inline-flex items-center justify-center rounded-2xl border border-[#327f7d] bg-[linear-gradient(180deg,#274c77_0%,#163455_100%)] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_36px_rgba(50,127,125,0.18)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+            className="hub-button-pop inline-flex items-center justify-center rounded-2xl border border-[#327f7d] bg-[linear-gradient(180deg,#274c77_0%,#163455_100%)] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_36px_rgba(50,127,125,0.18)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? 'Submitting ticket...' : 'Submit Ticket'}
           </button>
