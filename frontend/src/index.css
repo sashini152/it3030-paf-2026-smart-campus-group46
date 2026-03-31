@@ -3,18 +3,18 @@
 @tailwind utilities;
 
 :root {
-  --hub-bg: #eef3f8;
-  --hub-surface: #ffffff;
-  --hub-surface-2: #f3f7fb;
-  --hub-border: #d8e1eb;
-  --hub-text: #0f172a;
-  --hub-text-muted: #64748b;
-  --hub-heading: #0f172a;
-  --hub-accent: #327f7d;
-  --hub-accent-dim: rgba(50, 127, 125, 0.12);
-  --hub-ok: #327f7d;
-  --hub-warn: #475569;
-  --hub-font: 'Segoe UI', system-ui, sans-serif;
+  --hub-bg: #0f1117;
+  --hub-surface: #161b22;
+  --hub-surface-2: #1c212b;
+  --hub-border: #2d333b;
+  --hub-text: #c9d1d9;
+  --hub-text-muted: #8b949e;
+  --hub-heading: #f0f6fc;
+  --hub-accent: #58a6ff;
+  --hub-accent-dim: rgba(88, 166, 255, 0.15);
+  --hub-ok: #3fb950;
+  --hub-warn: #d29922;
+  --hub-font: "Segoe UI", system-ui, sans-serif;
   --hub-radius: 10px;
   --hub-max: 1100px;
 
@@ -577,4 +577,165 @@ code {
   .hub-page--home .hub-home-hero h1 {
     max-width: 100%;
   }
+}
+
+/* Incident Ticket Styles */
+.hub-ticket-list {
+  margin-top: 1.5rem;
+}
+
+.hub-tickets {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.hub-ticket-card {
+  background: var(--hub-surface);
+  border: 1px solid var(--hub-border);
+  border-radius: var(--hub-radius);
+  padding: 1.5rem;
+  transition: border-color 0.2s ease;
+}
+
+.hub-ticket-card:hover {
+  border-color: var(--hub-accent);
+}
+
+.hub-ticket-card--full {
+  max-width: none;
+}
+
+.hub-ticket-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.hub-ticket-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--hub-heading);
+}
+
+.hub-ticket-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.hub-ticket-description {
+  margin: 0;
+  color: var(--hub-text);
+  line-height: 1.6;
+}
+
+.hub-ticket-meta {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  color: var(--hub-text-muted);
+}
+
+.hub-ticket-meta-item {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.hub-ticket-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--hub-border);
+}
+
+.hub-ticket-details {
+  margin-top: 1rem;
+}
+
+.hub-ticket-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+.hub-ticket-section {
+  margin-top: 1.5rem;
+}
+
+.hub-ticket-section h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  color: var(--hub-heading);
+}
+
+.hub-status-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.hub-status {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.hub-status--open {
+  color: #d29922;
+  background: rgba(210, 153, 34, 0.15);
+}
+
+.hub-status--progress {
+  color: #58a6ff;
+  background: rgba(88, 166, 255, 0.15);
+}
+
+.hub-status--resolved {
+  color: #3fb950;
+  background: rgba(63, 185, 80, 0.12);
+}
+
+.hub-status--closed {
+  color: var(--hub-text-muted);
+  background: var(--hub-surface-2);
+}
+
+.hub-status--rejected {
+  color: #f85149;
+  background: rgba(248, 81, 73, 0.12);
+}
+
+.hub-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
+
+.hub-page-header h1 {
+  margin: 0;
+}
+
+.hub-empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--hub-text-muted);
+}
+
+.hub-loading {
+  text-align: center;
+  padding: 2rem;
+  color: var(--hub-text-muted);
 }
