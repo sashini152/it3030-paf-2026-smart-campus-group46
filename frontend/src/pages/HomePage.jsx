@@ -1,91 +1,85 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getJson } from '../api/client'
+
+const modules = [
+  {
+    title: 'Facilities & assets',
+    description: 'Browse rooms, labs, and equipment by type, capacity, and location.',
+    action: 'Open resources',
+    to: '/resources',
+    tone: 'hub-home-card--navy',
+  },
+  {
+    title: 'Bookings',
+    description: 'Request spaces and track approvals for classes, events, and student use.',
+    action: 'Open bookings',
+    to: '/bookings',
+    tone: 'hub-home-card--steel',
+  },
+  {
+    title: 'Tickets',
+    description: 'Report campus issues clearly and follow replies, updates, and status changes.',
+    action: 'Open tickets',
+    to: '/tickets',
+    tone: 'hub-home-card--peach',
+  },
+  {
+    title: 'Notifications',
+    description: 'See booking updates, service notices, and important campus reminders in one place.',
+    action: 'Open notifications',
+    to: '/notifications',
+    tone: 'hub-home-card--berry',
+  },
+]
 
 export default function HomePage() {
-  const [health, setHealth] = useState(null)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    let cancelled = false
-    getJson('/api/health')
-      .then((data) => {
-        if (!cancelled) setHealth(data)
-      })
-      .catch((e) => {
-        if (!cancelled) setError(e.message)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
   return (
-    <div className="hub-page">
-      <section className="hub-hero">
-        <h1>Operations hub for your campus</h1>
-        <p className="hub-lead">
-          Book facilities and equipment, track maintenance tickets, and stay
-          updated with notifications — all in one place.
-        </p>
-        <div className="hub-hero__status" role="status">
-          {health && (
-            <span className="hub-pill hub-pill--ok">
-              API connected · {health.service}
-            </span>
-          )}
-          {error && (
-            <span className="hub-pill hub-pill--warn">
-              API offline — start the Spring Boot server on port 8080
-            </span>
-          )}
-          {!health && !error && (
-            <span className="hub-pill hub-pill--muted">Checking API…</span>
-          )}
+    <div className="hub-page hub-page--home">
+      <section className="hub-home-hero">
+        <div className="hub-home-hero__content">
+          <p className="hub-home-kicker">Smart Campus Hub</p>
+          <h1>Student operations, bookings, and support in one place</h1>
+          <p className="hub-lead">
+            Manage resources, request spaces, submit campus support tickets, and
+            stay updated without jumping between separate systems.
+          </p>
+          <div className="hub-home-hero__actions">
+            <Link to="/tickets" className="hub-home-cta hub-home-cta--primary">
+              Submit a ticket
+            </Link>
+            <Link to="/resources" className="hub-home-cta hub-home-cta--secondary">
+              Explore resources
+            </Link>
+          </div>
+        </div>
+
+        <div className="hub-home-panel" aria-label="Student highlights">
+          <div className="hub-home-panel__row">
+            <span className="hub-home-panel__label">For students</span>
+            <span className="hub-home-panel__value">Fast access</span>
+          </div>
+          <div className="hub-home-panel__stack">
+            <div className="hub-home-panel__chip">Rooms and labs</div>
+            <div className="hub-home-panel__chip">Bookings</div>
+            <div className="hub-home-panel__chip">Ticket tracking</div>
+            <div className="hub-home-panel__chip">Notices</div>
+          </div>
+          <p className="hub-home-panel__text">
+            Built for day-to-day student use with quick navigation and clear
+            service access.
+          </p>
         </div>
       </section>
 
-      <section className="hub-cards" aria-label="Modules">
-        <article className="hub-card">
-          <h2>Facilities &amp; assets</h2>
-          <p>
-            Catalogue rooms, labs, and equipment. Search by type, capacity, and
-            location.
-          </p>
-          <Link to="/resources" className="hub-card__action">
-            Open resources
-          </Link>
-        </article>
-        <article className="hub-card">
-          <h2>Bookings</h2>
-          <p>
-            Request slots, avoid conflicts, and let admins approve or reject
-            requests.
-          </p>
-          <Link to="/bookings" className="hub-card__action">
-            Open bookings
-          </Link>
-        </article>
-        <article className="hub-card">
-          <h2>Maintenance &amp; incidents</h2>
-          <p>
-            Raise tickets with evidence, track workflow, and collaborate with
-            technicians.
-          </p>
-          <Link to="/tickets" className="hub-card__action">
-            Open tickets
-          </Link>
-        </article>
-        <article className="hub-card">
-          <h2>Notifications &amp; access</h2>
-          <p>
-            See booking and ticket updates. Sign in with Google when OAuth is
-            configured.
-          </p>
-          <Link to="/notifications" className="hub-card__action">
-            Notifications
-          </Link>
-        </article>
+      <section className="hub-home-cards" aria-label="Student modules">
+        {modules.map((module) => (
+          <article key={module.title} className={`hub-home-card ${module.tone}`}>
+            <h2>{module.title}</h2>
+            <p>{module.description}</p>
+            <Link to={module.to} className="hub-home-card__action">
+              {module.action}
+            </Link>
+          </article>
+        ))}
       </section>
     </div>
   )
