@@ -9,35 +9,58 @@ import TicketDetails from './pages/TicketDetails'
 import AdminDashboard from './pages/AdminDashboard'
 import NotificationsPage from './pages/NotificationsPage'
 import LoginPage from './pages/LoginPage'
+import DashboardPage from './pages/DashboardPage'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { isAdminRole } from './utils/session'
 
 function AdminRoute({ children }) {
   return isAdminRole() ? children : <Navigate to="/login" replace />
 }
 
+function ProtectedRoute({ children }) {
+  const { isAuthenticated } = useAuth()
+  return isAuthenticated ? children : <Navigate to="/login" replace />
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<Layout />}>
+        <Route index element={<HomePage />} />
+        <Route path="resources" element={<ResourcesPage />} />
+        <Route path="bookings" element={<BookingsPage />} />
+        <Route path="tickets" element={<TicketsPage />} />
+        <Route path="ticket-list" element={<TicketList />} />
+        <Route path="ticket-details/:id" element={<TicketDetails />} />
+        <Route
+          path="admin"
+          element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
+          }
+        />
+        <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="login" element={<LoginPage />} />
+        <Route
+          path="dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+    </Routes>
+  )
+}
+
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<HomePage />} />
-          <Route path="resources" element={<ResourcesPage />} />
-          <Route path="bookings" element={<BookingsPage />} />
-          <Route path="tickets" element={<TicketsPage />} />
-          <Route path="ticket-list" element={<TicketList />} />
-          <Route path="ticket-details/:id" element={<TicketDetails />} />
-          <Route
-            path="admin"
-            element={
-              <AdminRoute>
-                <AdminDashboard />
-              </AdminRoute>
-            }
-          />
-          <Route path="notifications" element={<NotificationsPage />} />
-          <Route path="login" element={<LoginPage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </AuthProvider>
   )
 }
