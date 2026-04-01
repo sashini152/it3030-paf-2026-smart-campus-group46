@@ -3,7 +3,6 @@ import { buildQuery, deleteRequest, getJson, postJson, putJson } from '../api/cl
 import ParallaxPanel from '../components/ParallaxPanel'
 import Reveal from '../components/Reveal'
 import Tooltip from '../components/Tooltip'
-import '../styles/home.css'
 
 const USER_STORAGE_KEY = 'smartcampusUserId'
 const STATUSES = ['', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']

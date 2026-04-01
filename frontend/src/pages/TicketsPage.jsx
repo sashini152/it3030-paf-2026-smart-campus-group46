@@ -62,7 +62,7 @@ export default function TicketsPage() {
   }, [tickets])
 
   return (
-    <div className="hub-page hub-ticket-flow space-y-8 rounded-[36px] bg-[linear-gradient(180deg,#181A2F_0%,#242E49_52%,#37415C_100%)] p-6 text-white sm:p-8">
+    <div className="hub-page hub-page--tickets hub-ticket-flow space-y-8 rounded-[36px] bg-white p-6 text-[#181A2F] sm:p-8">
       <Reveal className="grid gap-4 sm:grid-cols-3" delay={20}>
         {queueStats.map((stat, index) => (
           <ParallaxPanel

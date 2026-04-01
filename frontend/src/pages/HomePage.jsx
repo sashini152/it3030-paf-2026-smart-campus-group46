@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ParallaxPanel from '../components/ParallaxPanel'
 import Reveal from '../components/Reveal'
+import Tooltip from '../components/Tooltip'
 
 const modules = [
   {
@@ -9,6 +11,8 @@ const modules = [
     action: 'Open resources',
     to: '/resources',
     tone: 'hub-home-card--navy',
+    badge: 'Explore',
+    hint: 'Search spaces, labs, and equipment before starting a request.',
   },
   {
     title: 'Bookings',
@@ -16,6 +20,8 @@ const modules = [
     action: 'Open bookings',
     to: '/bookings',
     tone: 'hub-home-card--steel',
+    badge: 'Reserve',
+    hint: 'Create requests, watch approvals, and keep the flow in one place.',
   },
   {
     title: 'Tickets',
@@ -23,6 +29,8 @@ const modules = [
     action: 'Open tickets',
     to: '/tickets',
     tone: 'hub-home-card--peach',
+    badge: 'Support',
+    hint: 'Send issues fast and follow progress without leaving the workspace.',
   },
   {
     title: 'Notifications',
@@ -30,6 +38,21 @@ const modules = [
     action: 'Open notifications',
     to: '/notifications',
     tone: 'hub-home-card--berry',
+    badge: 'Updates',
+    hint: 'Stay on top of approvals, notices, and support replies.',
+  },
+]
+
+const metrics = [
+  {
+    value: '4',
+    label: 'core student services',
+    tooltip: 'Resources, bookings, tickets, and notifications stay connected from one entry point.',
+  },
+  {
+    value: '1',
+    label: 'main landing page',
+    tooltip: 'The home page acts as the single start point for the student-side flow.',
   },
 ]
 
@@ -37,18 +60,38 @@ const steps = [
   {
     title: '1. Choose a service',
     description: 'Start from resources, bookings, tickets, or notifications depending on what you need.',
+    accent: 'Pick',
+    icon: 'o',
+    tone: 'hub-home-step--blush',
   },
   {
     title: '2. Complete the request',
     description: 'Submit the required details once and keep the flow clear and predictable.',
+    accent: 'Fill',
+    icon: '+',
+    tone: 'hub-home-step--butter',
   },
   {
     title: '3. Track the result',
     description: 'Check approval status, updates, and support responses without switching pages.',
+    accent: 'Follow',
+    icon: '*',
+    tone: 'hub-home-step--mint',
   },
 ]
 
 export default function HomePage() {
+  const [activeFocus, setActiveFocus] = useState(0)
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveFocus((current) => (current + 1) % modules.length)
+    }, 4200)
+    return () => clearInterval(timer)
+  }, [])
+
+  const activeModule = modules[activeFocus]
+
   return (
     <div className="hub-page hub-page--home">
       <section className="hub-home-hero">
@@ -71,14 +114,17 @@ export default function HomePage() {
               </a>
             </div>
             <div className="hub-home-hero__metrics" aria-label="Home page overview">
-              <div className="hub-home-hero__metric">
-                <span className="hub-home-hero__metric-value">4</span>
-                <span className="hub-home-hero__metric-label">core student services</span>
-              </div>
-              <div className="hub-home-hero__metric">
-                <span className="hub-home-hero__metric-value">1</span>
-                <span className="hub-home-hero__metric-label">main landing page</span>
-              </div>
+              {metrics.map((metric) => (
+                <div key={metric.label} className="hub-home-hero__metric">
+                  <div className="hub-home-hero__metric-top">
+                    <span className="hub-home-hero__metric-value">{metric.value}</span>
+                    <Tooltip text={metric.tooltip} tone="ticket">
+                      <span className="hub-home-hero__metric-info">i</span>
+                    </Tooltip>
+                  </div>
+                  <span className="hub-home-hero__metric-label">{metric.label}</span>
+                </div>
+              ))}
             </div>
           </ParallaxPanel>
         </Reveal>
@@ -87,28 +133,58 @@ export default function HomePage() {
           <ParallaxPanel className="hub-home-panel" aria-label="Quick access" strength={6}>
             <div className="hub-home-panel__row">
               <span className="hub-home-panel__label">Quick access</span>
-              <span className="hub-home-panel__value">Student home</span>
+              <span className="hub-home-panel__value">Live flow</span>
             </div>
-            <div className="hub-home-panel__stack">
-              <div className="hub-home-panel__chip">Resources</div>
-              <div className="hub-home-panel__chip">Bookings</div>
-              <div className="hub-home-panel__chip">Tickets</div>
-              <div className="hub-home-panel__chip">Notifications</div>
+            <div className="hub-home-panel__focus hub-fade-slide">
+              <p className="hub-home-panel__focus-kicker">{activeModule.badge}</p>
+              <h2 className="hub-home-panel__focus-title">{activeModule.title}</h2>
+              <p className="hub-home-panel__focus-text">{activeModule.hint}</p>
+              <Link to={activeModule.to} className="hub-home-panel__focus-link">
+                {activeModule.action}
+              </Link>
             </div>
-            <p className="hub-home-panel__text">
-              The home page now focuses on the standard student flow instead of showing extra dashboard sections.
-            </p>
-            <a href="#home-how-it-works" className="hub-home-panel__link">
-              See how it works
-            </a>
+            <div className="hub-home-panel__shortcuts">
+              {modules.map((module, index) => (
+                <button
+                  key={module.title}
+                  type="button"
+                  className={`hub-home-panel__chip ${index === activeFocus ? 'hub-home-panel__chip--active' : ''}`}
+                  onClick={() => setActiveFocus(index)}
+                >
+                  {module.title}
+                </button>
+              ))}
+            </div>
+            <div className="hub-home-panel__controls">
+              <div className="hub-home-panel__dots">
+                {modules.map((module, index) => (
+                  <button
+                    key={module.title}
+                    type="button"
+                    className={`hub-home-panel__dot ${index === activeFocus ? 'hub-home-panel__dot--active' : ''}`}
+                    onClick={() => setActiveFocus(index)}
+                    aria-label={`Show ${module.title}`}
+                  />
+                ))}
+              </div>
+              <div className="hub-home-panel__actions">
+                <button type="button" className="hub-home-panel__button" onClick={() => setActiveFocus((current) => (current === 0 ? modules.length - 1 : current - 1))}>
+                  Prev
+                </button>
+                <button type="button" className="hub-home-panel__button" onClick={() => setActiveFocus((current) => (current + 1) % modules.length)}>
+                  Next
+                </button>
+              </div>
+            </div>
           </ParallaxPanel>
         </Reveal>
       </section>
 
-      <section id="home-modules" className="hub-home-cards" aria-label="Student modules">
+      <section id="home-modules" className="hub-home-cards hub-home-section" aria-label="Student modules">
         {modules.map((module, index) => (
           <Reveal key={module.title} delay={index * 70}>
             <ParallaxPanel className={`hub-home-card ${module.tone}`} strength={6}>
+              <p className="hub-home-card__badge">{module.badge}</p>
               <h2>{module.title}</h2>
               <p>{module.description}</p>
               <Link to={module.to} className="hub-home-card__action">
@@ -125,17 +201,21 @@ export default function HomePage() {
       <Reveal delay={120}>
         <section
           id="home-how-it-works"
-          className="mx-auto grid max-w-6xl gap-4 px-1 pb-16 md:grid-cols-3"
+          className="hub-home-steps hub-home-section"
           aria-label="How it works"
         >
           {steps.map((step) => (
             <article
               key={step.title}
-              className="rounded-[28px] border border-white/60 bg-white/80 p-6 shadow-[0_20px_50px_rgba(15,23,42,0.08)]"
+              className={`hub-home-step ${step.tone}`}
             >
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">How it works</p>
-              <h2 className="mt-3 text-2xl font-semibold text-slate-900">{step.title}</h2>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{step.description}</p>
+              <div className="hub-home-step__spark" aria-hidden="true">
+                {step.icon}
+              </div>
+              <p className="hub-home-step__eyebrow">How it works</p>
+              <div className="hub-home-step__badge">{step.accent}</div>
+              <h2 className="hub-home-step__title">{step.title}</h2>
+              <p className="hub-home-step__text">{step.description}</p>
             </article>
           ))}
         </section>

@@ -13,9 +13,19 @@ const TICKET_STATUSES = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED'
 const NOTIFICATION_TYPES = ['BOOKING', 'TICKET', 'COMMENT', 'SYSTEM']
 const emptyResource = { type: 'LECTURE_HALL', name: '', capacity: 0, location: '', availabilityWindows: '', status: 'ACTIVE' }
 const emptyNotice = { title: '', message: '', type: 'SYSTEM', targetUserId: '' }
+const ADMIN_REQUEST_TIMEOUT_MS = 4000
 
 function cls(...values) { return values.filter(Boolean).join(' ') }
 function label(value) { return (value || '').replaceAll('_', ' ') }
+function withTimeout(request, labelText) {
+  let timeoutId
+  return Promise.race([
+    request,
+    new Promise((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error(`${labelText} request timed out. Reload the page and make sure the backend is still running.`)), ADMIN_REQUEST_TIMEOUT_MS)
+    }),
+  ]).finally(() => clearTimeout(timeoutId))
+}
 function dt(value) {
   if (!value) return '-'
   const date = new Date(value)
@@ -63,21 +73,21 @@ export default function AdminDashboard() {
 
   const loadResources = useCallback(async () => {
     setResourcesLoading(true); setResourcesError(null)
-    try { const data = await getJson('/api/resources'); setResources(Array.isArray(data) ? data : []) }
+    try { const data = await withTimeout(getJson('/api/resources'), 'Resource list'); setResources(Array.isArray(data) ? data : []) }
     catch (error) { setResources([]); setResourcesError(error.message) }
     finally { setResourcesLoading(false) }
   }, [])
 
   const loadBookings = useCallback(async () => {
     setBookingsLoading(true); setBookingsError(null)
-    try { const data = await getJson('/api/bookings'); setBookings(Array.isArray(data) ? data : []) }
+    try { const data = await withTimeout(getJson('/api/bookings'), 'Booking list'); setBookings(Array.isArray(data) ? data : []) }
     catch (error) { setBookings([]); setBookingsError(error.message) }
     finally { setBookingsLoading(false) }
   }, [])
 
   const loadNotifications = useCallback(async () => {
     setNotificationsLoading(true); setNotificationsError(null)
-    try { const data = await getJson('/api/admin/notifications'); setNotifications(Array.isArray(data) ? data : []) }
+    try { const data = await withTimeout(getJson('/api/admin/notifications'), 'Notification inbox'); setNotifications(Array.isArray(data) ? data : []) }
     catch (error) { setNotifications([]); setNotificationsError(error.message) }
     finally { setNotificationsLoading(false) }
   }, [])
@@ -85,7 +95,7 @@ export default function AdminDashboard() {
   const loadAnalytics = useCallback(async () => {
     setAnalyticsLoading(true); setAnalyticsError(null)
     try {
-      const data = await getJson('/api/admin/analytics/usage')
+      const data = await withTimeout(getJson('/api/admin/analytics/usage'), 'Usage analytics')
       setAnalytics({
         topResources: Array.isArray(data?.topResources) ? data.topResources : [],
         peakBookingHours: Array.isArray(data?.peakBookingHours) ? data.peakBookingHours : [],
@@ -209,13 +219,13 @@ export default function AdminDashboard() {
             {section === 'overview' && (
               <div className="space-y-5">
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                  <article className="rounded-[24px] bg-slate-900 p-5 text-white"><p>Total tickets</p><p className="mt-2 text-3xl font-semibold">{tickets.length}</p><p className="text-sm opacity-80">{ticketSummary.active} active queue</p></article>
-                  <article className="rounded-[24px] bg-emerald-50 p-5"><p>Resources</p><p className="mt-2 text-3xl font-semibold">{resources.length}</p><p className="text-sm text-slate-500">{resources.filter((item) => item.status === 'ACTIVE').length} active</p></article>
-                  <article className="rounded-[24px] bg-sky-50 p-5"><p>Pending bookings</p><p className="mt-2 text-3xl font-semibold">{pendingBookings.length}</p><p className="text-sm text-slate-500">Awaiting review</p></article>
-                  <article className="rounded-[24px] bg-amber-50 p-5"><p>Unread notifications</p><p className="mt-2 text-3xl font-semibold">{notifications.filter((item) => !item.read).length}</p><p className="text-sm text-slate-500">Admin inbox</p></article>
+                  <article className="hub-quarter-fade rounded-[24px] bg-slate-900 p-5 text-white"><p>Total tickets</p><p className="mt-2 text-3xl font-semibold">{tickets.length}</p><p className="text-sm opacity-80">{ticketSummary.active} active queue</p></article>
+                  <article className="hub-quarter-fade rounded-[24px] bg-emerald-50 p-5"><p>Resources</p><p className="mt-2 text-3xl font-semibold">{resources.length}</p><p className="text-sm text-slate-500">{resources.filter((item) => item.status === 'ACTIVE').length} active</p></article>
+                  <article className="hub-quarter-fade rounded-[24px] bg-sky-50 p-5"><p>Pending bookings</p><p className="mt-2 text-3xl font-semibold">{pendingBookings.length}</p><p className="text-sm text-slate-500">Awaiting review</p></article>
+                  <article className="hub-quarter-fade rounded-[24px] bg-amber-50 p-5"><p>Unread notifications</p><p className="mt-2 text-3xl font-semibold">{notifications.filter((item) => !item.read).length}</p><p className="text-sm text-slate-500">Admin inbox</p></article>
                 </div>
                 <div className="grid gap-5 lg:grid-cols-2">
-                  <section className="rounded-[24px] border border-slate-200 bg-white p-5">
+                  <section className="hub-quarter-fade rounded-[24px] border border-slate-200 bg-white p-5">
                     <h2 className="text-xl font-semibold">Usage analytics</h2>
                     <p className="mt-1 text-sm text-slate-500">Top resources and peak approved-booking hours.</p>
                     {analyticsError && <p className="mt-3 text-sm text-rose-600">{analyticsError}</p>}
@@ -224,7 +234,7 @@ export default function AdminDashboard() {
                       <div><h3 className="text-sm font-semibold text-slate-900">Peak booking hours</h3><div className="mt-3 space-y-3">{analytics.peakBookingHours.length === 0 ? <p className="text-sm text-slate-500">No approved bookings yet.</p> : analytics.peakBookingHours.map((item) => <div key={item.hour}><div className="mb-1 flex items-center justify-between text-sm"><span className="font-medium text-slate-700">{item.label}</span><span className="text-slate-500">{item.bookingCount}</span></div><div className="h-2 rounded-full bg-slate-100"><div className="h-2 rounded-full bg-sky-500" style={{ width: `${(item.bookingCount / maxHourCount) * 100}%` }} /></div></div>)}</div></div>
                     </div>}
                   </section>
-                  <section className="rounded-[24px] border border-slate-200 bg-white p-5">
+                  <section className="hub-quarter-fade rounded-[24px] border border-slate-200 bg-white p-5">
                     <h2 className="text-xl font-semibold">Ticket SLA summary</h2>
                     <div className="mt-4 grid gap-4 md:grid-cols-2">
                       <article className="rounded-2xl bg-slate-50 p-4"><p className="text-sm text-slate-500">Average first response</p><p className="mt-2 text-2xl font-semibold text-slate-900">{durationLabel(ticketSummary.avgFirstResponse)}</p></article>
@@ -238,7 +248,7 @@ export default function AdminDashboard() {
 
             {section === 'resources' && (
               <div className="space-y-5">
-                <section className="rounded-[24px] border border-slate-200 bg-white p-5">
+                <section className="hub-quarter-fade rounded-[24px] border border-slate-200 bg-white p-5">
                   <h2 className="text-xl font-semibold">{resourceEditId ? 'Edit resource' : 'Add resource'}</h2>
                   <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={saveResource}>
                     <select value={resourceForm.type} onChange={(event) => setResourceForm((current) => ({ ...current, type: event.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2">{RESOURCE_TYPES.map((item) => <option key={item} value={item}>{label(item)}</option>)}</select>
@@ -251,7 +261,7 @@ export default function AdminDashboard() {
                   </form>
                   {resourcesError && <p className="mt-2 text-sm text-rose-600">{resourcesError}</p>}
                 </section>
-                <section className="rounded-[24px] border border-slate-200 bg-white p-5">
+                <section className="hub-quarter-fade rounded-[24px] border border-slate-200 bg-white p-5">
                   <h2 className="text-xl font-semibold">Resource list</h2>
                   {resourcesLoading ? <p className="mt-2 text-sm text-slate-500">Loading...</p> : <div className="mt-3 overflow-x-auto"><table className="min-w-full text-sm"><thead><tr className="text-left text-xs text-slate-500"><th className="py-2">Name</th><th>Type</th><th>Location</th><th>Status</th><th>Actions</th></tr></thead><tbody>{resources.map((item) => <tr key={item.id} className="border-t border-slate-100"><td className="py-2 font-semibold">{item.name}</td><td>{label(item.type)}</td><td>{item.location}</td><td>{label(item.status)}</td><td className="space-x-2"><button type="button" onClick={() => { setResourceEditId(item.id); setResourceForm({ type: item.type, name: item.name, capacity: item.capacity, location: item.location, availabilityWindows: item.availabilityWindows || '', status: item.status }) }} className="rounded-lg border border-slate-300 px-2 py-1 text-xs">Edit</button><button type="button" onClick={() => deleteResource(item.id)} className="rounded-lg bg-rose-500 px-2 py-1 text-xs text-white">Delete</button></td></tr>)}</tbody></table></div>}
                 </section>
@@ -259,7 +269,7 @@ export default function AdminDashboard() {
             )}
 
             {section === 'bookings' && (
-              <section className="rounded-[24px] border border-slate-200 bg-white p-5">
+              <section className="hub-quarter-fade rounded-[24px] border border-slate-200 bg-white p-5">
                 <div className="mb-3 flex items-center justify-between"><h2 className="text-xl font-semibold">Booking management</h2><select value={bookingFilter} onChange={(event) => setBookingFilter(event.target.value)} className="rounded-xl border border-slate-300 px-3 py-2 text-sm">{BOOKING_FILTERS.map((item) => <option key={item} value={item}>{item === 'ALL' ? 'All' : label(item)}</option>)}</select></div>
                 {bookingsError && <p className="mb-2 text-sm text-rose-600">{bookingsError}</p>}
                 {bookingsLoading ? <p className="text-sm text-slate-500">Loading...</p> : <div className="overflow-x-auto"><table className="min-w-full text-sm"><thead><tr className="text-left text-xs text-slate-500"><th className="py-2">Resource</th><th>User</th><th>Time</th><th>Status</th><th>Check-in</th><th>Actions</th></tr></thead><tbody>{visibleBookings.map((item) => <tr key={item.id} className="border-t border-slate-100"><td className="py-2 font-semibold">{item.resourceId}</td><td>{item.requestedByUserId}</td><td>{dt(item.startDateTime)}</td><td>{label(item.status)}</td><td>{item.checkedInAt ? <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">Verified</span> : item.status === 'APPROVED' ? <Link to={`/booking-check-in?booking=${item.id}`} className="text-xs font-semibold text-emerald-700">QR / verify</Link> : '-'}</td><td className="space-x-2">{item.status === 'PENDING' && <><button type="button" disabled={busyId === item.id} onClick={() => runBookingAction(item.id, 'approve')} className="rounded-lg bg-emerald-500 px-2 py-1 text-xs text-white">Approve</button><button type="button" disabled={busyId === item.id} onClick={() => { const reason = window.prompt('Rejection reason'); if (reason?.trim()) runBookingAction(item.id, 'reject', { reason: reason.trim() }) }} className="rounded-lg bg-amber-500 px-2 py-1 text-xs text-white">Reject</button></>}{(item.status === 'PENDING' || item.status === 'APPROVED') && <button type="button" disabled={busyId === item.id} onClick={() => runBookingAction(item.id, 'cancel')} className="rounded-lg border border-slate-300 px-2 py-1 text-xs">Cancel</button>}<button type="button" disabled={busyId === item.id} onClick={() => deleteBooking(item.id)} className="rounded-lg bg-rose-500 px-2 py-1 text-xs text-white">Delete</button></td></tr>)}</tbody></table></div>}
@@ -267,7 +277,7 @@ export default function AdminDashboard() {
             )}
 
             {section === 'tickets' && (
-              <section className="rounded-[24px] border border-slate-200 bg-white p-5">
+              <section className="hub-quarter-fade rounded-[24px] border border-slate-200 bg-white p-5">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-semibold">Ticket operations</h2><input value={ticketQuery} onChange={(event) => setTicketQuery(event.target.value)} placeholder="Search ticket..." className="rounded-xl border border-slate-300 px-3 py-2 text-sm" /></div>
                 {ticketsError && <p className="mb-2 text-sm text-rose-600">{String(ticketsError.message || ticketsError)}</p>}
                 {ticketsLoading ? <p className="text-sm text-slate-500">Loading...</p> : <div className="overflow-x-auto"><table className="min-w-full text-sm"><thead><tr className="text-left text-xs text-slate-500"><th className="py-2">Title</th><th>Reporter</th><th>Status</th><th>First response</th><th>Resolution</th><th>Actions</th></tr></thead><tbody>{visibleTickets.map((item) => <tr key={`${item.ticketSource || 'ticket'}:${item.id}`} className="border-t border-slate-100"><td className="py-2"><p className="font-semibold">{item.title}</p><p className="max-w-[280px] text-xs text-slate-500">{item.description?.slice(0, 70)}</p></td><td>{item.createdBy || '-'}</td><td><select value={item.status || 'OPEN'} disabled={busyId === item.id} onChange={(event) => updateTicketStatus(item, event.target.value)} className="rounded-xl border border-slate-300 px-2 py-1 text-xs">{TICKET_STATUSES.map((status) => <option key={status} value={status}>{label(status)}</option>)}</select></td><td>{durationLabel(minutesBetween(item.createdAt, item.firstResponseAt))}</td><td>{durationLabel(minutesBetween(item.createdAt, item.resolvedAt))}</td><td className="space-x-2"><Link to={`/ticket-details/${item.id}`} className="rounded-lg border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:no-underline">View</Link><button type="button" disabled={busyId === item.id} onClick={() => deleteTicket(item)} className="rounded-lg bg-rose-500 px-2 py-1 text-xs text-white">Delete</button></td></tr>)}</tbody></table></div>}
@@ -276,7 +286,7 @@ export default function AdminDashboard() {
 
             {section === 'notifications' && (
               <div className="space-y-5">
-                <section className="rounded-[24px] border border-slate-200 bg-white p-5">
+                <section className="hub-quarter-fade rounded-[24px] border border-slate-200 bg-white p-5">
                   <div className="mb-3 flex items-center justify-between"><h2 className="text-xl font-semibold">Create notification</h2><button type="button" onClick={markAllRead} className="rounded-xl border border-slate-300 px-4 py-2 text-sm">Mark all read</button></div>
                   <form className="grid gap-3 md:grid-cols-2" onSubmit={createNotification}>
                     <input required placeholder="Title" value={notificationForm.title} onChange={(event) => setNotificationForm((current) => ({ ...current, title: event.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2" />
@@ -287,7 +297,7 @@ export default function AdminDashboard() {
                   </form>
                   {notificationsError && <p className="mt-2 text-sm text-rose-600">{notificationsError}</p>}
                 </section>
-                <section className="rounded-[24px] border border-slate-200 bg-white p-5">
+                <section className="hub-quarter-fade rounded-[24px] border border-slate-200 bg-white p-5">
                   <h2 className="text-xl font-semibold">Notification inbox</h2>
                   {notificationsLoading ? <p className="mt-2 text-sm text-slate-500">Loading...</p> : <div className="mt-3 overflow-x-auto"><table className="min-w-full text-sm"><thead><tr className="text-left text-xs text-slate-500"><th className="py-2">Title</th><th>Type</th><th>Target</th><th>Created</th><th>State</th><th>Actions</th></tr></thead><tbody>{notifications.map((item) => <tr key={item.id} className="border-t border-slate-100"><td className="py-2"><p className="font-semibold">{item.title}</p><p className="max-w-[280px] text-xs text-slate-500">{item.message}</p></td><td>{label(item.type)}</td><td>{item.targetUserId || 'Broadcast'}</td><td>{dt(item.createdAt)}</td><td>{item.read ? 'Read' : 'Unread'}</td><td className="space-x-2"><button type="button" disabled={busyId === item.id} onClick={() => toggleRead(item)} className="rounded-lg border border-slate-300 px-2 py-1 text-xs">{item.read ? 'Unread' : 'Read'}</button><button type="button" disabled={busyId === item.id} onClick={() => deleteNotification(item.id)} className="rounded-lg bg-rose-500 px-2 py-1 text-xs text-white">Delete</button></td></tr>)}</tbody></table></div>}
                 </section>

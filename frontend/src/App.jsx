@@ -4,7 +4,6 @@ import HomePage from './pages/HomePage'
 import ResourcesPage from './pages/ResourcesPage'
 import BookingsPage from './pages/BookingsPage'
 import UserBookingsPage from './pages/UserBookingsPage'
-import AdminBookingsPage from './pages/AdminBookingsPage'
 import AdminResourcesPage from './pages/AdminResourcesPage'
 import AdminBookingsDashboard from './pages/AdminBookingsDashboard'
 import AdminTicketsPage from './pages/AdminTicketsPage'
@@ -15,36 +14,68 @@ import AdminDashboard from './pages/AdminDashboard'
 import UserProfilePage from './pages/UserProfilePage'
 import NotificationsPage from './pages/NotificationsPage'
 import LoginPage from './pages/LoginPage'
-<<<<<<< HEAD
 import SignupPage from './pages/SignupPage'
-=======
->>>>>>> 277136eee2e5728305516bcf0bc8384f1c4a6ba3
+import BookingCheckInPage from './pages/BookingCheckInPage'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 
+function AuthLoadingScreen() {
+  return (
+    <div className="hub-page hub-page--narrow">
+      <div className="text-center">
+        <h1>Loading...</h1>
+        <p>Checking your sign-in status.</p>
+      </div>
+    </div>
+  )
+}
+
 function ProtectedRoute({ children }) {
-  const { isAuthenticated } = useAuth()
-  return isAuthenticated ? children : <Navigate to="/login" replace />
+  const { isAuthenticated, loading } = useAuth()
+  if (loading) return <AuthLoadingScreen />
+  return isAuthenticated ? children : <Navigate to="/signup" replace />
 }
 
 function AdminRoute({ children }) {
-  const { isAuthenticated, hasRole } = useAuth()
+  const { isAuthenticated, hasRole, loading } = useAuth()
+  if (loading) return <AuthLoadingScreen />
   return isAuthenticated && hasRole('ADMIN') ? children : <Navigate to="/login" replace />
 }
 
 function DashboardRoute() {
-  const { isAuthenticated, hasRole } = useAuth()
+  const { isAuthenticated, hasRole, loading } = useAuth()
+  if (loading) return <AuthLoadingScreen />
   if (!isAuthenticated) return <Navigate to="/login" replace />
   if (hasRole('ADMIN')) return <Navigate to="/admin" replace />
   return <Navigate to="/" replace />
+}
+
+function HomeRoute() {
+  const { isAuthenticated, loading } = useAuth()
+  if (loading) return <AuthLoadingScreen />
+  return isAuthenticated ? <HomePage /> : <Navigate to="/signup" replace />
 }
 
 function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
-        <Route index element={<HomePage />} />
-        <Route path="resources" element={<ResourcesPage />} />
-        <Route path="bookings" element={<BookingsPage />} />
+        <Route index element={<HomeRoute />} />
+        <Route
+          path="resources"
+          element={
+            <ProtectedRoute>
+              <ResourcesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="bookings"
+          element={
+            <ProtectedRoute>
+              <BookingsPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="user-bookings"
           element={
@@ -61,9 +92,38 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        <Route path="tickets" element={<TicketsPage />} />
-        <Route path="ticket-list" element={<TicketList />} />
-        <Route path="ticket-details/:id" element={<TicketDetails />} />
+        <Route
+          path="tickets"
+          element={
+            <ProtectedRoute>
+              <TicketsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="ticket-list"
+          element={
+            <ProtectedRoute>
+              <TicketList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="ticket-details/:id"
+          element={
+            <ProtectedRoute>
+              <TicketDetails />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="booking-check-in"
+          element={
+            <ProtectedRoute>
+              <BookingCheckInPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="admin"
           element={
@@ -72,12 +132,6 @@ function AppRoutes() {
             </AdminRoute>
           }
         />
-<<<<<<< HEAD
-        <Route path="notifications" element={<NotificationsPage />} />
-        <Route path="login" element={<LoginPage />} />
-        <Route path="signup" element={<SignupPage />} />
-        <Route path="dashboard" element={<DashboardRoute />} />
-=======
         <Route
           path="admin-resources"
           element={
@@ -110,9 +164,17 @@ function AppRoutes() {
             </AdminRoute>
           }
         />
-        <Route path="notifications" element={<NotificationsPage />} />
+        <Route
+          path="notifications"
+          element={
+            <ProtectedRoute>
+              <NotificationsPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="login" element={<LoginPage />} />
->>>>>>> 277136eee2e5728305516bcf0bc8384f1c4a6ba3
+        <Route path="signup" element={<SignupPage />} />
+        <Route path="dashboard" element={<DashboardRoute />} />
       </Route>
     </Routes>
   )

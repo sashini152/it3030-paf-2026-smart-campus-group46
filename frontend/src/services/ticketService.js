@@ -4,17 +4,18 @@ const TICKET_BASE_PATH = '/api/incident-tickets'
 const STANDARD_TICKET_BASE_PATH = '/api/tickets'
 const INCIDENT_SOURCE = 'incident'
 const STANDARD_SOURCE = 'standard'
-const REQUEST_TIMEOUT_MS = 5000
+const REQUEST_TIMEOUT_MS = 2500
 
 function withTimeout(request, label) {
+  let timeoutId
   return Promise.race([
     request,
     new Promise((_, reject) => {
-      window.setTimeout(() => {
-        reject(new Error(`${label} timed out`))
+      timeoutId = setTimeout(() => {
+        reject(new Error(`${label} timed out. Start the backend server and reload the page.`))
       }, REQUEST_TIMEOUT_MS)
     }),
-  ])
+  ]).finally(() => clearTimeout(timeoutId))
 }
 
 function normalizeTicket(ticket, source) {
@@ -51,6 +52,9 @@ export async function fetchAllTickets() {
   }
 
   if (incidentResult.status === 'rejected') {
+    if (standardResult.status === 'rejected') {
+      throw new Error('Ticket services are unavailable. Start the backend on port 8081 and reload the admin dashboard.')
+    }
     throw incidentResult.reason
   }
 

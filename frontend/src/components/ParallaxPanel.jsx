@@ -27,7 +27,7 @@ export default function ParallaxPanel({
 }) {
   return (
     <Tag
-      className={`hub-parallax-panel ${className}`.trim()}
+      className={`hub-parallax-panel hub-quarter-fade ${className}`.trim()}
       onMouseMove={(event) => setMotion(event, strength)}
       onMouseLeave={resetMotion}
       {...props}

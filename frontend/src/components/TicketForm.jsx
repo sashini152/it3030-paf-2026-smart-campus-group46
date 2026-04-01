@@ -31,13 +31,15 @@ function cls(...values) {
 
 const inputClass =
   'mt-2 w-full rounded-2xl border border-[#37415C] bg-white px-4 py-3 text-sm text-[#181A2F] outline-none transition placeholder:text-[#37415C] focus:border-[#B4182D] focus:ring-2 focus:ring-[#B4182D]'
+const sectionCardClass =
+  'hub-lift rounded-[30px] border border-[#37415C] bg-[linear-gradient(155deg,#242E49_0%,#37415C_100%)] p-5 text-white shadow-none sm:p-6'
 
 function FieldHint({ children }) {
-  return <p className="mt-2 text-xs leading-5 text-[#37415C]">{children}</p>
+  return <p className="mt-2 text-xs leading-5 text-white/75">{children}</p>
 }
 
 function FieldError({ children }) {
-  return <p className="mt-2 text-sm text-[#B4182D]">{children}</p>
+  return <p className="mt-2 text-sm text-[#FDA481]">{children}</p>
 }
 
 function sanitizeWhitespace(value) {
@@ -236,15 +238,15 @@ export default function TicketForm({ onCreated }) {
         )}
 
         <Reveal delay={40}>
-          <section className="hub-lift rounded-[30px] border border-[#37415C] bg-white p-5 shadow-none sm:p-6">
+          <section className={sectionCardClass}>
           <div className="mb-5">
-            <h3 className="text-lg font-semibold text-[#181A2F]">Reporter details</h3>
-            <p className="mt-1 text-sm text-[#37415C]">These details help the team identify who reported the issue and where to reply.</p>
+            <h3 className="text-lg font-semibold text-white">Reporter details</h3>
+            <p className="mt-1 text-sm text-white/75">These details help the team identify who reported the issue and where to reply.</p>
           </div>
 
           <div className="grid gap-5 md:grid-cols-2">
             <label className="block">
-              <span className="text-sm font-medium text-[#181A2F]">Full name</span>
+              <span className="text-sm font-medium text-white">Full name</span>
               <input
                 type="text"
                 value={userName}
@@ -259,7 +261,7 @@ export default function TicketForm({ onCreated }) {
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-[#181A2F]">Campus email</span>
+              <span className="text-sm font-medium text-white">Campus email</span>
               <input
                 type="email"
                 value={userEmail}
@@ -277,15 +279,15 @@ export default function TicketForm({ onCreated }) {
         </Reveal>
 
         <Reveal delay={110}>
-          <section className="hub-lift rounded-[30px] border border-[#37415C] bg-white p-5 shadow-none sm:p-6">
+          <section className={sectionCardClass}>
           <div className="mb-5">
-            <h3 className="text-lg font-semibold text-[#181A2F]">Issue details</h3>
-            <p className="mt-1 text-sm text-[#37415C]">Describe where the problem happened and what the support team should inspect first.</p>
+            <h3 className="text-lg font-semibold text-white">Issue details</h3>
+            <p className="mt-1 text-sm text-white/75">Describe where the problem happened and what the support team should inspect first.</p>
           </div>
 
           <div className="space-y-5">
             <label className="block">
-              <span className="text-sm font-medium text-[#181A2F]">Resource or location</span>
+              <span className="text-sm font-medium text-white">Resource or location</span>
               <input
                 type="text"
                 value={resource}
@@ -297,10 +299,10 @@ export default function TicketForm({ onCreated }) {
             </label>
 
             <label className="block">
-              <span className="flex items-center gap-2 text-sm font-medium text-[#181A2F]">
+              <span className="flex items-center gap-2 text-sm font-medium text-white">
                 <span>Short title</span>
                 <Tooltip text="Keep it simple and readable. Numbers and special characters are not allowed in the title." tone="ticket">
-                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#54162B] text-[11px] font-semibold text-[#54162B]">
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#FDA481] text-[11px] font-semibold text-[#FDA481]">
                     ?
                   </span>
                 </Tooltip>
@@ -316,9 +318,9 @@ export default function TicketForm({ onCreated }) {
             </label>
 
             <label className="block">
-              <span className="flex items-center justify-between text-sm font-medium text-[#181A2F]">
+              <span className="flex items-center justify-between text-sm font-medium text-white">
                 <span>Description</span>
-                <span className={description.length > 280 ? 'text-[#B4182D]' : 'text-[#37415C]'}>{description.length}/300</span>
+                <span className={description.length > 280 ? 'text-[#FDA481]' : 'text-white/75'}>{description.length}/300</span>
               </span>
               <textarea
                 value={description}
@@ -335,15 +337,15 @@ export default function TicketForm({ onCreated }) {
         </Reveal>
 
         <Reveal delay={170}>
-          <section className="hub-lift rounded-[30px] border border-[#37415C] bg-white p-5 shadow-none sm:p-6">
+          <section className={sectionCardClass}>
           <div className="mb-5">
-            <h3 className="text-lg font-semibold text-[#181A2F]">Routing and urgency</h3>
-            <p className="mt-1 text-sm text-[#37415C]">These selections help the dashboard group your ticket correctly and prioritize the queue.</p>
+            <h3 className="text-lg font-semibold text-white">Routing and urgency</h3>
+            <p className="mt-1 text-sm text-white/75">These selections help the dashboard group your ticket correctly and prioritize the queue.</p>
           </div>
 
           <div className="grid gap-5 lg:grid-cols-2">
             <div>
-              <p className="text-sm font-medium text-[#181A2F]">Category</p>
+              <p className="text-sm font-medium text-white">Category</p>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 {categories.map((option) => {
                   const active = category === option
@@ -355,8 +357,8 @@ export default function TicketForm({ onCreated }) {
                       className={cls(
                         'hub-button-pop rounded-2xl border px-4 py-4 text-left transition',
                         active
-                          ? 'border-[#181A2F] bg-[#242E49] text-white shadow-none'
-                          : 'border-[#37415C] bg-white text-[#181A2F] hover:border-[#FDA481] hover:bg-[#FDA481]'
+                          ? 'border-[#FDA481] bg-[#54162B] text-white shadow-none'
+                          : 'border-[#37415C] bg-[#181A2F] text-white hover:border-[#FDA481] hover:bg-[#242E49]'
                       )}
                     >
                       <p className="text-sm font-semibold">{option}</p>
@@ -369,7 +371,7 @@ export default function TicketForm({ onCreated }) {
             </div>
 
             <div>
-              <p className="text-sm font-medium text-[#181A2F]">Priority</p>
+              <p className="text-sm font-medium text-white">Priority</p>
               <div className="mt-3 space-y-3">
                 {priorities.map((option) => {
                   const active = priority === option
@@ -380,14 +382,14 @@ export default function TicketForm({ onCreated }) {
                       onClick={() => setPriority(option)}
                       className={cls(
                         'hub-button-pop flex w-full items-start justify-between gap-4 rounded-2xl border px-4 py-4 text-left transition',
-                        active ? priorityTone[option] : 'border-[#37415C] bg-white text-[#181A2F] hover:border-[#FDA481] hover:bg-[#FDA481]'
+                        active ? priorityTone[option] : 'border-[#37415C] bg-[#181A2F] text-white hover:border-[#FDA481] hover:bg-[#242E49]'
                       )}
                     >
                       <div>
                         <p className="text-sm font-semibold">{option}</p>
                         <p className="mt-1 text-xs leading-5 opacity-80">{priorityCopy[option]}</p>
                       </div>
-                      <span className={cls('mt-0.5 h-4 w-4 rounded-full border', active ? 'border-current bg-white/20' : 'border-[#37415C]')} />
+                      <span className={cls('mt-0.5 h-4 w-4 rounded-full border', active ? 'border-current bg-white/20' : 'border-white/40')} />
                     </button>
                   )
                 })}
@@ -399,10 +401,10 @@ export default function TicketForm({ onCreated }) {
         </Reveal>
 
         <Reveal delay={240}>
-          <section className="hub-lift rounded-[30px] border border-[#37415C] bg-white p-5 shadow-none sm:p-6">
+          <section className={sectionCardClass}>
           <div className="mb-5">
-            <h3 className="text-lg font-semibold text-[#181A2F]">Attachments</h3>
-            <p className="mt-1 text-sm text-[#37415C]">Upload up to three images if visuals will help the support team identify the problem faster.</p>
+            <h3 className="text-lg font-semibold text-white">Attachments</h3>
+            <p className="mt-1 text-sm text-white/75">Upload up to three images if visuals will help the support team identify the problem faster.</p>
           </div>
 
           <div
@@ -418,12 +420,12 @@ export default function TicketForm({ onCreated }) {
             onDrop={handleDrop}
             className={cls(
               'hub-lift rounded-[28px] border border-dashed px-6 py-10 text-center transition',
-              dragActive ? 'border-[#FDA481] bg-[#FDA481] text-[#181A2F]' : 'border-[#37415C] bg-white'
+              dragActive ? 'border-[#FDA481] bg-[#FDA481] text-[#181A2F]' : 'border-[#37415C] bg-[#181A2F] text-white'
             )}
           >
-            <p className="text-base font-semibold text-[#181A2F]">Drag and drop images here</p>
-            <p className="mt-2 text-sm text-[#37415C]">Or choose files manually. PNG and JPG only, up to 5MB each.</p>
-            <input type="file" accept="image/*" multiple onChange={handleFiles} className="mx-auto mt-5 block text-sm text-[#181A2F]" />
+            <p className="text-base font-semibold text-inherit">Drag and drop images here</p>
+            <p className="mt-2 text-sm text-inherit opacity-75">Or choose files manually. PNG and JPG only, up to 5MB each.</p>
+            <input type="file" accept="image/*" multiple onChange={handleFiles} className="mx-auto mt-5 block text-sm text-inherit" />
           </div>
 
           {errors.files ? <FieldError>{errors.files}</FieldError> : <FieldHint>Screenshots and device photos often reduce back-and-forth.</FieldHint>}
@@ -431,11 +433,11 @@ export default function TicketForm({ onCreated }) {
           {previews.length > 0 && (
             <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {previews.map((preview) => (
-                <div key={preview.url} className="hub-lift overflow-hidden rounded-[24px] border border-[#37415C] bg-white shadow-none">
+                <div key={preview.url} className="hub-lift overflow-hidden rounded-[24px] border border-[#37415C] bg-[#181A2F] shadow-none">
                   <img src={preview.url} alt={preview.name} className="h-36 w-full object-cover" />
                   <div className="px-4 py-3">
-                    <p className="truncate text-sm font-medium text-[#181A2F]">{preview.name}</p>
-                    <p className="mt-1 text-xs text-[#37415C]">{Math.round(preview.size / 1024)} KB</p>
+                    <p className="truncate text-sm font-medium text-white">{preview.name}</p>
+                    <p className="mt-1 text-xs text-white/75">{Math.round(preview.size / 1024)} KB</p>
                   </div>
                 </div>
               ))}

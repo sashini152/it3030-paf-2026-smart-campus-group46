@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -9,7 +9,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
     Accept: 'application/json',
   },
-  withCredentials: true, // Include cookies for OAuth2 session
+  withCredentials: true,
 })
 
 api.interceptors.response.use(
@@ -19,41 +19,35 @@ api.interceptors.response.use(
     const message =
       error.code === 'ECONNABORTED'
         ? 'The request timed out. Check that the backend is running and try again.'
-        : status === 502
-        ? 'The support service is temporarily unavailable. Please try again in a moment.'
+        : error.code === 'ERR_NETWORK'
+        ? 'Cannot reach the backend server at localhost:8081. Start the Spring backend and try again.'
         : status === 401
         ? 'Your session has expired. Sign in again and retry.'
         : status === 403
         ? 'You do not have permission to perform this action.'
+        : status === 502
+        ? 'The support service is temporarily unavailable. Please try again in a moment.'
         : error.response?.data?.message || error.message
     return Promise.reject(new Error(message))
   }
 )
 
-// Add authorization header with OAuth2 token
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
-    // For testing purposes, add a temporary token if none exists
-    else {
-      console.log('🔓 No token found, using temporary auth for testing')
-      // You can add a temporary token here or skip auth for testing
-      // config.headers.Authorization = 'Bearer temp-test-token'
-    }
     return config
   },
   (error) => Promise.reject(error)
 )
 
-// Build query string from params
 export function buildQuery(params) {
   const esc = encodeURIComponent
   const query = Object.entries(params)
-    .filter(([, v]) => v !== undefined && v !== '')
-    .map(([k, v]) => `${esc(k)}=${esc(v)}`)
+    .filter(([, value]) => value !== undefined && value !== '')
+    .map(([key, value]) => `${esc(key)}=${esc(value)}`)
     .join('&')
   return query ? `?${query}` : ''
 }
@@ -78,7 +72,6 @@ export async function deleteJson(path) {
   return data
 }
 
-// Alias for DELETE request (for backward compatibility)
 export const deleteRequest = deleteJson
 
 export async function patchJson(path, payload) {
@@ -87,4 +80,3 @@ export async function patchJson(path, payload) {
 }
 
 export { api }
-
