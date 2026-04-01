@@ -1,11 +1,10 @@
 import axios from 'axios'
 
-const API_BASE = 'http://localhost:8081'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -18,8 +17,14 @@ api.interceptors.response.use(
   (error) => {
     const status = error.response?.status
     const message =
-      status === 502
+      error.code === 'ECONNABORTED'
+        ? 'The request timed out. Check that the backend is running and try again.'
+        : status === 502
         ? 'The support service is temporarily unavailable. Please try again in a moment.'
+        : status === 401
+        ? 'Your session has expired. Sign in again and retry.'
+        : status === 403
+        ? 'You do not have permission to perform this action.'
         : error.response?.data?.message || error.message
     return Promise.reject(new Error(message))
   }

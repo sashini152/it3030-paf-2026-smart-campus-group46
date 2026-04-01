@@ -93,7 +93,7 @@ export default function TicketDetails({ ticketId: ticketIdProp }) {
   const handleStatusChange = async (newStatus) => {
     setStatusUpdating(true)
     try {
-      const updated = await ticketService.updateStatus(ticketId, newStatus)
+      const updated = await ticketService.updateAnyTicketStatus(ticket, newStatus)
       setTicket(updated)
     } catch (err) {
       alert('Failed to update status')

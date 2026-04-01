@@ -2,9 +2,63 @@ import { api, getJson, postJson, putJson, deleteJson, patchJson } from '../api/c
 
 const TICKET_BASE_PATH = '/api/incident-tickets'
 const STANDARD_TICKET_BASE_PATH = '/api/tickets'
+const INCIDENT_SOURCE = 'incident'
+const STANDARD_SOURCE = 'standard'
+const REQUEST_TIMEOUT_MS = 5000
+
+function withTimeout(request, label) {
+  return Promise.race([
+    request,
+    new Promise((_, reject) => {
+      window.setTimeout(() => {
+        reject(new Error(`${label} timed out`))
+      }, REQUEST_TIMEOUT_MS)
+    }),
+  ])
+}
+
+function normalizeTicket(ticket, source) {
+  if (!ticket || typeof ticket !== 'object') return ticket
+  return { ...ticket, ticketSource: source }
+}
+
+function normalizeTicketList(payload, source) {
+  if (!Array.isArray(payload)) return []
+  return payload.map((ticket) => normalizeTicket(ticket, source))
+}
 
 export function fetchTickets() {
   return getJson(TICKET_BASE_PATH)
+}
+
+export function fetchStandardTickets() {
+  return getJson(STANDARD_TICKET_BASE_PATH)
+}
+
+export async function fetchAllTickets() {
+  const [incidentResult, standardResult] = await Promise.allSettled([
+    withTimeout(fetchTickets(), 'Incident ticket request'),
+    withTimeout(fetchStandardTickets(), 'Standard ticket request'),
+  ])
+
+  const mergedTickets = [
+    ...(incidentResult.status === 'fulfilled' ? normalizeTicketList(incidentResult.value, INCIDENT_SOURCE) : []),
+    ...(standardResult.status === 'fulfilled' ? normalizeTicketList(standardResult.value, STANDARD_SOURCE) : []),
+  ]
+
+  if (mergedTickets.length > 0) {
+    return mergedTickets
+  }
+
+  if (incidentResult.status === 'rejected') {
+    throw incidentResult.reason
+  }
+
+  if (standardResult.status === 'rejected') {
+    throw standardResult.reason
+  }
+
+  return []
 }
 
 export function fetchTicket(ticketId) {
@@ -17,9 +71,11 @@ export function fetchStandardTicket(ticketId) {
 
 export async function fetchAnyTicket(ticketId) {
   try {
-    return await fetchTicket(ticketId)
+    const ticket = await withTimeout(fetchTicket(ticketId), 'Incident ticket request')
+    return normalizeTicket(ticket, INCIDENT_SOURCE)
   } catch (incidentError) {
-    return fetchStandardTicket(ticketId)
+    const ticket = await withTimeout(fetchStandardTicket(ticketId), 'Standard ticket request')
+    return normalizeTicket(ticket, STANDARD_SOURCE)
   }
 }
 
@@ -58,6 +114,62 @@ export function assignTechnician(ticketId, technicianId) {
 
 export function updateStatus(ticketId, status) {
   return patchJson(`${TICKET_BASE_PATH}/${ticketId}/status`, { status })
+}
+
+export async function updateAnyTicketStatus(ticket, status) {
+  if (!ticket?.id) {
+    throw new Error('Ticket id is required')
+  }
+
+  if (ticket.ticketSource === STANDARD_SOURCE) {
+    const updated = await patchJson(`${STANDARD_TICKET_BASE_PATH}/${ticket.id}/status`, { status })
+    return normalizeTicket(updated, STANDARD_SOURCE)
+  }
+
+  if (ticket.ticketSource === INCIDENT_SOURCE) {
+    const updated = await putJson(`${TICKET_BASE_PATH}/${ticket.id}`, {
+      id: ticket.id,
+      title: ticket.title || 'Untitled',
+      description: ticket.description || '',
+      status,
+      createdBy: ticket.createdBy || 'system',
+    })
+    return normalizeTicket(updated, INCIDENT_SOURCE)
+  }
+
+  try {
+    const updated = await putJson(`${TICKET_BASE_PATH}/${ticket.id}`, {
+      id: ticket.id,
+      title: ticket.title || 'Untitled',
+      description: ticket.description || '',
+      status,
+      createdBy: ticket.createdBy || 'system',
+    })
+    return normalizeTicket(updated, INCIDENT_SOURCE)
+  } catch (incidentError) {
+    const updated = await patchJson(`${STANDARD_TICKET_BASE_PATH}/${ticket.id}/status`, { status })
+    return normalizeTicket(updated, STANDARD_SOURCE)
+  }
+}
+
+export async function deleteAnyTicket(ticket) {
+  if (!ticket?.id) {
+    throw new Error('Ticket id is required')
+  }
+
+  if (ticket.ticketSource === STANDARD_SOURCE) {
+    return deleteJson(`${STANDARD_TICKET_BASE_PATH}/${ticket.id}`)
+  }
+
+  if (ticket.ticketSource === INCIDENT_SOURCE) {
+    return deleteJson(`${TICKET_BASE_PATH}/${ticket.id}`)
+  }
+
+  try {
+    return await deleteJson(`${TICKET_BASE_PATH}/${ticket.id}`)
+  } catch (incidentError) {
+    return deleteJson(`${STANDARD_TICKET_BASE_PATH}/${ticket.id}`)
+  }
 }
 
 export async function uploadTicketImages(ticketId, files) {

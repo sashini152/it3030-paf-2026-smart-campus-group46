@@ -10,8 +10,8 @@ export function useTickets() {
     setLoading(true)
     setError(null)
     return ticketService
-      .fetchTickets()
-      .then((data) => setTickets(data))
+      .fetchAllTickets()
+      .then((data) => setTickets(Array.isArray(data) ? data : []))
       .catch((err) => {
         setTickets([])
         setError(err)

@@ -9,7 +9,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (user) {
-      navigate(user.role === 'ADMIN' ? '/admin' : '/dashboard')
+      navigate(user.role === 'ADMIN' ? '/admin' : '/')
     }
   }, [user, navigate])
 
@@ -27,7 +27,7 @@ export default function LoginPage() {
           login(userData, token)
           window.history.replaceState({}, document.title, window.location.pathname)
           setTimeout(() => {
-            navigate(role === 'ADMIN' ? '/admin' : '/dashboard')
+            navigate(role === 'ADMIN' ? '/admin' : '/')
           }, 100)
         } else {
           setProcessing(false)
@@ -43,7 +43,7 @@ export default function LoginPage() {
 
   const handleGoogleLogin = () => {
     setProcessing(true)
-    window.location.assign('http://localhost:8081/oauth2/authorization/google')
+    window.location.assign('/oauth2/authorization/google')
   }
 
   if (loading || processing) {

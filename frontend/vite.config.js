@@ -6,9 +6,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api/incident-tickets': 'http://localhost:8081',
-      '/api/tickets': 'http://localhost:8081',
-      '/api': 'http://localhost:8080',
+      '/api': 'http://localhost:8081',
+      '/oauth2': 'http://localhost:8081',
+      '/login/oauth2': 'http://localhost:8081',
     },
   },
 })

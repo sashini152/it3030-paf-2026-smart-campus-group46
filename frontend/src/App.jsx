@@ -12,7 +12,6 @@ import AdminDashboard from './pages/AdminDashboard'
 import NotificationsPage from './pages/NotificationsPage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
-import DashboardPage from './pages/DashboardPage'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 
 function ProtectedRoute({ children }) {
@@ -29,7 +28,7 @@ function DashboardRoute() {
   const { isAuthenticated, hasRole } = useAuth()
   if (!isAuthenticated) return <Navigate to="/login" replace />
   if (hasRole('ADMIN')) return <Navigate to="/admin" replace />
-  return <DashboardPage />
+  return <Navigate to="/" replace />
 }
 
 function AppRoutes() {

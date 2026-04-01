@@ -9,13 +9,13 @@ export default function SignupPage() {
 
   useEffect(() => {
     if (user) {
-      navigate('/dashboard')
+      navigate(user.role === 'ADMIN' ? '/admin' : '/')
     }
   }, [user, navigate])
 
   const handleGoogleSignup = () => {
     setProcessing(true)
-    window.location.assign('http://localhost:8081/oauth2/authorization/google')
+    window.location.assign('/oauth2/authorization/google')
   }
 
   if (loading || processing) {

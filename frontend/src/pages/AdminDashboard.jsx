@@ -1,550 +1,419 @@
-import { useMemo, useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { deleteJson, getJson, patchJson, postJson, putJson } from '../api/client'
+import { useAuth } from '../contexts/AuthContext'
 import { useTickets } from '../hooks/useTickets'
-import { getJson, putJson } from '../api/client'
+import { deleteAnyTicket, updateAnyTicketStatus } from '../services/ticketService'
 
-// Booking management component for admin
-function BookingManagement() {
-  const [bookings, setBookings] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [processingId, setProcessingId] = useState(null) // Track which booking is being processed
-
-  const loadBookings = async () => {
-    try {
-      const data = await getJson('/api/bookings?status=PENDING')
-      setBookings(Array.isArray(data) ? data : [])
-    } catch (e) {
-      setError(e.message)
-      setBookings([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleApprove = async (bookingId) => {
-    setProcessingId(bookingId) // Disable button for this booking
-    try {
-      await putJson(`/api/bookings/${bookingId}/approve`)
-      await loadBookings() // Refresh list
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setProcessingId(null) // Re-enable button
-    }
-  }
-
-  const handleReject = async (bookingId) => {
-    const reason = prompt('Enter rejection reason:')
-    if (!reason) return
-    
-    setProcessingId(bookingId) // Disable button for this booking
-    try {
-      await putJson(`/api/bookings/${bookingId}/reject`, { reason })
-      await loadBookings() // Refresh list
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setProcessingId(null) // Re-enable button
-    }
-  }
-
-  useEffect(() => {
-    loadBookings()
-    
-    // Auto-refresh every 30 seconds to check for new pending bookings
-    const interval = setInterval(() => {
-      console.log('Checking for new pending bookings...')
-      loadBookings()
-    }, 30000)
-    
-    return () => clearInterval(interval)
-  }, [])
-
-  return (
-    <div className="mb-8">
-      <h2 className="text-xl font-semibold text-slate-900 mb-4">Pending Booking Approvals</h2>
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
-          {error}
-        </div>
-      )}
-      {loading ? (
-        <p className="text-slate-500">Loading pending bookings...</p>
-      ) : bookings.length === 0 ? (
-        <p className="text-slate-500">No pending bookings to review.</p>
-      ) : (
-        <div className="bg-white rounded-lg shadow border border-slate-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Resource</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">User</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Purpose</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Start Time</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">End Time</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-slate-200">
-              {bookings.map((booking) => (
-                <tr key={booking.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
-                    {booking.resourceId}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
-                    {booking.requestedByUserId}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-900">
-                    {booking.purpose}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
-                    {new Date(booking.startDateTime).toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
-                    {new Date(booking.endDateTime).toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => handleApprove(booking.id)}
-                      disabled={processingId === booking.id}
-                      className={`mr-2 px-3 py-1 text-xs rounded ${
-                        processingId === booking.id 
-                          ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
-                          : 'bg-emerald-500 text-white hover:bg-emerald-600'
-                      }`}
-                    >
-                      {processingId === booking.id ? 'Approving...' : 'Approve'}
-                    </button>
-                    <button
-                      onClick={() => handleReject(booking.id)}
-                      disabled={processingId === booking.id}
-                      className={`px-3 py-1 text-xs rounded ${
-                        processingId === booking.id 
-                          ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
-                          : 'bg-red-500 text-white hover:bg-red-600'
-                      }`}
-                    >
-                      {processingId === booking.id ? 'Rejecting...' : 'Reject'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  )
-}
-
-const navItems = [
-  { label: 'Overview', to: '/admin', active: true },
-  { label: 'Resources', to: '/resources' },
-  { label: 'Bookings', to: '/bookings' },
-  { label: 'Tickets', to: '/tickets' },
-  { label: 'Notifications', to: '/notifications' },
-  { label: 'Sign In', to: '/login' },
-]
-
-const statusChip = {
-  OPEN: 'bg-amber-100 text-amber-800',
-  IN_PROGRESS: 'bg-sky-100 text-sky-800',
-  RESOLVED: 'bg-emerald-100 text-emerald-800',
-  CLOSED: 'bg-slate-200 text-slate-700',
-  WAITING_FOR_CLIENT: 'bg-violet-100 text-violet-800',
-  WAITING_FOR_SUPPORT: 'bg-orange-100 text-orange-800',
-}
-
-const moduleTiles = [
-  ['Incident Queue', 'Live data from the ticket API.', 'Live', 'bg-emerald-100 text-emerald-700'],
-  ['Bookings', 'Approval metrics can drop in here next.', 'Pending API', 'bg-sky-100 text-sky-700'],
-  ['Resources', 'Usage and availability fit this same tile.', 'Planned', 'bg-amber-100 text-amber-700'],
-  ['Notifications', 'Unread and delivery health can surface here.', 'Planned', 'bg-violet-100 text-violet-700'],
-]
+const SECTIONS = ['overview', 'resources', 'bookings', 'tickets', 'notifications']
+const RESOURCE_TYPES = ['LECTURE_HALL', 'LAB', 'MEETING_ROOM', 'EQUIPMENT']
+const RESOURCE_STATUSES = ['ACTIVE', 'OUT_OF_SERVICE']
+const BOOKING_FILTERS = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']
+const TICKET_STATUSES = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED', 'WAITING_FOR_CLIENT', 'WAITING_FOR_SUPPORT']
+const NOTIFICATION_TYPES = ['BOOKING', 'TICKET', 'COMMENT', 'SYSTEM']
 
 function cls(...values) {
   return values.filter(Boolean).join(' ')
 }
 
-function statusName(value) {
-  return (value || 'OPEN').toUpperCase()
+function label(text) {
+  return (text || '').replaceAll('_', ' ')
 }
 
-function label(value) {
-  return statusName(value).replaceAll('_', ' ')
-}
-
-function dateText(value) {
+function dt(value) {
   if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '-'
-  return date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  const d = new Date(value)
+  return Number.isNaN(d.getTime()) ? '-' : d.toLocaleString()
 }
 
-function minutesBetween(start, end) {
-  if (!start || !end) return null
-  const a = new Date(start).getTime()
-  const b = new Date(end).getTime()
-  if (Number.isNaN(a) || Number.isNaN(b)) return null
-  return Math.max(0, Math.round((b - a) / 60000))
-}
-
-function durationText(minutes) {
-  if (minutes === null) return 'Pending'
-  if (minutes < 60) return `${minutes} min`
-  const hours = Math.floor(minutes / 60)
-  const rest = minutes % 60
-  return rest ? `${hours}h ${rest}m` : `${hours}h`
-}
-
-function ageText(value) {
-  if (!value) return '-'
-  const diff = Math.max(0, Date.now() - new Date(value).getTime())
-  const minutes = Math.round(diff / 60000)
-  if (minutes < 60) return `${minutes}m ago`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-  return `${Math.floor(hours / 24)}d ago`
-}
-
-function buildTrend(tickets) {
-  const now = new Date()
-  const months = Array.from({ length: 6 }, (_, index) => {
-    const date = new Date(now.getFullYear(), now.getMonth() - 5 + index, 1)
-    return {
-      key: `${date.getFullYear()}-${date.getMonth()}`,
-      label: date.toLocaleDateString(undefined, { month: 'short' }),
-      opened: 0,
-      resolved: 0,
-    }
-  })
-  const lookup = Object.fromEntries(months.map((item) => [item.key, item]))
-
-  tickets.forEach((ticket) => {
-    if (ticket.createdAt) {
-      const date = new Date(ticket.createdAt)
-      const key = `${date.getFullYear()}-${date.getMonth()}`
-      if (lookup[key]) lookup[key].opened += 1
-    }
-    if (ticket.resolvedAt) {
-      const date = new Date(ticket.resolvedAt)
-      const key = `${date.getFullYear()}-${date.getMonth()}`
-      if (lookup[key]) lookup[key].resolved += 1
-    }
-  })
-
-  return months
-}
-
-function linePoints(values, width = 480, height = 230, pad = 24) {
-  const max = Math.max(...values, 1)
-  return values
-    .map((value, index) => {
-      const x = pad + ((width - pad * 2) * index) / Math.max(values.length - 1, 1)
-      const y = height - pad - (value / max) * (height - pad * 2)
-      return `${x},${y}`
-    })
-    .join(' ')
-}
-
-function Sidebar() {
-  return (
-    <div className="flex h-full flex-col">
-      <div className="mb-8 flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500 text-sm font-bold text-white shadow-lg shadow-emerald-500/20">
-          SC
-        </div>
-        <div>
-          <p className="text-lg font-semibold text-slate-900">Smart Campus</p>
-          <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Admin Desk</p>
-        </div>
-      </div>
-
-      <nav className="space-y-1.5">
-        {navItems.map((item) => (
-          <Link
-            key={item.label}
-            to={item.to}
-            className={cls(
-              'block rounded-2xl px-4 py-3 text-sm font-medium transition',
-              item.active ? 'bg-emerald-50 text-emerald-700 shadow-sm' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
-            )}
-          >
-            {item.label}
-          </Link>
-        ))}
-      </nav>
-
-      <div className="mt-auto rounded-[28px] border border-slate-200 bg-slate-50 p-5 text-sm leading-6 text-slate-600">
-        Ticket operations are live. The other campus modules are scaffolded so that dashboard can grow without another redesign.
-      </div>
-    </div>
-  )
-}
+const emptyResource = { type: 'LECTURE_HALL', name: '', capacity: 0, location: '', availabilityWindows: '', status: 'ACTIVE' }
+const emptyNotice = { title: '', message: '', type: 'SYSTEM', targetUserId: '' }
 
 export default function AdminDashboard() {
-  const { tickets, loading, error } = useTickets()
-  const [search, setSearch] = useState('')
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
+  const { tickets, loading: ticketsLoading, error: ticketsError, reload: reloadTickets } = useTickets()
+
+  const [section, setSection] = useState('overview')
   const [menuOpen, setMenuOpen] = useState(false)
 
-  const summary = useMemo(() => {
-    const counts = { OPEN: 0, IN_PROGRESS: 0, RESOLVED: 0, CLOSED: 0, WAITING_FOR_CLIENT: 0, WAITING_FOR_SUPPORT: 0 }
-    let responseTotal = 0
-    let responseCount = 0
+  const [resources, setResources] = useState([])
+  const [resourcesLoading, setResourcesLoading] = useState(true)
+  const [resourcesError, setResourcesError] = useState(null)
+  const [resourceForm, setResourceForm] = useState(emptyResource)
+  const [resourceEditId, setResourceEditId] = useState(null)
 
-    tickets.forEach((ticket) => {
-      const status = statusName(ticket.status)
-      counts[status] = (counts[status] || 0) + 1
-      const response = minutesBetween(ticket.createdAt, ticket.firstResponseAt)
-      if (response !== null) {
-        responseTotal += response
-        responseCount += 1
-      }
-    })
+  const [bookings, setBookings] = useState([])
+  const [bookingsLoading, setBookingsLoading] = useState(true)
+  const [bookingsError, setBookingsError] = useState(null)
+  const [bookingFilter, setBookingFilter] = useState('ALL')
 
-    const active = counts.OPEN + counts.IN_PROGRESS + counts.WAITING_FOR_CLIENT + counts.WAITING_FOR_SUPPORT
+  const [notifications, setNotifications] = useState([])
+  const [notificationsLoading, setNotificationsLoading] = useState(true)
+  const [notificationsError, setNotificationsError] = useState(null)
+  const [notificationForm, setNotificationForm] = useState(emptyNotice)
 
-    return {
-      counts,
-      cards: [
-        ['Total Tickets', tickets.length, `${active} need action`, 'bg-slate-900 text-white'],
-        ['Open Queue', active, `${counts.IN_PROGRESS} in progress`, 'bg-emerald-50 text-slate-900'],
-        ['Resolved', counts.RESOLVED + counts.CLOSED, `${counts.CLOSED} closed`, 'bg-sky-50 text-slate-900'],
-        ['Avg Response', durationText(responseCount ? Math.round(responseTotal / responseCount) : null), 'First reply speed', 'bg-amber-50 text-slate-900'],
-      ],
-      trend: buildTrend(tickets),
+  const [busyId, setBusyId] = useState(null)
+  const [ticketQuery, setTicketQuery] = useState('')
+
+  const loadResources = useCallback(async () => {
+    setResourcesLoading(true)
+    setResourcesError(null)
+    try {
+      const data = await getJson('/api/resources')
+      setResources(Array.isArray(data) ? data : [])
+    } catch (error) {
+      setResources([])
+      setResourcesError(error.message)
+    } finally {
+      setResourcesLoading(false)
     }
+  }, [])
+
+  const loadBookings = useCallback(async () => {
+    setBookingsLoading(true)
+    setBookingsError(null)
+    try {
+      const data = await getJson('/api/bookings')
+      setBookings(Array.isArray(data) ? data : [])
+    } catch (error) {
+      setBookings([])
+      setBookingsError(error.message)
+    } finally {
+      setBookingsLoading(false)
+    }
+  }, [])
+
+  const loadNotifications = useCallback(async () => {
+    setNotificationsLoading(true)
+    setNotificationsError(null)
+    try {
+      const data = await getJson('/api/admin/notifications')
+      setNotifications(Array.isArray(data) ? data : [])
+    } catch (error) {
+      setNotifications([])
+      setNotificationsError(error.message)
+    } finally {
+      setNotificationsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadResources().catch(() => {})
+    loadBookings().catch(() => {})
+    loadNotifications().catch(() => {})
+    reloadTickets().catch(() => {})
+  }, [loadBookings, loadNotifications, loadResources, reloadTickets])
+
+  const ticketCounts = useMemo(() => {
+    const counts = { OPEN: 0, IN_PROGRESS: 0, RESOLVED: 0, CLOSED: 0, WAITING_FOR_CLIENT: 0, WAITING_FOR_SUPPORT: 0 }
+    tickets.forEach((item) => {
+      const key = (item.status || 'OPEN').toUpperCase()
+      counts[key] = (counts[key] || 0) + 1
+    })
+    return counts
   }, [tickets])
 
+  const pendingBookings = useMemo(() => bookings.filter((item) => item.status === 'PENDING'), [bookings])
+  const visibleBookings = useMemo(() => bookingFilter === 'ALL' ? bookings : bookings.filter((item) => item.status === bookingFilter), [bookingFilter, bookings])
   const visibleTickets = useMemo(() => {
-    const query = search.trim().toLowerCase()
-    const sorted = [...tickets].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
-    const filtered = !query
-      ? sorted
-      : sorted.filter((ticket) =>
-          [ticket.title, ticket.description, ticket.createdBy, label(ticket.status)]
-            .filter(Boolean)
-            .join(' ')
-            .toLowerCase()
-            .includes(query)
-        )
-    return filtered.slice(0, 8)
-  }, [search, tickets])
+    const q = ticketQuery.trim().toLowerCase()
+    if (!q) return tickets
+    return tickets.filter((item) =>
+      [item.title, item.description, item.createdBy, item.status].filter(Boolean).join(' ').toLowerCase().includes(q)
+    )
+  }, [ticketQuery, tickets])
 
-  const openedLine = linePoints(summary.trend.map((item) => item.opened))
-  const resolvedLine = linePoints(summary.trend.map((item) => item.resolved))
+  const unreadNotifications = notifications.filter((item) => !item.read).length
+  const activeTickets = ticketCounts.OPEN + ticketCounts.IN_PROGRESS + ticketCounts.WAITING_FOR_CLIENT + ticketCounts.WAITING_FOR_SUPPORT
+
+  async function saveResource(event) {
+    event.preventDefault()
+    setResourcesError(null)
+    try {
+      const payload = {
+        type: resourceForm.type,
+        name: resourceForm.name.trim(),
+        capacity: Number(resourceForm.capacity),
+        location: resourceForm.location.trim(),
+        availabilityWindows: resourceForm.availabilityWindows.trim() || null,
+        status: resourceForm.status,
+      }
+      if (resourceEditId) await putJson(`/api/resources/${resourceEditId}`, payload)
+      else await postJson('/api/resources', payload)
+      setResourceEditId(null)
+      setResourceForm(emptyResource)
+      await loadResources()
+    } catch (error) {
+      setResourcesError(error.message)
+    }
+  }
+
+  async function deleteResource(id) {
+    if (!window.confirm('Delete this resource?')) return
+    setResourcesError(null)
+    try {
+      await deleteJson(`/api/resources/${id}`)
+      await loadResources()
+    } catch (error) {
+      setResourcesError(error.message)
+    }
+  }
+
+  async function runBookingAction(id, action, body = {}) {
+    setBusyId(id)
+    setBookingsError(null)
+    try {
+      await putJson(`/api/bookings/${id}/${action}`, body)
+      await loadBookings()
+      await loadNotifications()
+    } catch (error) {
+      setBookingsError(error.message)
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function deleteBooking(id) {
+    if (!window.confirm('Delete this booking?')) return
+    setBusyId(id)
+    setBookingsError(null)
+    try {
+      await deleteJson(`/api/bookings/${id}`)
+      await loadBookings()
+    } catch (error) {
+      setBookingsError(error.message)
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function updateTicketStatus(ticket, status) {
+    setBusyId(ticket.id)
+    try {
+      await updateAnyTicketStatus(ticket, status)
+      await reloadTickets()
+      await loadNotifications()
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function deleteTicket(ticket) {
+    if (!window.confirm('Delete this ticket?')) return
+    setBusyId(ticket.id)
+    try {
+      await deleteAnyTicket(ticket)
+      await reloadTickets()
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function createNotification(event) {
+    event.preventDefault()
+    setNotificationsError(null)
+    try {
+      await postJson('/api/admin/notifications', {
+        title: notificationForm.title.trim(),
+        message: notificationForm.message.trim(),
+        type: notificationForm.type,
+        targetUserId: notificationForm.targetUserId.trim() || null,
+      })
+      setNotificationForm(emptyNotice)
+      await loadNotifications()
+    } catch (error) {
+      setNotificationsError(error.message)
+    }
+  }
+
+  async function toggleRead(notification) {
+    setBusyId(notification.id)
+    setNotificationsError(null)
+    try {
+      await patchJson(`/api/admin/notifications/${notification.id}/read`, { read: !notification.read })
+      await loadNotifications()
+    } catch (error) {
+      setNotificationsError(error.message)
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function deleteNotification(id) {
+    if (!window.confirm('Delete this notification?')) return
+    setBusyId(id)
+    setNotificationsError(null)
+    try {
+      await deleteJson(`/api/admin/notifications/${id}`)
+      await loadNotifications()
+    } catch (error) {
+      setNotificationsError(error.message)
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function markAllRead() {
+    setNotificationsError(null)
+    try {
+      await patchJson('/api/admin/notifications/read-all', {})
+      await loadNotifications()
+    } catch (error) {
+      setNotificationsError(error.message)
+    }
+  }
+
+  function sidebarView() {
+    return (
+      <div className="flex h-full flex-col">
+        <div className="mb-8 flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500 text-sm font-bold text-white">SC</div>
+          <div>
+            <p className="text-lg font-semibold text-slate-900">Smart Campus</p>
+            <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Admin Desk</p>
+          </div>
+        </div>
+        <nav className="space-y-1.5">
+          {SECTIONS.map((item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => setSection(item)}
+              className={cls(
+                'block w-full rounded-2xl px-4 py-3 text-left text-sm font-medium transition',
+                section === item ? 'bg-emerald-50 text-emerald-700 shadow-sm' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+              )}
+            >
+              {item[0].toUpperCase() + item.slice(1)}
+            </button>
+          ))}
+        </nav>
+        <button
+          type="button"
+          onClick={() => {
+            logout()
+            navigate('/login', { replace: true })
+          }}
+          className="mt-6 rounded-2xl bg-rose-500 px-4 py-3 text-sm font-semibold text-white hover:bg-rose-600"
+        >
+          Logout
+        </button>
+        <div className="mt-auto rounded-[28px] border border-slate-200 bg-slate-50 p-5 text-sm leading-6 text-slate-600">
+          All admin sections are now completed in one dashboard page.
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#edf3f0] text-slate-900">
-      <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-24 top-16 h-80 w-80 rounded-full bg-emerald-200/45 blur-3xl" />
-        <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-sky-100/60 blur-3xl" />
-      </div>
-
       <div className="flex min-h-screen">
-        <aside className="hidden w-72 shrink-0 border-r border-white/70 bg-white/85 px-6 py-8 backdrop-blur xl:block">
-          <Sidebar />
-        </aside>
-
+        <aside className="hidden w-72 shrink-0 border-r border-white/70 bg-white/85 px-6 py-8 xl:block">{sidebarView()}</aside>
         {menuOpen && (
           <div className="fixed inset-0 z-40 bg-slate-900/35 xl:hidden" onClick={() => setMenuOpen(false)}>
             <aside className="h-full w-72 bg-white px-6 py-8" onClick={(event) => event.stopPropagation()}>
-              <Sidebar />
+              {sidebarView()}
             </aside>
           </div>
         )}
-
         <main className="flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
-          <div className="mx-auto max-w-[1480px] rounded-[36px] border border-white/70 bg-white/70 p-4 shadow-[0_30px_80px_rgba(148,163,184,0.28)] backdrop-blur md:p-6 lg:p-8">
-            <header className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="mx-auto max-w-[1480px] rounded-[36px] border border-white/70 bg-white/70 p-4 shadow-[0_30px_80px_rgba(148,163,184,0.28)] md:p-6 lg:p-8">
+            <header className="mb-8 flex items-start justify-between gap-4">
               <div className="flex items-start gap-3">
-                <button type="button" onClick={() => setMenuOpen(true)} className="mt-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm xl:hidden">
-                  Menu
-                </button>
+                <button type="button" onClick={() => setMenuOpen(true)} className="mt-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 xl:hidden">Menu</button>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-600">Smart Campus Admin</p>
                   <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">Operations dashboard</h1>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
-                    This follows the analytics-panel shape from your reference, but the content is mapped to your website:
-                    incident tickets live now, with room for resources, bookings, and notification health next.
-                  </p>
+                  <p className="mt-2 max-w-2xl text-sm text-slate-500">Manage resources, bookings, tickets, and notifications from one page.</p>
                 </div>
               </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search ticket, reporter, or status"
-                  className="min-w-[260px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm outline-none placeholder:text-slate-400"
-                />
-                <Link to="/tickets" className="rounded-2xl bg-emerald-500 px-5 py-3 text-center text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 hover:bg-emerald-600 hover:no-underline">
-                  Review Ticket Inbox
-                </Link>
-                <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-slate-900">Campus Admin</p>
-                    <p className="text-xs text-slate-500">Operations lead</p>
-                  </div>
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-sm font-semibold text-white">SC</div>
-                </div>
+              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-right text-sm">
+                <p className="font-semibold text-slate-900">{user?.name || 'Campus Admin'}</p>
+                <p className="text-slate-500">{user?.email || 'admin@smartcampus.local'}</p>
               </div>
             </header>
 
-            <section className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
-              {summary.cards.map(([title, value, note, tone]) => (
-                <article key={title} className={cls('rounded-[28px] p-5 shadow-[0_24px_60px_rgba(15,23,42,0.07)]', tone)}>
-                  <p className="text-sm font-medium opacity-75">{title}</p>
-                  <p className="mt-4 text-3xl font-semibold tracking-tight">{value}</p>
-                  <p className="mt-2 text-sm opacity-70">{note}</p>
-                </article>
-              ))}
-            </section>
-
-            <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.7fr)]">
-              <article className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Ticket trend</p>
-                <h2 className="mt-2 text-2xl font-semibold text-slate-900">Opened vs resolved</h2>
-                <p className="mt-1 text-sm text-slate-500">Monthly movement for the last six months.</p>
-                <div className="mt-6 overflow-hidden rounded-[28px] bg-slate-50 p-4">
-                  <div className="mb-4 flex gap-5 text-sm text-slate-500">
-                    <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />Opened</span>
-                    <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-sky-500" />Resolved</span>
-                  </div>
-                  <svg viewBox="0 0 480 230" className="h-72 w-full">
-                    {[0, 1, 2, 3, 4].map((index) => (
-                      <line key={index} x1="24" x2="456" y1={24 + index * 45} y2={24 + index * 45} stroke="#dbe4ee" strokeDasharray="6 8" />
-                    ))}
-                    <polyline points={openedLine} fill="none" stroke="#10b981" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-                    <polyline points={resolvedLine} fill="none" stroke="#0ea5e9" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-                    {summary.trend.map((item, index) => (
-                      <text key={item.label} x={24 + (432 * index) / 5} y="222" textAnchor="middle" fill="#94a3b8" fontSize="11">
-                        {item.label}
-                      </text>
-                    ))}
-                  </svg>
-                </div>
-              </article>
-
-              <BookingManagement />
-            </section>
-
-            <section className="mt-6 rounded-[30px] border border-slate-200 bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Queue summary</p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-900">Ticket lifecycle</h2>
-              <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                {[
-                  ['Open', summary.counts.OPEN, 'text-amber-700 bg-amber-100'],
-                  ['In Progress', summary.counts.IN_PROGRESS, 'text-sky-700 bg-sky-100'],
-                  ['Waiting', summary.counts.WAITING_FOR_CLIENT + summary.counts.WAITING_FOR_SUPPORT, 'text-violet-700 bg-violet-100'],
-                  ['Closed', summary.counts.CLOSED, 'text-slate-700 bg-slate-200'],
-                ].map(([name, value, tone]) => (
-                  <div key={name} className="rounded-[24px] bg-slate-50 p-4">
-                    <span className={cls('inline-flex rounded-full px-3 py-1 text-xs font-semibold', tone)}>{name}</span>
-                    <p className="mt-4 text-3xl font-semibold text-slate-900">{value}</p>
-                  </div>
-                ))}
+            {section === 'overview' && (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <article className="rounded-[24px] bg-slate-900 p-5 text-white"><p>Total Tickets</p><p className="mt-2 text-3xl font-semibold">{tickets.length}</p><p className="text-sm opacity-80">{activeTickets} active queue</p></article>
+                <article className="rounded-[24px] bg-emerald-50 p-5"><p>Resources</p><p className="mt-2 text-3xl font-semibold">{resources.length}</p><p className="text-sm text-slate-500">{resources.filter((r) => r.status === 'ACTIVE').length} active</p></article>
+                <article className="rounded-[24px] bg-sky-50 p-5"><p>Pending Bookings</p><p className="mt-2 text-3xl font-semibold">{pendingBookings.length}</p><p className="text-sm text-slate-500">Awaiting review</p></article>
+                <article className="rounded-[24px] bg-amber-50 p-5"><p>Unread Notifications</p><p className="mt-2 text-3xl font-semibold">{unreadNotifications}</p><p className="text-sm text-slate-500">Admin inbox</p></article>
+                <section className="col-span-full rounded-[24px] border border-slate-200 bg-white p-5">
+                  <h2 className="text-xl font-semibold">Pending Booking Approvals</h2>
+                  {pendingBookings.length === 0 ? <p className="mt-2 text-sm text-slate-500">No pending bookings.</p> : (
+                    <div className="mt-3 space-y-2">{pendingBookings.slice(0, 5).map((item) => <div key={item.id} className="rounded-xl bg-slate-50 p-3 text-sm"><span className="font-semibold">{item.resourceId}</span> by {item.requestedByUserId} - {dt(item.startDateTime)}</div>)}</div>
+                  )}
+                </section>
               </div>
-              <div className="mt-6 rounded-[24px] bg-slate-900 p-5 text-sm leading-6 text-slate-300">
-                Ticket SLA and queue health belong at top because tickets are your only live admin dataset today. The other modules can attach to this same shell later.
-              </div>
-            </section>
+            )}
 
-            <section className="mt-6">
-              <div className="mb-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Platform sections</p>
-                <h2 className="mt-2 text-2xl font-semibold text-slate-900">Campus modules</h2>
+            {section === 'resources' && (
+              <div className="space-y-5">
+                <section className="rounded-[24px] border border-slate-200 bg-white p-5">
+                  <h2 className="text-xl font-semibold">{resourceEditId ? 'Edit resource' : 'Add resource'}</h2>
+                  <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={saveResource}>
+                    <select value={resourceForm.type} onChange={(e) => setResourceForm((v) => ({ ...v, type: e.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2">{RESOURCE_TYPES.map((x) => <option key={x} value={x}>{label(x)}</option>)}</select>
+                    <input required placeholder="Name" value={resourceForm.name} onChange={(e) => setResourceForm((v) => ({ ...v, name: e.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2" />
+                    <input type="number" min={0} required placeholder="Capacity" value={resourceForm.capacity} onChange={(e) => setResourceForm((v) => ({ ...v, capacity: e.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2" />
+                    <input required placeholder="Location" value={resourceForm.location} onChange={(e) => setResourceForm((v) => ({ ...v, location: e.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2" />
+                    <input placeholder="Availability window" value={resourceForm.availabilityWindows} onChange={(e) => setResourceForm((v) => ({ ...v, availabilityWindows: e.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2 md:col-span-2" />
+                    <select value={resourceForm.status} onChange={(e) => setResourceForm((v) => ({ ...v, status: e.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2">{RESOURCE_STATUSES.map((x) => <option key={x} value={x}>{label(x)}</option>)}</select>
+                    <div className="flex items-center gap-2"><button type="submit" className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">{resourceEditId ? 'Update' : 'Create'}</button>{resourceEditId && <button type="button" onClick={() => { setResourceEditId(null); setResourceForm(emptyResource) }} className="rounded-xl border border-slate-300 px-4 py-2 text-sm">Cancel</button>}</div>
+                  </form>
+                  {resourcesError && <p className="mt-2 text-sm text-rose-600">{resourcesError}</p>}
+                </section>
+                <section className="rounded-[24px] border border-slate-200 bg-white p-5">
+                  <h2 className="text-xl font-semibold">Resource List</h2>
+                  {resourcesLoading ? <p className="mt-2 text-sm text-slate-500">Loading...</p> : (
+                    <div className="mt-3 overflow-x-auto"><table className="min-w-full text-sm"><thead><tr className="text-left text-xs text-slate-500"><th className="py-2">Name</th><th>Type</th><th>Location</th><th>Status</th><th>Actions</th></tr></thead><tbody>{resources.map((item) => <tr key={item.id} className="border-t border-slate-100"><td className="py-2 font-semibold">{item.name}</td><td>{label(item.type)}</td><td>{item.location}</td><td>{label(item.status)}</td><td className="space-x-2"><button type="button" onClick={() => { setResourceEditId(item.id); setResourceForm({ type: item.type, name: item.name, capacity: item.capacity, location: item.location, availabilityWindows: item.availabilityWindows || '', status: item.status }) }} className="rounded-lg border border-slate-300 px-2 py-1 text-xs">Edit</button><button type="button" onClick={() => deleteResource(item.id)} className="rounded-lg bg-rose-500 px-2 py-1 text-xs text-white">Delete</button></td></tr>)}</tbody></table></div>
+                  )}
+                </section>
               </div>
-              <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
-                {moduleTiles.map(([title, text, badge, tone]) => (
-                  <article key={title} className="rounded-[28px] border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-lg font-semibold text-slate-900">{title}</p>
-                      <span className={cls('rounded-full px-3 py-1 text-xs font-semibold', tone)}>{badge}</span>
-                    </div>
-                    <p className="mt-3 text-sm leading-6 text-slate-600">{text}</p>
-                  </article>
-                ))}
-              </div>
-            </section>
+            )}
 
-            <section className="mt-6 rounded-[30px] border border-slate-200 bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
-              <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Live queue</p>
-                  <h2 className="mt-2 text-2xl font-semibold text-slate-900">Recent incident tickets</h2>
-                </div>
-                <div className="text-sm text-slate-500">{loading ? 'Loading ticket feed...' : `${visibleTickets.length} visible ticket rows`}</div>
-              </div>
-              {error ? (
-                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  Ticket data could not be loaded. Check the incident-ticket service.
-                </div>
-              ) : loading ? (
-                <div className="rounded-[24px] bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">Loading current ticket activity...</div>
-              ) : visibleTickets.length === 0 ? (
-                <div className="rounded-[24px] bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
-                  No tickets match the current search.
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full border-separate border-spacing-y-3 text-left">
-                    <thead>
-                      <tr className="text-xs uppercase tracking-[0.22em] text-slate-400">
-                        <th className="px-4 py-2 font-semibold">Incident</th>
-                        <th className="px-4 py-2 font-semibold">Reporter</th>
-                        <th className="px-4 py-2 font-semibold">Status</th>
-                        <th className="px-4 py-2 font-semibold">Created</th>
-                        <th className="px-4 py-2 font-semibold">Response SLA</th>
-                        <th className="px-4 py-2 font-semibold">Age</th>
-                        <th className="px-4 py-2 font-semibold">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {visibleTickets.map((ticket) => {
-                        const response = minutesBetween(ticket.createdAt, ticket.firstResponseAt)
-                        const status = statusName(ticket.status)
+            {section === 'bookings' && (
+              <section className="rounded-[24px] border border-slate-200 bg-white p-5">
+                <div className="mb-3 flex items-center justify-between"><h2 className="text-xl font-semibold">Booking Management</h2><select value={bookingFilter} onChange={(e) => setBookingFilter(e.target.value)} className="rounded-xl border border-slate-300 px-3 py-2 text-sm">{BOOKING_FILTERS.map((x) => <option key={x} value={x}>{x === 'ALL' ? 'All' : label(x)}</option>)}</select></div>
+                {bookingsError && <p className="mb-2 text-sm text-rose-600">{bookingsError}</p>}
+                {bookingsLoading ? <p className="text-sm text-slate-500">Loading...</p> : (
+                  <div className="overflow-x-auto"><table className="min-w-full text-sm"><thead><tr className="text-left text-xs text-slate-500"><th className="py-2">Resource</th><th>User</th><th>Time</th><th>Status</th><th>Actions</th></tr></thead><tbody>{visibleBookings.map((item) => <tr key={item.id} className="border-t border-slate-100"><td className="py-2 font-semibold">{item.resourceId}</td><td>{item.requestedByUserId}</td><td>{dt(item.startDateTime)}</td><td>{label(item.status)}</td><td className="space-x-2">{item.status === 'PENDING' && <><button type="button" disabled={busyId === item.id} onClick={() => runBookingAction(item.id, 'approve')} className="rounded-lg bg-emerald-500 px-2 py-1 text-xs text-white">Approve</button><button type="button" disabled={busyId === item.id} onClick={() => { const reason = window.prompt('Rejection reason'); if (reason?.trim()) runBookingAction(item.id, 'reject', { reason: reason.trim() }) }} className="rounded-lg bg-amber-500 px-2 py-1 text-xs text-white">Reject</button></>}{(item.status === 'PENDING' || item.status === 'APPROVED') && <button type="button" disabled={busyId === item.id} onClick={() => runBookingAction(item.id, 'cancel')} className="rounded-lg border border-slate-300 px-2 py-1 text-xs">Cancel</button>}<button type="button" disabled={busyId === item.id} onClick={() => deleteBooking(item.id)} className="rounded-lg bg-rose-500 px-2 py-1 text-xs text-white">Delete</button></td></tr>)}</tbody></table></div>
+                )}
+              </section>
+            )}
 
-                        return (
-                          <tr key={ticket.id} className="bg-slate-50 text-sm text-slate-600 shadow-sm">
-                            <td className="rounded-l-[22px] px-4 py-4">
-                              <div className="font-semibold text-slate-900">
-                                <Link to={`/ticket-details/${ticket.id}`} className="hover:no-underline">{ticket.title || 'Untitled incident'}</Link>
-                              </div>
-                              <p className="mt-1 max-w-md text-xs leading-5 text-slate-500">{ticket.description?.slice(0, 90) || 'No description provided.'}</p>
-                            </td>
-                            <td className="px-4 py-4">
-                              <p className="font-medium text-slate-900">{ticket.createdBy || 'Anonymous'}</p>
-                              <p className="text-xs text-slate-500">{ticket.id ? `ID ${ticket.id.slice(0, 8)}` : 'Pending ID'}</p>
-                            </td>
-                            <td className="px-4 py-4">
-                              <span className={cls('inline-flex rounded-full px-3 py-1 text-xs font-semibold', statusChip[status] || 'bg-slate-200 text-slate-700')}>
-                                {label(status)}
-                              </span>
-                            </td>
-                            <td className="px-4 py-4 text-slate-900">{dateText(ticket.createdAt)}</td>
-                            <td className="px-4 py-4">
-                              <p className="font-medium text-slate-900">{durationText(response)}</p>
-                              <p className="text-xs text-slate-500">{ticket.firstResponseAt ? `Started ${dateText(ticket.firstResponseAt)}` : 'Awaiting response'}</p>
-                            </td>
-                            <td className="px-4 py-4">
-                              <p className="font-medium text-slate-900">{ageText(ticket.createdAt)}</p>
-                              <p className="text-xs text-slate-500">{ticket.resolvedAt ? `Resolved ${dateText(ticket.resolvedAt)}` : 'Still active'}</p>
-                            </td>
-                            <td className="rounded-r-[22px] px-4 py-4">
-                              <Link to={`/ticket-details/${ticket.id}`} className="inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:border-emerald-200 hover:text-emerald-700 hover:no-underline">
-                                View
-                              </Link>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </section>
+            {section === 'tickets' && (
+              <section className="rounded-[24px] border border-slate-200 bg-white p-5">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-semibold">Ticket Operations</h2><input value={ticketQuery} onChange={(e) => setTicketQuery(e.target.value)} placeholder="Search ticket..." className="rounded-xl border border-slate-300 px-3 py-2 text-sm" /></div>
+                {ticketsError && <p className="mb-2 text-sm text-rose-600">{String(ticketsError.message || ticketsError)}</p>}
+                {ticketsLoading ? <p className="text-sm text-slate-500">Loading...</p> : (
+                  <div className="overflow-x-auto"><table className="min-w-full text-sm"><thead><tr className="text-left text-xs text-slate-500"><th className="py-2">Title</th><th>Reporter</th><th>Created</th><th>Status</th><th>Actions</th></tr></thead><tbody>{visibleTickets.map((item) => <tr key={`${item.ticketSource || 'ticket'}:${item.id}`} className="border-t border-slate-100"><td className="py-2"><p className="font-semibold">{item.title}</p><p className="max-w-[280px] text-xs text-slate-500">{item.description?.slice(0, 70)}</p></td><td>{item.createdBy || '-'}</td><td>{dt(item.createdAt)}</td><td><select value={item.status || 'OPEN'} disabled={busyId === item.id} onChange={(e) => updateTicketStatus(item, e.target.value)} className="rounded-xl border border-slate-300 px-2 py-1 text-xs">{TICKET_STATUSES.map((x) => <option key={x} value={x}>{label(x)}</option>)}</select></td><td className="space-x-2"><Link to={`/ticket-details/${item.id}`} className="rounded-lg border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:no-underline">View</Link><button type="button" disabled={busyId === item.id} onClick={() => deleteTicket(item)} className="rounded-lg bg-rose-500 px-2 py-1 text-xs text-white">Delete</button></td></tr>)}</tbody></table></div>
+                )}
+              </section>
+            )}
+
+            {section === 'notifications' && (
+              <div className="space-y-5">
+                <section className="rounded-[24px] border border-slate-200 bg-white p-5">
+                  <div className="mb-3 flex items-center justify-between"><h2 className="text-xl font-semibold">Create Notification</h2><button type="button" onClick={markAllRead} className="rounded-xl border border-slate-300 px-4 py-2 text-sm">Mark all read</button></div>
+                  <form className="grid gap-3 md:grid-cols-2" onSubmit={createNotification}>
+                    <input required placeholder="Title" value={notificationForm.title} onChange={(e) => setNotificationForm((v) => ({ ...v, title: e.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2" />
+                    <select value={notificationForm.type} onChange={(e) => setNotificationForm((v) => ({ ...v, type: e.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2">{NOTIFICATION_TYPES.map((x) => <option key={x} value={x}>{label(x)}</option>)}</select>
+                    <textarea required placeholder="Message" value={notificationForm.message} onChange={(e) => setNotificationForm((v) => ({ ...v, message: e.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2 md:col-span-2" rows={3} />
+                    <input placeholder="Target user ID (optional)" value={notificationForm.targetUserId} onChange={(e) => setNotificationForm((v) => ({ ...v, targetUserId: e.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2" />
+                    <div><button type="submit" className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">Publish</button></div>
+                  </form>
+                  {notificationsError && <p className="mt-2 text-sm text-rose-600">{notificationsError}</p>}
+                </section>
+                <section className="rounded-[24px] border border-slate-200 bg-white p-5">
+                  <h2 className="text-xl font-semibold">Notification Inbox</h2>
+                  {notificationsLoading ? <p className="mt-2 text-sm text-slate-500">Loading...</p> : (
+                    <div className="mt-3 overflow-x-auto"><table className="min-w-full text-sm"><thead><tr className="text-left text-xs text-slate-500"><th className="py-2">Title</th><th>Type</th><th>Target</th><th>Created</th><th>State</th><th>Actions</th></tr></thead><tbody>{notifications.map((item) => <tr key={item.id} className="border-t border-slate-100"><td className="py-2"><p className="font-semibold">{item.title}</p><p className="max-w-[280px] text-xs text-slate-500">{item.message}</p></td><td>{label(item.type)}</td><td>{item.targetUserId || 'Broadcast'}</td><td>{dt(item.createdAt)}</td><td>{item.read ? 'Read' : 'Unread'}</td><td className="space-x-2"><button type="button" disabled={busyId === item.id} onClick={() => toggleRead(item)} className="rounded-lg border border-slate-300 px-2 py-1 text-xs">{item.read ? 'Unread' : 'Read'}</button><button type="button" disabled={busyId === item.id} onClick={() => deleteNotification(item.id)} className="rounded-lg bg-rose-500 px-2 py-1 text-xs text-white">Delete</button></td></tr>)}</tbody></table></div>
+                  )}
+                </section>
+              </div>
+            )}
           </div>
         </main>
       </div>

@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 
 import com.smartcampus.hub.common.ConflictException;
 import com.smartcampus.hub.common.NotFoundException;
+import com.smartcampus.hub.notification.NotificationService;
+import com.smartcampus.hub.notification.NotificationType;
 import com.smartcampus.hub.resource.ResourceService;
 import com.smartcampus.hub.resource.ResourceStatus;
 
@@ -18,10 +20,15 @@ public class BookingService {
 
 	private final BookingRepository bookingRepository;
 	private final ResourceService resourceService;
+	private final NotificationService notificationService;
 
-	public BookingService(BookingRepository bookingRepository, ResourceService resourceService) {
+	public BookingService(
+			BookingRepository bookingRepository,
+			ResourceService resourceService,
+			NotificationService notificationService) {
 		this.bookingRepository = bookingRepository;
 		this.resourceService = resourceService;
+		this.notificationService = notificationService;
 	}
 
 	public Booking create(CreateBookingRequest req) {
@@ -47,7 +54,15 @@ public class BookingService {
 		b.setAdminReason(null);
 		b.setCreatedAt(now);
 		b.setUpdatedAt(now);
-		return bookingRepository.save(b);
+		Booking saved = bookingRepository.save(b);
+		notificationService.publish(
+				NotificationType.BOOKING,
+				"Booking request submitted",
+				"Your booking request is pending admin review.",
+				saved.getRequestedByUserId(),
+				"BOOKING",
+				saved.getId());
+		return saved;
 	}
 
 	public List<Booking> list(BookingStatus status, String userId, String resourceId) {
@@ -84,7 +99,15 @@ public class BookingService {
 		b.setStatus(BookingStatus.APPROVED);
 		b.setAdminReason(null);
 		b.setUpdatedAt(Instant.now());
-		return bookingRepository.save(b);
+		Booking saved = bookingRepository.save(b);
+		notificationService.publish(
+				NotificationType.BOOKING,
+				"Booking approved",
+				"Your booking was approved by the admin team.",
+				saved.getRequestedByUserId(),
+				"BOOKING",
+				saved.getId());
+		return saved;
 	}
 
 	public Booking reject(String id, RejectBookingRequest req) {
@@ -95,7 +118,15 @@ public class BookingService {
 		b.setStatus(BookingStatus.REJECTED);
 		b.setAdminReason(req.getReason().trim());
 		b.setUpdatedAt(Instant.now());
-		return bookingRepository.save(b);
+		Booking saved = bookingRepository.save(b);
+		notificationService.publish(
+				NotificationType.BOOKING,
+				"Booking rejected",
+				"Your booking was rejected. Reason: " + saved.getAdminReason(),
+				saved.getRequestedByUserId(),
+				"BOOKING",
+				saved.getId());
+		return saved;
 	}
 
 	public Booking cancel(String id) {
@@ -105,7 +136,15 @@ public class BookingService {
 		}
 		b.setStatus(BookingStatus.CANCELLED);
 		b.setUpdatedAt(Instant.now());
-		return bookingRepository.save(b);
+		Booking saved = bookingRepository.save(b);
+		notificationService.publish(
+				NotificationType.BOOKING,
+				"Booking cancelled",
+				"Your booking was cancelled.",
+				saved.getRequestedByUserId(),
+				"BOOKING",
+				saved.getId());
+		return saved;
 	}
 
 	public void delete(String id) {

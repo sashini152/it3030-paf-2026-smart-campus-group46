@@ -193,7 +193,7 @@ export default function TicketList() {
 
                       return (
                         <tr
-                          key={ticket.id}
+                          key={`${ticket.ticketSource || 'ticket'}:${ticket.id}`}
                           onMouseEnter={() => setHoveredTicketId(ticket.id)}
                           onMouseLeave={() => setHoveredTicketId(null)}
                           className={`hub-ticket-list-row align-top transition ${hovered ? 'hub-ticket-list-row--active' : ''}`}
