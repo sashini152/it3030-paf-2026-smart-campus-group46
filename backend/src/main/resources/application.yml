@@ -4,6 +4,19 @@ spring:
   data:
     mongodb:
       uri: ${MONGODB_URI:mongodb://localhost:27017/smartcampus}
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 server:
   port: 8080
+
+app:
+  upload:
+    dir: ${UPLOAD_DIR:uploads}
+    max-images-per-ticket: 3
+    allowed-content-types:
+      - image/jpeg
+      - image/png
+      - image/webp
