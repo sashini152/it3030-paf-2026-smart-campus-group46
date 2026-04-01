@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Layout from './layout/Layout'
 import HomePage from './pages/HomePage'
 import ResourcesPage from './pages/ResourcesPage'
@@ -11,7 +11,6 @@ import NotificationsPage from './pages/NotificationsPage'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
-import { isAdminRole } from './utils/session'
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth()
