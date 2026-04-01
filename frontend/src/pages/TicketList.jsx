@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ChatBot from '../components/ChatBot'
 import EmptyState from '../components/EmptyState'
@@ -25,6 +25,21 @@ const statConfig = [
   { key: 'waitingForSupport', label: 'Waiting for support', accent: 'text-white', tone: 'border-[#37415C] bg-[#37415C] text-white' },
 ]
 
+const insightSlides = [
+  {
+    title: 'Prioritize active outages first',
+    body: 'Check OPEN and IN_PROGRESS queues first so students see immediate movement on critical reports.',
+  },
+  {
+    title: 'Use waiting states clearly',
+    body: 'WAITING_FOR_CLIENT and WAITING_FOR_SUPPORT tell students exactly why a ticket is paused.',
+  },
+  {
+    title: 'Keep updates visible',
+    body: 'Ticket details and comments are the student-facing source of truth for progress and next action.',
+  },
+]
+
 function formatFilterLabel(status) {
   return status === 'ALL' ? 'All statuses' : status.replaceAll('_', ' ')
 }
@@ -33,6 +48,16 @@ export default function TicketList() {
   const { tickets, loading, error } = useTickets()
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [hoveredTicketId, setHoveredTicketId] = useState(null)
+  const [activeInsight, setActiveInsight] = useState(0)
+  const [pauseInsights, setPauseInsights] = useState(false)
+
+  useEffect(() => {
+    if (pauseInsights) return undefined
+    const timer = setInterval(() => {
+      setActiveInsight((current) => (current + 1) % insightSlides.length)
+    }, 4800)
+    return () => clearInterval(timer)
+  }, [pauseInsights])
 
   const filteredTickets = useMemo(() => {
     if (statusFilter === 'ALL') return tickets
@@ -107,6 +132,22 @@ export default function TicketList() {
               </label>
             </div>
 
+            <div className="hub-ticket-filter-chips" role="toolbar" aria-label="Quick status filters">
+              {TICKET_STATUS_OPTIONS.map((status) => {
+                const active = statusFilter === status
+                return (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => setStatusFilter(status)}
+                    className={`hub-ticket-filter-chip ${active ? 'hub-ticket-filter-chip--active' : ''}`}
+                  >
+                    {formatFilterLabel(status)}
+                  </button>
+                )
+              })}
+            </div>
+
             {loading && <LoadingSpinner label="Loading tickets..." tone="ticket" />}
 
             {error && !loading && (
@@ -168,7 +209,7 @@ export default function TicketList() {
                                 className={`text-sm text-[#B4182D] transition ${hovered ? 'translate-x-1' : ''}`}
                                 aria-hidden="true"
                               >
-                                →
+                                {'->'}
                               </span>
                             </Link>
                             <p className="mt-1 max-w-[28ch] text-xs leading-5 text-[#37415C]">
@@ -207,15 +248,56 @@ export default function TicketList() {
         <aside className="space-y-6 xl:sticky xl:top-24 xl:self-start">
           <Reveal delay={200}>
             <ParallaxPanel strength={10}>
-              <SurfaceCard className="space-y-3 !border-[#54162B] !bg-[#54162B] !text-white shadow-none">
+              <SurfaceCard
+                className="space-y-4 !border-[#54162B] !bg-[#54162B] !text-white shadow-none"
+                onMouseEnter={() => setPauseInsights(true)}
+                onMouseLeave={() => setPauseInsights(false)}
+              >
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#FDA481]">
-                  Queue Guide
+                  Queue Insights
                 </p>
-                <p className="text-sm leading-6 text-white">
-                  Open tickets first to see full progress, timestamps, and admin replies. Statuses
-                  such as waiting for client and waiting for support are grouped in the shared tracker
-                  flow so students can still follow where work is paused.
-                </p>
+                <div key={activeInsight} className="hub-ticket-insight hub-fade-slide">
+                  <h3 className="text-base font-semibold text-white">{insightSlides[activeInsight].title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-white">{insightSlides[activeInsight].body}</p>
+                </div>
+
+                <div className="hub-ticket-insight__controls">
+                  <div className="hub-ticket-insight__dots" role="tablist" aria-label="Insight slides">
+                    {insightSlides.map((slide, index) => (
+                      <button
+                        key={slide.title}
+                        type="button"
+                        className={`hub-ticket-insight__dot ${
+                          index === activeInsight ? 'hub-ticket-insight__dot--active' : ''
+                        }`}
+                        onClick={() => setActiveInsight(index)}
+                        aria-label={`Show insight ${index + 1}`}
+                        aria-selected={index === activeInsight}
+                        role="tab"
+                      />
+                    ))}
+                  </div>
+                  <div className="hub-ticket-insight__buttons">
+                    <button
+                      type="button"
+                      className="hub-ticket-insight__control"
+                      onClick={() =>
+                        setActiveInsight((current) =>
+                          current === 0 ? insightSlides.length - 1 : current - 1
+                        )
+                      }
+                    >
+                      Prev
+                    </button>
+                    <button
+                      type="button"
+                      className="hub-ticket-insight__control"
+                      onClick={() => setActiveInsight((current) => (current + 1) % insightSlides.length)}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
               </SurfaceCard>
             </ParallaxPanel>
           </Reveal>

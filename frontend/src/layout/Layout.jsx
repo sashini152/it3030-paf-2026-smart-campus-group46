@@ -8,14 +8,14 @@ const navigationItems = [
   { to: '/resources', label: 'Resources' },
   { to: '/tickets', label: 'Tickets' },
   { to: '/notifications', label: 'Notifications' },
-  
 ]
 
-const adminNavigationItems = [
-  { to: '/admin', label: 'Dashboard' },
+const guestNavigationItems = [
   { to: '/login', label: 'Sign in' },
- 
+  { to: '/signup', label: 'Sign up' },
 ]
+
+const adminNavigationItems = [{ to: '/admin', label: 'Dashboard' }]
 
 const linkClass = ({ isActive }) =>
   'hub-nav__link' + (isActive ? ' hub-nav__link--active' : '')
@@ -77,6 +77,11 @@ export default function Layout() {
               {bookingPageLabel}
             </NavLink>
             {navigationItems.slice(2).map((item) => (
+              <NavLink key={item.to} to={item.to} className={linkClass}>
+                {item.label}
+              </NavLink>
+            ))}
+            {!user && guestNavigationItems.map((item) => (
               <NavLink key={item.to} to={item.to} className={linkClass}>
                 {item.label}
               </NavLink>

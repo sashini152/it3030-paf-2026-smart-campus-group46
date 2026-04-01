@@ -11,6 +11,7 @@ import TicketDetails from './pages/TicketDetails'
 import AdminDashboard from './pages/AdminDashboard'
 import NotificationsPage from './pages/NotificationsPage'
 import LoginPage from './pages/LoginPage'
+import SignupPage from './pages/SignupPage'
 import DashboardPage from './pages/DashboardPage'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 
@@ -22,6 +23,13 @@ function ProtectedRoute({ children }) {
 function AdminRoute({ children }) {
   const { isAuthenticated, hasRole } = useAuth()
   return isAuthenticated && hasRole('ADMIN') ? children : <Navigate to="/login" replace />
+}
+
+function DashboardRoute() {
+  const { isAuthenticated, hasRole } = useAuth()
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  if (hasRole('ADMIN')) return <Navigate to="/admin" replace />
+  return <DashboardPage />
 }
 
 function AppRoutes() {
@@ -60,14 +68,8 @@ function AppRoutes() {
         />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="login" element={<LoginPage />} />
-        <Route
-          path="dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="signup" element={<SignupPage />} />
+        <Route path="dashboard" element={<DashboardRoute />} />
       </Route>
     </Routes>
   )
