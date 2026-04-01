@@ -5,10 +5,14 @@ import { getSessionRole, isAdminRole } from '../utils/session'
 
 const navigationItems = [
   { to: '/resources', label: 'Resources' },
-  { to: '/bookings', label: 'Bookings' },
   { to: '/tickets', label: 'Tickets' },
   { to: '/notifications', label: 'Notifications' },
   { to: '/login', label: 'Sign in' },
+]
+
+const adminNavigationItems = [
+  { to: '/admin', label: 'Dashboard' },
+  { to: '/admin-bookings', label: 'Booking Approvals' },
 ]
 
 const linkClass = ({ isActive }) =>
@@ -18,6 +22,10 @@ export default function Layout() {
   const location = useLocation()
   const [role, setRole] = useState(getSessionRole())
   const isHomePage = location.pathname === '/'
+
+  // Determine booking page route and label based on user role
+  const bookingPageRoute = role === 'ADMIN' ? '/admin-bookings' : '/user-bookings'
+  const bookingPageLabel = role === 'ADMIN' ? 'Booking Approvals' : 'My Bookings'
 
   useEffect(() => {
     const syncRole = () => setRole(getSessionRole())
@@ -42,17 +50,25 @@ export default function Layout() {
             <span className="hub-brand__text">Smart Campus Hub</span>
           </NavLink>
           <nav className="hub-nav" aria-label="Main">
-            {navigationItems.slice(0, 3).map((item) => (
+            {navigationItems.slice(0, 2).map((item) => (
               <NavLink key={item.to} to={item.to} className={linkClass}>
                 {item.label}
               </NavLink>
             ))}
-            {isAdminRole(role) && (
-              <NavLink to="/admin" className={linkClass}>
-                Dashboard
+            {/* Role-based My Bookings navigation */}
+            <NavLink 
+              key="my-bookings" 
+              to={bookingPageRoute} 
+              className={linkClass}
+            >
+              {bookingPageLabel}
+            </NavLink>
+            {navigationItems.slice(2).map((item) => (
+              <NavLink key={item.to} to={item.to} className={linkClass}>
+                {item.label}
               </NavLink>
-            )}
-            {navigationItems.slice(3).map((item) => (
+            ))}
+            {isAdminRole(role) && adminNavigationItems.map((item) => (
               <NavLink key={item.to} to={item.to} className={linkClass}>
                 {item.label}
               </NavLink>

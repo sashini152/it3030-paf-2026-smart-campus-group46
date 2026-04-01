@@ -3,6 +3,8 @@ import Layout from './layout/Layout'
 import HomePage from './pages/HomePage'
 import ResourcesPage from './pages/ResourcesPage'
 import BookingsPage from './pages/BookingsPage'
+import UserBookingsPage from './pages/UserBookingsPage'
+import AdminBookingsPage from './pages/AdminBookingsPage'
 import TicketsPage from './pages/TicketsPage'
 import TicketList from './pages/TicketList'
 import TicketDetails from './pages/TicketDetails'
@@ -32,10 +34,20 @@ function AppRoutes() {
             <ResourcesPage />
           </ProtectedRoute>
         } />
-        <Route path="bookings" element={
+        <Route path="user-bookings" element={
           <ProtectedRoute>
-            <BookingsPage />
+            <UserBookingsPage />
           </ProtectedRoute>
+        } />
+        <Route path="admin-bookings" element={
+          <AdminRoute>
+            <AdminBookingsPage />
+          </AdminRoute>
+        } />
+        <Route path="bookings" element={
+          <AdminRoute>
+            <AdminBookingsPage />
+          </AdminRoute>
         } />
         <Route path="tickets" element={
           <ProtectedRoute>

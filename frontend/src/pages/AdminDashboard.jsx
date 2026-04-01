@@ -1,6 +1,142 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useTickets } from '../hooks/useTickets'
+import { getJson, putJson } from '../api/client'
+
+// Booking management component for admin
+function BookingManagement() {
+  const [bookings, setBookings] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [processingId, setProcessingId] = useState(null) // Track which booking is being processed
+
+  const loadBookings = async () => {
+    try {
+      const data = await getJson('/api/bookings?status=PENDING')
+      setBookings(Array.isArray(data) ? data : [])
+    } catch (e) {
+      setError(e.message)
+      setBookings([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleApprove = async (bookingId) => {
+    setProcessingId(bookingId) // Disable button for this booking
+    try {
+      await putJson(`/api/bookings/${bookingId}/approve`)
+      await loadBookings() // Refresh list
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setProcessingId(null) // Re-enable button
+    }
+  }
+
+  const handleReject = async (bookingId) => {
+    const reason = prompt('Enter rejection reason:')
+    if (!reason) return
+    
+    setProcessingId(bookingId) // Disable button for this booking
+    try {
+      await putJson(`/api/bookings/${bookingId}/reject`, { reason })
+      await loadBookings() // Refresh list
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setProcessingId(null) // Re-enable button
+    }
+  }
+
+  useEffect(() => {
+    loadBookings()
+    
+    // Auto-refresh every 30 seconds to check for new pending bookings
+    const interval = setInterval(() => {
+      console.log('Checking for new pending bookings...')
+      loadBookings()
+    }, 30000)
+    
+    return () => clearInterval(interval)
+  }, [])
+
+  return (
+    <div className="mb-8">
+      <h2 className="text-xl font-semibold text-slate-900 mb-4">Pending Booking Approvals</h2>
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+          {error}
+        </div>
+      )}
+      {loading ? (
+        <p className="text-slate-500">Loading pending bookings...</p>
+      ) : bookings.length === 0 ? (
+        <p className="text-slate-500">No pending bookings to review.</p>
+      ) : (
+        <div className="bg-white rounded-lg shadow border border-slate-200 overflow-hidden">
+          <table className="min-w-full divide-y divide-slate-200">
+            <thead className="bg-slate-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Resource</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">User</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Purpose</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Start Time</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">End Time</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-slate-200">
+              {bookings.map((booking) => (
+                <tr key={booking.id}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                    {booking.resourceId}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                    {booking.requestedByUserId}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-slate-900">
+                    {booking.purpose}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                    {new Date(booking.startDateTime).toLocaleString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                    {new Date(booking.endDateTime).toLocaleString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button
+                      onClick={() => handleApprove(booking.id)}
+                      disabled={processingId === booking.id}
+                      className={`mr-2 px-3 py-1 text-xs rounded ${
+                        processingId === booking.id 
+                          ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                          : 'bg-emerald-500 text-white hover:bg-emerald-600'
+                      }`}
+                    >
+                      {processingId === booking.id ? 'Approving...' : 'Approve'}
+                    </button>
+                    <button
+                      onClick={() => handleReject(booking.id)}
+                      disabled={processingId === booking.id}
+                      className={`px-3 py-1 text-xs rounded ${
+                        processingId === booking.id 
+                          ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                          : 'bg-red-500 text-white hover:bg-red-600'
+                      }`}
+                    >
+                      {processingId === booking.id ? 'Rejecting...' : 'Reject'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
 
 const navItems = [
   { label: 'Overview', to: '/admin', active: true },
@@ -141,7 +277,7 @@ function Sidebar() {
       </nav>
 
       <div className="mt-auto rounded-[28px] border border-slate-200 bg-slate-50 p-5 text-sm leading-6 text-slate-600">
-        Ticket operations are live. The other campus modules are scaffolded so the dashboard can grow without another redesign.
+        Ticket operations are live. The other campus modules are scaffolded so that dashboard can grow without another redesign.
       </div>
     </div>
   )
@@ -291,26 +427,28 @@ export default function AdminDashboard() {
                 </div>
               </article>
 
-              <article className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Queue summary</p>
-                <h2 className="mt-2 text-2xl font-semibold text-slate-900">Ticket lifecycle</h2>
-                <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                  {[
-                    ['Open', summary.counts.OPEN, 'text-amber-700 bg-amber-100'],
-                    ['In Progress', summary.counts.IN_PROGRESS, 'text-sky-700 bg-sky-100'],
-                    ['Waiting', summary.counts.WAITING_FOR_CLIENT + summary.counts.WAITING_FOR_SUPPORT, 'text-violet-700 bg-violet-100'],
-                    ['Closed', summary.counts.CLOSED, 'text-slate-700 bg-slate-200'],
-                  ].map(([name, value, tone]) => (
-                    <div key={name} className="rounded-[24px] bg-slate-50 p-4">
-                      <span className={cls('inline-flex rounded-full px-3 py-1 text-xs font-semibold', tone)}>{name}</span>
-                      <p className="mt-4 text-3xl font-semibold text-slate-900">{value}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-6 rounded-[24px] bg-slate-900 p-5 text-sm leading-6 text-slate-300">
-                  Ticket SLA and queue health belong at the top because tickets are your only live admin dataset today. The other modules can attach to this same shell later.
-                </div>
-              </article>
+              <BookingManagement />
+            </section>
+
+            <section className="mt-6 rounded-[30px] border border-slate-200 bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Queue summary</p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-900">Ticket lifecycle</h2>
+              <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                {[
+                  ['Open', summary.counts.OPEN, 'text-amber-700 bg-amber-100'],
+                  ['In Progress', summary.counts.IN_PROGRESS, 'text-sky-700 bg-sky-100'],
+                  ['Waiting', summary.counts.WAITING_FOR_CLIENT + summary.counts.WAITING_FOR_SUPPORT, 'text-violet-700 bg-violet-100'],
+                  ['Closed', summary.counts.CLOSED, 'text-slate-700 bg-slate-200'],
+                ].map(([name, value, tone]) => (
+                  <div key={name} className="rounded-[24px] bg-slate-50 p-4">
+                    <span className={cls('inline-flex rounded-full px-3 py-1 text-xs font-semibold', tone)}>{name}</span>
+                    <p className="mt-4 text-3xl font-semibold text-slate-900">{value}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 rounded-[24px] bg-slate-900 p-5 text-sm leading-6 text-slate-300">
+                Ticket SLA and queue health belong at top because tickets are your only live admin dataset today. The other modules can attach to this same shell later.
+              </div>
             </section>
 
             <section className="mt-6">
@@ -339,7 +477,6 @@ export default function AdminDashboard() {
                 </div>
                 <div className="text-sm text-slate-500">{loading ? 'Loading ticket feed...' : `${visibleTickets.length} visible ticket rows`}</div>
               </div>
-
               {error ? (
                 <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                   Ticket data could not be loaded. Check the incident-ticket service.

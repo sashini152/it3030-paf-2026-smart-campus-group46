@@ -31,7 +31,22 @@ public class SimpleOAuth2SuccessHandler implements AuthenticationSuccessHandler 
 
         // Assign role based on email domain
         String role = "USER"; // Default role
-        if (email != null && (email.endsWith("@admin.com") || email.endsWith("@slit.lk"))) {
+        boolean isAdmin = false;
+
+        if (email != null) {
+            if (email.endsWith("@admin.com")) {
+                isAdmin = true;
+                System.out.println("Admin match: @admin.com domain");
+            } else if (email.endsWith("@slit.lk")) {
+                isAdmin = true;
+                System.out.println("Admin match: @slit.lk domain");
+            } else if (email.equals("sashini.unilocatelk@gmail.com")) {
+                isAdmin = true;
+                System.out.println("Admin match: sashini.unilocatelk@gmail.com exact match");
+            }
+        }
+
+        if (isAdmin) {
             role = "ADMIN";
         }
 
