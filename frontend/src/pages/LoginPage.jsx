@@ -54,7 +54,7 @@ export default function LoginPage() {
   const handleGoogleLogin = () => {
     setProcessing(true)
     // Redirect to Google OAuth2
-    window.location.assign('http://localhost:8081/oauth2/authorization/google')
+    window.location.assign('http://localhost:8080/oauth2/authorization/google')
   }
 
   if (loading || processing) {

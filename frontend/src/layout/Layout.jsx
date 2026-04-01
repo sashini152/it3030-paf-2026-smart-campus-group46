@@ -24,9 +24,14 @@ export default function Layout() {
   const { user } = useAuth()
   const location = useLocation()
   const isHomePage = location.pathname === '/'
+  const isResourcesPage = location.pathname.startsWith('/resources')
+  const isBookingsPage =
+    location.pathname.startsWith('/bookings') ||
+    location.pathname.startsWith('/user-bookings') ||
+    location.pathname.startsWith('/admin-bookings')
 
   // Determine booking page route and label based on user role
-  const bookingPageRoute = user?.role === 'ADMIN' ? '/bookings' : '/user-bookings'
+  const bookingPageRoute = user?.role === 'ADMIN' ? '/admin-bookings' : '/bookings'
   const bookingPageLabel = user?.role === 'ADMIN' ? 'Booking Approvals' : 'My Bookings'
 
   useEffect(() => {
@@ -46,7 +51,11 @@ export default function Layout() {
   }
 
   return (
-    <div className={`hub-app${isHomePage ? ' hub-app--home' : ''}`}>
+    <div
+      className={`hub-app${isHomePage ? ' hub-app--home' : ''}${
+        isResourcesPage ? ' hub-app--resources' : ''
+      }${isBookingsPage ? ' hub-app--bookings' : ''}`}
+    >
       <header className="hub-header">
         <div className="hub-header__inner">
           <NavLink to="/" className="hub-brand" end>

@@ -29,8 +29,6 @@ export default function ResourcesPage() {
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
   const [saving, setSaving] = useState(false)
-
-  // Check if user is admin
   const isAdmin = isAdminRole(user?.role)
 
   const load = useCallback(async () => {
@@ -114,22 +112,25 @@ export default function ResourcesPage() {
   }
 
   return (
-    <div className="hub-page hub-page--wide">
-      <h1>Resources</h1>
-      <p className="hub-lead">
-        {isAdmin 
-          ? 'Manage campus resources. Add, edit, and delete spaces and equipment. Bookings only allow ACTIVE resources.'
-          : 'Browse available campus resources for booking. Filter to find the perfect space for your needs.'
-        }
-      </p>
+    <div className="hub-page hub-page--wide hub-page--resources">
+      <div className="hub-resources-hero">
+        <p className="hub-resources-kicker">Campus assets</p>
+        <h1>Resources</h1>
+        <p className="hub-lead">
+          {isAdmin
+            ? 'Catalogue bookable spaces and equipment. Filter the list, then add or edit entries. Bookings only allow '
+            : 'Browse available spaces and equipment. Filter the catalogue and explore only '}
+          <code>ACTIVE</code> resources.
+        </p>
+      </div>
 
       {error && (
-        <div className="hub-alert hub-alert--error" role="alert">
+        <div className="hub-alert hub-alert--error hub-alert--resources" role="alert">
           {error}
         </div>
       )}
 
-      <section className="hub-panel">
+      <section className="hub-panel hub-resources-panel">
         <h2 className="hub-panel__title">Search &amp; filters</h2>
         <div className="hub-form-grid hub-form-grid--filters">
           <label className="hub-field">
@@ -178,7 +179,11 @@ export default function ResourcesPage() {
             />
           </label>
           <div className="hub-field hub-field--actions">
-            <button type="button" className="hub-btn hub-btn--primary" onClick={load}>
+            <button
+              type="button"
+              className="hub-btn hub-btn--primary hub-btn--resources"
+              onClick={load}
+            >
               Apply
             </button>
           </div>
@@ -186,114 +191,114 @@ export default function ResourcesPage() {
       </section>
 
       {isAdmin && (
-      <section className="hub-panel">
-        <h2 className="hub-panel__title">
-          {editingId ? 'Edit resource' : 'Add resource'}
-        </h2>
-        <form className="hub-form-grid" onSubmit={handleSubmit}>
-          <label className="hub-field">
-            <span>Type</span>
-            <select
-              value={form.type}
-              onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
-            >
-              {TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t.replaceAll('_', ' ')}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="hub-field hub-field--grow">
-            <span>Name</span>
-            <input
-              required
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            />
-          </label>
-          <label className="hub-field">
-            <span>Capacity</span>
-            <input
-              type="number"
-              min={0}
-              required
-              value={form.capacity}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, capacity: e.target.value }))
-              }
-            />
-          </label>
-          <label className="hub-field hub-field--grow">
-            <span>Location</span>
-            <input
-              required
-              value={form.location}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, location: e.target.value }))
-              }
-            />
-          </label>
-          <label className="hub-field hub-field--full">
-            <span>Availability windows</span>
-            <input
-              value={form.availabilityWindows}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  availabilityWindows: e.target.value,
-                }))
-              }
-              placeholder="e.g. Mon–Fri 08:00–18:00"
-            />
-          </label>
-          <label className="hub-field">
-            <span>Status</span>
-            <select
-              value={form.status}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, status: e.target.value }))
-              }
-            >
-              {STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s.replaceAll('_', ' ')}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="hub-field hub-field--actions hub-field--full">
-            <button
-              type="submit"
-              className="hub-btn hub-btn--primary"
-              disabled={saving}
-            >
-              {saving ? 'Saving…' : editingId ? 'Update' : 'Create'}
-            </button>
-            {editingId && (
+        <section className="hub-panel hub-resources-panel">
+          <h2 className="hub-panel__title">
+            {editingId ? 'Edit resource' : 'Add resource'}
+          </h2>
+          <form className="hub-form-grid" onSubmit={handleSubmit}>
+            <label className="hub-field">
+              <span>Type</span>
+              <select
+                value={form.type}
+                onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
+              >
+                {TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t.replaceAll('_', ' ')}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="hub-field hub-field--grow">
+              <span>Name</span>
+              <input
+                required
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              />
+            </label>
+            <label className="hub-field">
+              <span>Capacity</span>
+              <input
+                type="number"
+                min={0}
+                required
+                value={form.capacity}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, capacity: e.target.value }))
+                }
+              />
+            </label>
+            <label className="hub-field hub-field--grow">
+              <span>Location</span>
+              <input
+                required
+                value={form.location}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, location: e.target.value }))
+                }
+              />
+            </label>
+            <label className="hub-field hub-field--full">
+              <span>Availability windows</span>
+              <input
+                value={form.availabilityWindows}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    availabilityWindows: e.target.value,
+                  }))
+                }
+                placeholder="e.g. Mon–Fri 08:00–18:00"
+              />
+            </label>
+            <label className="hub-field">
+              <span>Status</span>
+              <select
+                value={form.status}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, status: e.target.value }))
+                }
+              >
+                {STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {s.replaceAll('_', ' ')}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="hub-field hub-field--actions hub-field--full">
               <button
-                type="button"
-                className="hub-btn"
-                onClick={cancelEdit}
+                type="submit"
+                className="hub-btn hub-btn--primary hub-btn--resources"
                 disabled={saving}
               >
-                Cancel edit
+                {saving ? 'Saving…' : editingId ? 'Update' : 'Create'}
               </button>
-            )}
-          </div>
-        </form>
-      </section>
+              {editingId && (
+                <button
+                  type="button"
+                  className="hub-btn hub-btn--resources-secondary"
+                  onClick={cancelEdit}
+                  disabled={saving}
+                >
+                  Cancel edit
+                </button>
+              )}
+            </div>
+          </form>
+        </section>
       )}
 
-      <section className="hub-panel">
+      <section className="hub-panel hub-resources-panel">
         <h2 className="hub-panel__title">Catalogue</h2>
         {loading ? (
-          <p className="hub-muted">Loading…</p>
+          <p className="hub-muted hub-muted--resources">Loading…</p>
         ) : items.length === 0 ? (
-          <p className="hub-muted">No resources match your filters.</p>
+          <p className="hub-muted hub-muted--resources">No resources match your filters.</p>
         ) : (
-          <div className="hub-table-wrap">
-            <table className="hub-table">
+          <div className="hub-table-wrap hub-table-wrap--resources">
+            <table className="hub-table hub-table--resources">
               <thead>
                 <tr>
                   <th>Name</th>
@@ -307,45 +312,45 @@ export default function ResourcesPage() {
               </thead>
               <tbody>
                 {items
-                  .filter(r => isAdmin || r.status === 'ACTIVE')
+                  .filter((r) => isAdmin || r.status === 'ACTIVE')
                   .map((r) => (
-                  <tr key={r.id}>
-                    <td>{r.name}</td>
-                    <td>{r.type?.replaceAll('_', ' ')}</td>
-                    <td>{r.capacity}</td>
-                    <td>{r.location}</td>
-                    <td>
-                      <span
-                        className={
-                          r.status === 'ACTIVE'
-                            ? 'hub-tag hub-tag--ok'
-                            : 'hub-tag hub-tag--warn'
-                        }
-                      >
-                        {r.status?.replaceAll('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="hub-table__clip">{r.availabilityWindows || '—'}</td>
-                    {isAdmin && (
-                    <td className="hub-table__actions">
-                      <button
-                        type="button"
-                        className="hub-btn hub-btn--small"
-                        onClick={() => startEdit(r)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="hub-btn hub-btn--small hub-btn--danger"
-                        onClick={() => handleDelete(r.id)}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                    )}
-                  </tr>
-                ))}
+                    <tr key={r.id}>
+                      <td>{r.name}</td>
+                      <td>{r.type?.replaceAll('_', ' ')}</td>
+                      <td>{r.capacity}</td>
+                      <td>{r.location}</td>
+                      <td>
+                        <span
+                          className={
+                            r.status === 'ACTIVE'
+                              ? 'hub-tag hub-tag--resource-active'
+                              : 'hub-tag hub-tag--resource-warn'
+                          }
+                        >
+                          {r.status?.replaceAll('_', ' ')}
+                        </span>
+                      </td>
+                      <td className="hub-table__clip">{r.availabilityWindows || '—'}</td>
+                      {isAdmin && (
+                        <td className="hub-table__actions">
+                          <button
+                            type="button"
+                            className="hub-btn hub-btn--small hub-btn--resources-secondary"
+                            onClick={() => startEdit(r)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="hub-btn hub-btn--small hub-btn--resources-danger"
+                            onClick={() => handleDelete(r.id)}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>

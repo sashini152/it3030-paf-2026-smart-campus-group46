@@ -11,7 +11,7 @@ export default function DashboardPage() {
   }
 
   // Determine booking page route based on user role
-  const bookingPageRoute = user?.role === 'ADMIN' ? '/bookings' : '/user-bookings'
+  const bookingPageRoute = user?.role === 'ADMIN' ? '/admin-bookings' : '/bookings'
 
   return (
     <div className="hub-page">

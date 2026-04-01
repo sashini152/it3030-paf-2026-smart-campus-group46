@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './layout/Layout'
 import HomePage from './pages/HomePage'
 import ResourcesPage from './pages/ResourcesPage'
@@ -29,36 +29,27 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<Layout />}>
         <Route index element={<HomePage />} />
-        <Route path="resources" element={
-          <ProtectedRoute>
-            <ResourcesPage />
-          </ProtectedRoute>
-        } />
-        <Route path="bookings" element={
-          <AdminRoute>
-            <AdminBookingsPage />
-          </AdminRoute>
-        } />
-        <Route path="user-bookings" element={
-          <ProtectedRoute>
-            <UserBookingsPage />
-          </ProtectedRoute>
-        } />
-        <Route path="tickets" element={
-          <ProtectedRoute>
-            <TicketsPage />
-          </ProtectedRoute>
-        } />
-        <Route path="ticket-list" element={
-          <ProtectedRoute>
-            <TicketList />
-          </ProtectedRoute>
-        } />
-        <Route path="ticket-details/:id" element={
-          <ProtectedRoute>
-            <TicketDetails />
-          </ProtectedRoute>
-        } />
+        <Route path="resources" element={<ResourcesPage />} />
+        <Route path="bookings" element={<BookingsPage />} />
+        <Route
+          path="user-bookings"
+          element={
+            <ProtectedRoute>
+              <UserBookingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin-bookings"
+          element={
+            <AdminRoute>
+              <AdminBookingsPage />
+            </AdminRoute>
+          }
+        />
+        <Route path="tickets" element={<TicketsPage />} />
+        <Route path="ticket-list" element={<TicketList />} />
+        <Route path="ticket-details/:id" element={<TicketDetails />} />
         <Route
           path="admin"
           element={
@@ -67,11 +58,7 @@ function AppRoutes() {
             </AdminRoute>
           }
         />
-        <Route path="notifications" element={
-          <ProtectedRoute>
-            <NotificationsPage />
-          </ProtectedRoute>
-        } />
+        <Route path="notifications" element={<NotificationsPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route
           path="dashboard"
