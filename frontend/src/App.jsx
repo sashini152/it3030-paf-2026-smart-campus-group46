@@ -34,20 +34,15 @@ function AppRoutes() {
             <ResourcesPage />
           </ProtectedRoute>
         } />
-        <Route path="user-bookings" element={
-          <ProtectedRoute>
-            <UserBookingsPage />
-          </ProtectedRoute>
-        } />
-        <Route path="admin-bookings" element={
-          <AdminRoute>
-            <AdminBookingsPage />
-          </AdminRoute>
-        } />
         <Route path="bookings" element={
           <AdminRoute>
             <AdminBookingsPage />
           </AdminRoute>
+        } />
+        <Route path="user-bookings" element={
+          <ProtectedRoute>
+            <UserBookingsPage />
+          </ProtectedRoute>
         } />
         <Route path="tickets" element={
           <ProtectedRoute>

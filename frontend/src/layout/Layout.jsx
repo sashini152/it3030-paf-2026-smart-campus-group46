@@ -1,34 +1,38 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import sliitLogo from '../assets/sliit-logo.png'
-import { getSessionRole, isAdminRole } from '../utils/session'
+import { useAuth } from '../contexts/AuthContext'
+import { isAdminRole } from '../utils/session'
 
 const navigationItems = [
   { to: '/resources', label: 'Resources' },
   { to: '/tickets', label: 'Tickets' },
   { to: '/notifications', label: 'Notifications' },
-  { to: '/login', label: 'Sign in' },
+  
 ]
 
 const adminNavigationItems = [
   { to: '/admin', label: 'Dashboard' },
-  { to: '/admin-bookings', label: 'Booking Approvals' },
+  { to: '/login', label: 'Sign in' },
+ 
 ]
 
 const linkClass = ({ isActive }) =>
   'hub-nav__link' + (isActive ? ' hub-nav__link--active' : '')
 
 export default function Layout() {
+  const { user } = useAuth()
   const location = useLocation()
-  const [role, setRole] = useState(getSessionRole())
   const isHomePage = location.pathname === '/'
 
   // Determine booking page route and label based on user role
-  const bookingPageRoute = role === 'ADMIN' ? '/admin-bookings' : '/user-bookings'
-  const bookingPageLabel = role === 'ADMIN' ? 'Booking Approvals' : 'My Bookings'
+  const bookingPageRoute = user?.role === 'ADMIN' ? '/bookings' : '/user-bookings'
+  const bookingPageLabel = user?.role === 'ADMIN' ? 'Booking Approvals' : 'My Bookings'
 
   useEffect(() => {
-    const syncRole = () => setRole(getSessionRole())
+    const syncRole = () => {
+      // Role is now handled by useAuth hook, no need for manual sync
+    }
     window.addEventListener('storage', syncRole)
     window.addEventListener('smart-campus-session-change', syncRole)
     return () => {
@@ -68,7 +72,7 @@ export default function Layout() {
                 {item.label}
               </NavLink>
             ))}
-            {isAdminRole(role) && adminNavigationItems.map((item) => (
+            {isAdminRole(user?.role) && adminNavigationItems.map((item) => (
               <NavLink key={item.to} to={item.to} className={linkClass}>
                 {item.label}
               </NavLink>
