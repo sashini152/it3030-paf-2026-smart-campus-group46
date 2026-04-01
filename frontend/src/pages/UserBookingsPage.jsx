@@ -27,7 +27,7 @@ function fromDatetimeLocal(s) {
 
 const STATUSES = ['', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']
 
-export default function BookingsPage() {
+export default function UserBookingsPage() {
   const [userId, setUserId] = useState(loadUserId)
   const [resources, setResources] = useState([])
   const [bookings, setBookings] = useState([])
@@ -55,8 +55,6 @@ export default function BookingsPage() {
   }, [])
 
   const loadBookings = useCallback(async () => {
-    setLoading(true)
-    setError(null)
     try {
       const q = buildQuery({
         status: listFilter.status || undefined,

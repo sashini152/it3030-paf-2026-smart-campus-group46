@@ -10,6 +10,9 @@ export default function DashboardPage() {
     navigate('/login')
   }
 
+  // Determine booking page route based on user role
+  const bookingPageRoute = user?.role === 'ADMIN' ? '/bookings' : '/user-bookings'
+
   return (
     <div className="hub-page">
       <h1>Dashboard</h1>
@@ -29,7 +32,7 @@ export default function DashboardPage() {
             </button>
             <button 
               className="hub-btn hub-btn--secondary"
-              onClick={() => navigate('/bookings')}
+              onClick={() => navigate(bookingPageRoute)}
             >
               My Bookings
             </button>
