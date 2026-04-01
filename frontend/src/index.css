@@ -367,6 +367,22 @@ code {
   animation: hub-message-enter 0.28s ease;
 }
 
+.hub-ticket-list-row {
+  animation: hub-ticket-row-enter 0.38s ease both;
+}
+
+.hub-ticket-list-row td {
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.hub-ticket-list-row--active td {
+  background: #fda481;
+  transform: translateY(-2px);
+}
+
 .hub-parallax-panel {
   --hub-rotate-x: 0deg;
   --hub-rotate-y: 0deg;
@@ -414,6 +430,18 @@ code {
 }
 
 @keyframes hub-message-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hub-ticket-row-enter {
   from {
     opacity: 0;
     transform: translateY(10px);

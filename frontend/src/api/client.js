@@ -13,7 +13,11 @@ const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const message = error.response?.data?.message || error.message
+    const status = error.response?.status
+    const message =
+      status === 502
+        ? 'The support service is temporarily unavailable. Please try again in a moment.'
+        : error.response?.data?.message || error.message
     return Promise.reject(new Error(message))
   }
 )
