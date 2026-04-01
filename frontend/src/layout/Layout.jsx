@@ -5,14 +5,22 @@ import { useAuth } from '../contexts/AuthContext'
 import { isAdminRole } from '../utils/session'
 
 const navigationItems = [
+  { to: '/profile', label: 'Profile' },
   { to: '/resources', label: 'Resources' },
   { to: '/tickets', label: 'Tickets' },
   { to: '/notifications', label: 'Notifications' },
 ]
 
+<<<<<<< HEAD
 const guestNavigationItems = [
   { to: '/login', label: 'Sign in' },
   { to: '/signup', label: 'Sign up' },
+=======
+const adminNavigationItems = [
+  { to: '/admin', label: 'Dashboard' },
+ 
+  { to: '/login', label: 'profile' },
+>>>>>>> 277136eee2e5728305516bcf0bc8384f1c4a6ba3
 ]
 
 const adminNavigationItems = [{ to: '/admin', label: 'Dashboard' }]

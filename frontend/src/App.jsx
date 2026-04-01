@@ -1,17 +1,24 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom'
 import Layout from './layout/Layout'
 import HomePage from './pages/HomePage'
 import ResourcesPage from './pages/ResourcesPage'
 import BookingsPage from './pages/BookingsPage'
 import UserBookingsPage from './pages/UserBookingsPage'
 import AdminBookingsPage from './pages/AdminBookingsPage'
+import AdminResourcesPage from './pages/AdminResourcesPage'
+import AdminBookingsDashboard from './pages/AdminBookingsDashboard'
+import AdminTicketsPage from './pages/AdminTicketsPage'
 import TicketsPage from './pages/TicketsPage'
 import TicketList from './pages/TicketList'
 import TicketDetails from './pages/TicketDetails'
 import AdminDashboard from './pages/AdminDashboard'
+import UserProfilePage from './pages/UserProfilePage'
 import NotificationsPage from './pages/NotificationsPage'
 import LoginPage from './pages/LoginPage'
+<<<<<<< HEAD
 import SignupPage from './pages/SignupPage'
+=======
+>>>>>>> 277136eee2e5728305516bcf0bc8384f1c4a6ba3
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 
 function ProtectedRoute({ children }) {
@@ -47,11 +54,11 @@ function AppRoutes() {
           }
         />
         <Route
-          path="admin-bookings"
+          path="profile"
           element={
-            <AdminRoute>
-              <AdminBookingsPage />
-            </AdminRoute>
+            <ProtectedRoute>
+              <UserProfilePage />
+            </ProtectedRoute>
           }
         />
         <Route path="tickets" element={<TicketsPage />} />
@@ -65,10 +72,47 @@ function AppRoutes() {
             </AdminRoute>
           }
         />
+<<<<<<< HEAD
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="signup" element={<SignupPage />} />
         <Route path="dashboard" element={<DashboardRoute />} />
+=======
+        <Route
+          path="admin-resources"
+          element={
+            <AdminRoute>
+              <AdminResourcesPage />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="admin-bookings-dashboard"
+          element={
+            <AdminRoute>
+              <AdminBookingsDashboard />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="admin-bookings"
+          element={
+            <AdminRoute>
+              <AdminBookingsDashboard />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="admin-tickets"
+          element={
+            <AdminRoute>
+              <AdminTicketsPage />
+            </AdminRoute>
+          }
+        />
+        <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="login" element={<LoginPage />} />
+>>>>>>> 277136eee2e5728305516bcf0bc8384f1c4a6ba3
       </Route>
     </Routes>
   )

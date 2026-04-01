@@ -8,8 +8,14 @@ export default function LoginPage() {
   const [processing, setProcessing] = useState(false)
 
   useEffect(() => {
+<<<<<<< HEAD
     if (user) {
       navigate(user.role === 'ADMIN' ? '/admin' : '/')
+=======
+    // If user is already logged in, redirect to profile
+    if (user) {
+      navigate('/profile')
+>>>>>>> 277136eee2e5728305516bcf0bc8384f1c4a6ba3
     }
   }, [user, navigate])
 
@@ -21,7 +27,9 @@ export default function LoginPage() {
         const role = urlParams.get('role')
         const name = urlParams.get('name')
         const email = urlParams.get('email')
+        const error = urlParams.get('error')
 
+<<<<<<< HEAD
         if (token && role && name) {
           const userData = { name, role, email }
           login(userData, token)
@@ -29,6 +37,28 @@ export default function LoginPage() {
           setTimeout(() => {
             navigate(role === 'ADMIN' ? '/admin' : '/')
           }, 100)
+=======
+        console.log("OAuth callback params:", { token, role, name, email, error });
+
+        // Handle OAuth errors
+        if (error) {
+          console.error("❌ OAuth error received:", error);
+          setProcessing(false);
+          return;
+        }
+
+        if (token && role && name) {
+          try {
+            const userData = { name, role, email }
+            console.log("✅ Logging in with user data:", userData);
+            login(userData, token)
+            window.history.replaceState({}, document.title, window.location.pathname)
+            setTimeout(() => { navigate('/profile') }, 100)
+          } catch (loginError) {
+            console.error("❌ Login error:", loginError);
+            setProcessing(false);
+          }
+>>>>>>> 277136eee2e5728305516bcf0bc8384f1c4a6ba3
         } else {
           setProcessing(false)
         }
@@ -43,7 +73,13 @@ export default function LoginPage() {
 
   const handleGoogleLogin = () => {
     setProcessing(true)
+<<<<<<< HEAD
     window.location.assign('/oauth2/authorization/google')
+=======
+    // Redirect to Google OAuth2 via backend
+    console.log('🔐 Initiating Google OAuth login...')
+    window.location.href = 'http://localhost:8081/oauth2/authorization/google'
+>>>>>>> 277136eee2e5728305516bcf0bc8384f1c4a6ba3
   }
 
   if (loading || processing) {

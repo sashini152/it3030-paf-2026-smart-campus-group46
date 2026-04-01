@@ -37,6 +37,12 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    // For testing purposes, add a temporary token if none exists
+    else {
+      console.log('🔓 No token found, using temporary auth for testing')
+      // You can add a temporary token here or skip auth for testing
+      // config.headers.Authorization = 'Bearer temp-test-token'
+    }
     return config
   },
   (error) => Promise.reject(error)
