@@ -8,9 +8,9 @@ export default function LoginPage() {
   const [processing, setProcessing] = useState(false)
 
   useEffect(() => {
-    // If user is already logged in, redirect to dashboard
+    // If user is already logged in, redirect to profile
     if (user) {
-      navigate('/dashboard')
+      navigate('/profile')
     }
   }, [user, navigate])
 
@@ -23,8 +23,16 @@ export default function LoginPage() {
         const role = urlParams.get('role')
         const name = urlParams.get('name')
         const email = urlParams.get('email')
+        const error = urlParams.get('error')
 
-        console.log("OAuth callback params:", { token, role, name, email });
+        console.log("OAuth callback params:", { token, role, name, email, error });
+
+        // Handle OAuth errors
+        if (error) {
+          console.error("❌ OAuth error received:", error);
+          setProcessing(false);
+          return;
+        }
 
         if (token && role && name) {
           try {
@@ -32,7 +40,7 @@ export default function LoginPage() {
             console.log("✅ Logging in with user data:", userData);
             login(userData, token)
             window.history.replaceState({}, document.title, window.location.pathname)
-            setTimeout(() => { navigate('/dashboard') }, 100)
+            setTimeout(() => { navigate('/profile') }, 100)
           } catch (loginError) {
             console.error("❌ Login error:", loginError);
             setProcessing(false);
@@ -53,8 +61,9 @@ export default function LoginPage() {
 
   const handleGoogleLogin = () => {
     setProcessing(true)
-    // Redirect to Google OAuth2
-    window.location.assign('http://localhost:8080/oauth2/authorization/google')
+    // Redirect to Google OAuth2 via backend
+    console.log('🔐 Initiating Google OAuth login...')
+    window.location.href = 'http://localhost:8081/oauth2/authorization/google'
   }
 
   if (loading || processing) {

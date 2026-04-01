@@ -140,11 +140,11 @@ function BookingManagement() {
 
 const navItems = [
   { label: 'Overview', to: '/admin', active: true },
-  { label: 'Resources', to: '/resources' },
-  { label: 'Bookings', to: '/bookings' },
+  { label: 'Resources', to: '/admin-resources' },
+  { label: 'Bookings', to: '/admin-bookings-dashboard' },
   { label: 'Tickets', to: '/tickets' },
   { label: 'Notifications', to: '/notifications' },
-  { label: 'Sign In', to: '/login' },
+  { label: 'Profile', to: '/login' },
 ]
 
 const statusChip = {
@@ -158,8 +158,8 @@ const statusChip = {
 
 const moduleTiles = [
   ['Incident Queue', 'Live data from the ticket API.', 'Live', 'bg-emerald-100 text-emerald-700'],
-  ['Bookings', 'Approval metrics can drop in here next.', 'Pending API', 'bg-sky-100 text-sky-700'],
-  ['Resources', 'Usage and availability fit this same tile.', 'Planned', 'bg-amber-100 text-amber-700'],
+  ['Bookings', 'Real-time booking approvals and management.', 'Live', 'bg-sky-100 text-sky-700'],
+  ['Resources', 'Live resource availability and management.', 'Live', 'bg-amber-100 text-amber-700'],
   ['Notifications', 'Unread and delivery health can surface here.', 'Planned', 'bg-violet-100 text-violet-700'],
 ]
 
@@ -284,11 +284,50 @@ function Sidebar() {
 }
 
 export default function AdminDashboard() {
-  const { tickets, loading, error } = useTickets()
+  const { tickets, loading: ticketsLoading, error: ticketsError } = useTickets()
+  const [bookings, setBookings] = useState([])
+  const [resources, setResources] = useState([])
+  const [bookingsLoading, setBookingsLoading] = useState(true)
+  const [resourcesLoading, setResourcesLoading] = useState(true)
+  const [bookingsError, setBookingsError] = useState(null)
+  const [resourcesError, setResourcesError] = useState(null)
   const [search, setSearch] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
 
+  // Fetch bookings data
+  useEffect(() => {
+    const loadBookings = async () => {
+      try {
+        const data = await getJson('/api/bookings')
+        setBookings(Array.isArray(data) ? data : [])
+      } catch (e) {
+        setBookingsError(e.message)
+        setBookings([])
+      } finally {
+        setBookingsLoading(false)
+      }
+    }
+    loadBookings()
+  }, [])
+
+  // Fetch resources data
+  useEffect(() => {
+    const loadResources = async () => {
+      try {
+        const data = await getJson('/api/resources')
+        setResources(Array.isArray(data) ? data : [])
+      } catch (e) {
+        setResourcesError(e.message)
+        setResources([])
+      } finally {
+        setResourcesLoading(false)
+      }
+    }
+    loadResources()
+  }, [])
+
   const summary = useMemo(() => {
+    // Ticket statistics
     const counts = { OPEN: 0, IN_PROGRESS: 0, RESOLVED: 0, CLOSED: 0, WAITING_FOR_CLIENT: 0, WAITING_FOR_SUPPORT: 0 }
     let responseTotal = 0
     let responseCount = 0
@@ -305,17 +344,43 @@ export default function AdminDashboard() {
 
     const active = counts.OPEN + counts.IN_PROGRESS + counts.WAITING_FOR_CLIENT + counts.WAITING_FOR_SUPPORT
 
+    // Booking statistics
+    const bookingStats = {
+      total: bookings.length,
+      pending: bookings.filter(b => b.status === 'PENDING').length,
+      approved: bookings.filter(b => b.status === 'APPROVED').length,
+      rejected: bookings.filter(b => b.status === 'REJECTED').length,
+      cancelled: bookings.filter(b => b.status === 'CANCELLED').length,
+    }
+
+    // Resource statistics
+    const resourceStats = {
+      total: resources.length,
+      active: resources.filter(r => r.status === 'ACTIVE').length,
+      outOfService: resources.filter(r => r.status === 'OUT_OF_SERVICE').length,
+      lectureHall: resources.filter(r => r.type === 'LECTURE_HALL').length,
+      lab: resources.filter(r => r.type === 'LAB').length,
+      meetingRoom: resources.filter(r => r.type === 'MEETING_ROOM').length,
+      equipment: resources.filter(r => r.type === 'EQUIPMENT').length,
+    }
+
     return {
       counts,
+      bookingStats,
+      resourceStats,
       cards: [
         ['Total Tickets', tickets.length, `${active} need action`, 'bg-slate-900 text-white'],
         ['Open Queue', active, `${counts.IN_PROGRESS} in progress`, 'bg-emerald-50 text-slate-900'],
         ['Resolved', counts.RESOLVED + counts.CLOSED, `${counts.CLOSED} closed`, 'bg-sky-50 text-slate-900'],
         ['Avg Response', durationText(responseCount ? Math.round(responseTotal / responseCount) : null), 'First reply speed', 'bg-amber-50 text-slate-900'],
+        ['Total Bookings', bookingStats.total, `${bookingStats.pending} pending`, 'bg-purple-50 text-slate-900'],
+        ['Approved Bookings', bookingStats.approved, `${bookingStats.rejected} rejected`, 'bg-blue-50 text-slate-900'],
+        ['Total Resources', resourceStats.total, `${resourceStats.active} active`, 'bg-green-50 text-slate-900'],
+        ['Available Resources', resourceStats.active, `${resourceStats.outOfService} out of service`, 'bg-orange-50 text-slate-900'],
       ],
       trend: buildTrend(tickets),
     }
-  }, [tickets])
+  }, [tickets, bookings, resources])
 
   const visibleTickets = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -475,13 +540,13 @@ export default function AdminDashboard() {
                   <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Live queue</p>
                   <h2 className="mt-2 text-2xl font-semibold text-slate-900">Recent incident tickets</h2>
                 </div>
-                <div className="text-sm text-slate-500">{loading ? 'Loading ticket feed...' : `${visibleTickets.length} visible ticket rows`}</div>
+                <div className="text-sm text-slate-500">{ticketsLoading ? 'Loading ticket feed...' : `${visibleTickets.length} visible ticket rows`}</div>
               </div>
-              {error ? (
+              {ticketsError ? (
                 <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                   Ticket data could not be loaded. Check the incident-ticket service.
                 </div>
-              ) : loading ? (
+              ) : ticketsLoading ? (
                 <div className="rounded-[24px] bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">Loading current ticket activity...</div>
               ) : visibleTickets.length === 0 ? (
                 <div className="rounded-[24px] bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
