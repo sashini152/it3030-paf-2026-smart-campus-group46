@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { buildQuery, deleteRequest, getJson, postJson, putJson } from '../api/client'
+import { useAuth } from '../contexts/AuthContext'
+import { isAdminRole } from '../utils/session'
 
 const TYPES = ['LECTURE_HALL', 'LAB', 'MEETING_ROOM', 'EQUIPMENT']
 const STATUSES = ['ACTIVE', 'OUT_OF_SERVICE']
@@ -14,6 +16,7 @@ const emptyForm = {
 }
 
 export default function ResourcesPage() {
+  const { user } = useAuth()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -26,6 +29,9 @@ export default function ResourcesPage() {
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
   const [saving, setSaving] = useState(false)
+
+  // Check if user is admin
+  const isAdmin = isAdminRole(user?.role)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -111,8 +117,10 @@ export default function ResourcesPage() {
     <div className="hub-page hub-page--wide">
       <h1>Resources</h1>
       <p className="hub-lead">
-        Catalogue bookable spaces and equipment. Filter the list, then add or
-        edit entries. Bookings only allow <code>ACTIVE</code> resources.
+        {isAdmin 
+          ? 'Manage campus resources. Add, edit, and delete spaces and equipment. Bookings only allow ACTIVE resources.'
+          : 'Browse available campus resources for booking. Filter to find the perfect space for your needs.'
+        }
       </p>
 
       {error && (
@@ -177,6 +185,7 @@ export default function ResourcesPage() {
         </div>
       </section>
 
+      {isAdmin && (
       <section className="hub-panel">
         <h2 className="hub-panel__title">
           {editingId ? 'Edit resource' : 'Add resource'}
@@ -274,6 +283,7 @@ export default function ResourcesPage() {
           </div>
         </form>
       </section>
+      )}
 
       <section className="hub-panel">
         <h2 className="hub-panel__title">Catalogue</h2>
@@ -292,11 +302,13 @@ export default function ResourcesPage() {
                   <th>Location</th>
                   <th>Status</th>
                   <th>Availability</th>
-                  <th />
+                  {isAdmin && <th />}
                 </tr>
               </thead>
               <tbody>
-                {items.map((r) => (
+                {items
+                  .filter(r => isAdmin || r.status === 'ACTIVE')
+                  .map((r) => (
                   <tr key={r.id}>
                     <td>{r.name}</td>
                     <td>{r.type?.replaceAll('_', ' ')}</td>
@@ -314,6 +326,7 @@ export default function ResourcesPage() {
                       </span>
                     </td>
                     <td className="hub-table__clip">{r.availabilityWindows || '—'}</td>
+                    {isAdmin && (
                     <td className="hub-table__actions">
                       <button
                         type="button"
@@ -330,6 +343,7 @@ export default function ResourcesPage() {
                         Delete
                       </button>
                     </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
