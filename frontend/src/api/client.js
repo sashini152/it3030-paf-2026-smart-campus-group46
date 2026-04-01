@@ -2,7 +2,7 @@ import axios from 'axios'
 
 const API_BASE = 'http://localhost:8081'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -10,6 +10,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
     Accept: 'application/json',
   },
+  withCredentials: true, // Include cookies for OAuth2 session
 })
 
 api.interceptors.response.use(
@@ -18,6 +19,18 @@ api.interceptors.response.use(
     const message = error.response?.data?.message || error.message
     return Promise.reject(new Error(message))
   }
+)
+
+// Add authorization header with OAuth2 token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => Promise.reject(error)
 )
 
 // Build query string from params
