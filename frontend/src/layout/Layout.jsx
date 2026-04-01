@@ -25,10 +25,13 @@ export default function Layout() {
   const location = useLocation()
   const isHomePage = location.pathname === '/'
   const isResourcesPage = location.pathname.startsWith('/resources')
-  const isBookingsPage = location.pathname.startsWith('/bookings')
+  const isBookingsPage =
+    location.pathname.startsWith('/bookings') ||
+    location.pathname.startsWith('/user-bookings') ||
+    location.pathname.startsWith('/admin-bookings')
 
   // Determine booking page route and label based on user role
-  const bookingPageRoute = user?.role === 'ADMIN' ? '/bookings' : '/user-bookings'
+  const bookingPageRoute = user?.role === 'ADMIN' ? '/admin-bookings' : '/bookings'
   const bookingPageLabel = user?.role === 'ADMIN' ? 'Booking Approvals' : 'My Bookings'
 
   useEffect(() => {
