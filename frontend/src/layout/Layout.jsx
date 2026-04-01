@@ -8,12 +8,12 @@ const navigationItems = [
   { to: '/resources', label: 'Resources' },
   { to: '/tickets', label: 'Tickets' },
   { to: '/notifications', label: 'Notifications' },
-  
+   { to: '/login', label: 'Sign in' },
 ]
 
 const adminNavigationItems = [
   { to: '/admin', label: 'Dashboard' },
-  { to: '/login', label: 'Sign in' },
+ 
  
 ]
 
