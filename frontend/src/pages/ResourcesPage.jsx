@@ -108,20 +108,23 @@ export default function ResourcesPage() {
   }
 
   return (
-    <div className="hub-page hub-page--wide">
-      <h1>Resources</h1>
-      <p className="hub-lead">
+    <div className="hub-page hub-page--wide hub-page--resources">
+      <div className="hub-resources-hero">
+        <p className="hub-resources-kicker">Campus assets</p>
+        <h1>Resources</h1>
+        <p className="hub-lead">
         Catalogue bookable spaces and equipment. Filter the list, then add or
         edit entries. Bookings only allow <code>ACTIVE</code> resources.
-      </p>
+        </p>
+      </div>
 
       {error && (
-        <div className="hub-alert hub-alert--error" role="alert">
+        <div className="hub-alert hub-alert--error hub-alert--resources" role="alert">
           {error}
         </div>
       )}
 
-      <section className="hub-panel">
+      <section className="hub-panel hub-resources-panel">
         <h2 className="hub-panel__title">Search &amp; filters</h2>
         <div className="hub-form-grid hub-form-grid--filters">
           <label className="hub-field">
@@ -170,14 +173,18 @@ export default function ResourcesPage() {
             />
           </label>
           <div className="hub-field hub-field--actions">
-            <button type="button" className="hub-btn hub-btn--primary" onClick={load}>
+            <button
+              type="button"
+              className="hub-btn hub-btn--primary hub-btn--resources"
+              onClick={load}
+            >
               Apply
             </button>
           </div>
         </div>
       </section>
 
-      <section className="hub-panel">
+      <section className="hub-panel hub-resources-panel">
         <h2 className="hub-panel__title">
           {editingId ? 'Edit resource' : 'Add resource'}
         </h2>
@@ -256,7 +263,7 @@ export default function ResourcesPage() {
           <div className="hub-field hub-field--actions hub-field--full">
             <button
               type="submit"
-              className="hub-btn hub-btn--primary"
+              className="hub-btn hub-btn--primary hub-btn--resources"
               disabled={saving}
             >
               {saving ? 'Saving…' : editingId ? 'Update' : 'Create'}
@@ -264,7 +271,7 @@ export default function ResourcesPage() {
             {editingId && (
               <button
                 type="button"
-                className="hub-btn"
+                className="hub-btn hub-btn--resources-secondary"
                 onClick={cancelEdit}
                 disabled={saving}
               >
@@ -275,15 +282,15 @@ export default function ResourcesPage() {
         </form>
       </section>
 
-      <section className="hub-panel">
+      <section className="hub-panel hub-resources-panel">
         <h2 className="hub-panel__title">Catalogue</h2>
         {loading ? (
-          <p className="hub-muted">Loading…</p>
+          <p className="hub-muted hub-muted--resources">Loading…</p>
         ) : items.length === 0 ? (
-          <p className="hub-muted">No resources match your filters.</p>
+          <p className="hub-muted hub-muted--resources">No resources match your filters.</p>
         ) : (
-          <div className="hub-table-wrap">
-            <table className="hub-table">
+          <div className="hub-table-wrap hub-table-wrap--resources">
+            <table className="hub-table hub-table--resources">
               <thead>
                 <tr>
                   <th>Name</th>
@@ -306,8 +313,8 @@ export default function ResourcesPage() {
                       <span
                         className={
                           r.status === 'ACTIVE'
-                            ? 'hub-tag hub-tag--ok'
-                            : 'hub-tag hub-tag--warn'
+                            ? 'hub-tag hub-tag--resource-active'
+                            : 'hub-tag hub-tag--resource-warn'
                         }
                       >
                         {r.status?.replaceAll('_', ' ')}
@@ -317,14 +324,14 @@ export default function ResourcesPage() {
                     <td className="hub-table__actions">
                       <button
                         type="button"
-                        className="hub-btn hub-btn--small"
+                        className="hub-btn hub-btn--small hub-btn--resources-secondary"
                         onClick={() => startEdit(r)}
                       >
                         Edit
                       </button>
                       <button
                         type="button"
-                        className="hub-btn hub-btn--small hub-btn--danger"
+                        className="hub-btn hub-btn--small hub-btn--resources-danger"
                         onClick={() => handleDelete(r.id)}
                       >
                         Delete

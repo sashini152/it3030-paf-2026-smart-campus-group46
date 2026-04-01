@@ -11,6 +11,18 @@ export function fetchTicket(ticketId) {
   return getJson(`${TICKET_BASE_PATH}/${ticketId}`)
 }
 
+export function fetchStandardTicket(ticketId) {
+  return getJson(`${STANDARD_TICKET_BASE_PATH}/${ticketId}`)
+}
+
+export async function fetchAnyTicket(ticketId) {
+  try {
+    return await fetchTicket(ticketId)
+  } catch (incidentError) {
+    return fetchStandardTicket(ticketId)
+  }
+}
+
 export function createTicket(data) {
   return postJson(TICKET_BASE_PATH, {
     title: data.title,

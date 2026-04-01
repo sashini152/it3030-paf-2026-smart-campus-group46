@@ -177,22 +177,25 @@ export default function BookingsPage() {
   }
 
   return (
-    <div className="hub-page hub-page--wide">
-      <h1>Bookings</h1>
-      <p className="hub-lead">
+    <div className="hub-page hub-page--wide hub-page--bookings">
+      <div className="hub-bookings-hero">
+        <p className="hub-bookings-kicker">Campus reservations</p>
+        <h1>Bookings</h1>
+        <p className="hub-lead">
         Request slots, avoid overlaps, and follow{' '}
         <strong>PENDING → APPROVED / REJECTED</strong>; approved requests can be{' '}
         <strong>CANCELLED</strong>. Admins use the dashboard below (wire roles in
         Module E).
-      </p>
+        </p>
+      </div>
 
       {error && (
-        <div className="hub-alert hub-alert--error" role="alert">
+        <div className="hub-alert hub-alert--error hub-alert--bookings" role="alert">
           {error}
         </div>
       )}
 
-      <section className="hub-panel">
+      <section className="hub-panel hub-bookings-panel">
         <h2 className="hub-panel__title">Your identity (temporary)</h2>
         <p className="hub-muted hub-panel__hint">
           Until Google OAuth is connected, enter a stable user ID so “my bookings”
@@ -210,7 +213,7 @@ export default function BookingsPage() {
         </div>
       </section>
 
-      <section className="hub-panel">
+      <section className="hub-panel hub-bookings-panel">
         <h2 className="hub-panel__title">New booking request</h2>
         <form className="hub-form-grid" onSubmit={handleCreate}>
           <label className="hub-field hub-field--grow">
@@ -274,7 +277,7 @@ export default function BookingsPage() {
           <div className="hub-field hub-field--actions hub-field--full">
             <button
               type="submit"
-              className="hub-btn hub-btn--primary"
+              className="hub-btn hub-btn--primary hub-btn--bookings"
               disabled={submitting}
             >
               {submitting ? 'Submitting…' : 'Submit request'}
@@ -283,7 +286,7 @@ export default function BookingsPage() {
         </form>
       </section>
 
-      <section className="hub-panel">
+      <section className="hub-panel hub-bookings-panel">
         <h2 className="hub-panel__title">Booking history</h2>
         <div className="hub-form-grid hub-form-grid--filters">
           <label className="hub-field">
@@ -314,7 +317,7 @@ export default function BookingsPage() {
           <div className="hub-field hub-field--actions">
             <button
               type="button"
-              className="hub-btn hub-btn--primary"
+              className="hub-btn hub-btn--primary hub-btn--bookings"
               onClick={() => loadBookings()}
             >
               Refresh
@@ -322,12 +325,12 @@ export default function BookingsPage() {
           </div>
         </div>
         {loading ? (
-          <p className="hub-muted">Loading…</p>
+          <p className="hub-muted hub-muted--bookings">Loading…</p>
         ) : bookings.length === 0 ? (
-          <p className="hub-muted">No bookings for this filter.</p>
+          <p className="hub-muted hub-muted--bookings">No bookings for this filter.</p>
         ) : (
-          <div className="hub-table-wrap">
-            <table className="hub-table">
+          <div className="hub-table-wrap hub-table-wrap--bookings">
+            <table className="hub-table hub-table--bookings">
               <thead>
                 <tr>
                   <th>Resource</th>
@@ -350,7 +353,7 @@ export default function BookingsPage() {
                     <td>{b.requestedByUserId}</td>
                     <td>{b.expectedAttendees}</td>
                     <td>
-                      <span className={`hub-tag hub-tag--${b.status?.toLowerCase()}`}>
+                      <span className={`hub-tag hub-tag--booking-${b.status?.toLowerCase()}`}>
                         {b.status}
                       </span>
                     </td>
@@ -359,7 +362,7 @@ export default function BookingsPage() {
                       {(b.status === 'APPROVED' || b.status === 'PENDING') && (
                         <button
                           type="button"
-                          className="hub-btn hub-btn--small"
+                          className="hub-btn hub-btn--small hub-btn--bookings-secondary"
                           onClick={() => cancelBooking(b.id)}
                         >
                           Cancel
@@ -367,7 +370,7 @@ export default function BookingsPage() {
                       )}
                       <button
                         type="button"
-                        className="hub-btn hub-btn--small hub-btn--danger"
+                        className="hub-btn hub-btn--small hub-btn--bookings-danger"
                         onClick={() => removeBooking(b.id)}
                       >
                         Delete
@@ -381,7 +384,7 @@ export default function BookingsPage() {
         )}
       </section>
 
-      <section className="hub-panel hub-panel--accent">
+      <section className="hub-panel hub-panel--accent hub-bookings-panel hub-bookings-panel--accent">
         <h2 className="hub-panel__title">
           Admin approval ({pendingList.length} pending)
         </h2>
@@ -389,10 +392,10 @@ export default function BookingsPage() {
           Approve or reject with a reason. Overlapping approved slots are blocked.
         </p>
         {pendingList.length === 0 ? (
-          <p className="hub-muted">No pending requests.</p>
+          <p className="hub-muted hub-muted--bookings">No pending requests.</p>
         ) : (
-          <div className="hub-table-wrap">
-            <table className="hub-table">
+          <div className="hub-table-wrap hub-table-wrap--bookings">
+            <table className="hub-table hub-table--bookings">
               <thead>
                 <tr>
                   <th>Resource</th>
@@ -415,14 +418,14 @@ export default function BookingsPage() {
                     <td className="hub-table__actions">
                       <button
                         type="button"
-                        className="hub-btn hub-btn--small hub-btn--primary"
+                        className="hub-btn hub-btn--small hub-btn--bookings"
                         onClick={() => approve(b.id)}
                       >
                         Approve
                       </button>
                       <button
                         type="button"
-                        className="hub-btn hub-btn--small hub-btn--danger"
+                        className="hub-btn hub-btn--small hub-btn--bookings-danger"
                         onClick={() => reject(b.id)}
                       >
                         Reject
