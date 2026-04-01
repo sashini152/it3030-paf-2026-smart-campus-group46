@@ -43,6 +43,9 @@ public class SimpleOAuth2SuccessHandler implements AuthenticationSuccessHandler 
             } else if (email.equals("sashini.unilocatelk@gmail.com")) {
                 isAdmin = true;
                 System.out.println("Admin match: sashini.unilocatelk@gmail.com exact match");
+            } else if (email.equals("hafzanahamed99@gmail.com")) {
+                isAdmin = true;
+                System.out.println("Admin match: hafzanahamed99@gmail.com exact match");
             }
         }
 
