@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 import { buildQuery, deleteRequest, getJson, postJson, putJson } from '../api/client'
 import '../styles/home.css'
 
@@ -27,7 +27,7 @@ function fromDatetimeLocal(s) {
 
 const STATUSES = ['', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']
 
-export default function BookingsPage() {
+export default function UserBookingsPage() {
   const [userId, setUserId] = useState(loadUserId)
   const [resources, setResources] = useState([])
   const [bookings, setBookings] = useState([])
@@ -55,8 +55,6 @@ export default function BookingsPage() {
   }, [])
 
   const loadBookings = useCallback(async () => {
-    setLoading(true)
-    setError(null)
     try {
       const q = buildQuery({
         status: listFilter.status || undefined,
@@ -139,28 +137,23 @@ export default function BookingsPage() {
   }
 
   return (
-    <div className="hub-page hub-page--wide hub-page--bookings">
-      <div className="hub-bookings-hero">
-        <p className="hub-bookings-kicker">Campus reservations</p>
-        <h1>Bookings</h1>
-        <p className="hub-lead">
-          Request slots, avoid overlaps, and follow{' '}
-          <strong>PENDING → APPROVED / REJECTED</strong>; approved requests can be{' '}
-          <strong>CANCELLED</strong>.
-        </p>
-      </div>
+    <div className="hub-page hub-page--wide">
+      <h1>My Bookings</h1>
+      <p className="hub-lead">
+        Manage your booking requests. View status of your bookings and cancel if needed.
+        Admin approval is required for bookings to be confirmed.
+      </p>
 
       {error && (
-        <div className="hub-alert hub-alert--error hub-alert--bookings" role="alert">
+        <div className="hub-alert hub-alert--error" role="alert">
           {error}
         </div>
       )}
 
-      <section className="hub-panel hub-bookings-panel">
+      <section className="hub-panel">
         <h2 className="hub-panel__title">Your identity (temporary)</h2>
         <p className="hub-muted hub-panel__hint">
-          Until Google OAuth is connected, enter a stable user ID so “my bookings”
-          and ownership make sense.
+          Enter your user ID to see your bookings.
         </p>
         <div className="hub-form-grid">
           <label className="hub-field hub-field--grow">
@@ -174,7 +167,7 @@ export default function BookingsPage() {
         </div>
       </section>
 
-      <section className="hub-panel hub-bookings-panel">
+      <section className="hub-panel">
         <h2 className="hub-panel__title">New booking request</h2>
         <form className="hub-form-grid" onSubmit={handleCreate}>
           <label className="hub-field hub-field--grow">
@@ -238,7 +231,7 @@ export default function BookingsPage() {
           <div className="hub-field hub-field--actions hub-field--full">
             <button
               type="submit"
-              className="hub-btn hub-btn--primary hub-btn--bookings"
+              className="hub-btn hub-btn--primary"
               disabled={submitting}
             >
               {submitting ? 'Submitting…' : 'Submit request'}
@@ -247,8 +240,8 @@ export default function BookingsPage() {
         </form>
       </section>
 
-      <section className="hub-panel hub-bookings-panel">
-        <h2 className="hub-panel__title">Booking history</h2>
+      <section className="hub-panel">
+        <h2 className="hub-panel__title">My booking history</h2>
         <div className="hub-form-grid hub-form-grid--filters">
           <label className="hub-field">
             <span>Status</span>
@@ -265,42 +258,24 @@ export default function BookingsPage() {
               ))}
             </select>
           </label>
-          <label className="hub-field hub-field--checkbox">
-            <input
-              type="checkbox"
-              checked={listFilter.mineOnly}
-              onChange={(e) =>
-                setListFilter((f) => ({ ...f, mineOnly: e.target.checked }))
-              }
-            />
-            <span>Only my bookings</span>
-          </label>
-          <div className="hub-field hub-field--actions">
-            <button
-              type="button"
-              className="hub-btn hub-btn--primary hub-btn--bookings"
-              onClick={() => loadBookings()}
-            >
-              Refresh
-            </button>
-          </div>
         </div>
-
+        
         {loading ? (
-          <p className="hub-muted hub-muted--bookings">Loading…</p>
+          <div className="hub-loading">Loading bookings...</div>
         ) : bookings.length === 0 ? (
-          <p className="hub-muted hub-muted--bookings">No bookings for this filter.</p>
+          <div className="hub-empty">
+            <p>No bookings found.</p>
+            <p className="hub-muted">Submit a booking request to get started.</p>
+          </div>
         ) : (
-          <div className="hub-table-wrap hub-table-wrap--bookings">
-            <table className="hub-table hub-table--bookings">
+          <div className="hub-table-wrap">
+            <table className="hub-table">
               <thead>
                 <tr>
                   <th>Resource</th>
                   <th>When</th>
-                  <th>User</th>
-                  <th>Attendees</th>
                   <th>Status</th>
-                  <th>Notes</th>
+                  <th>Purpose</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -312,11 +287,9 @@ export default function BookingsPage() {
                       {toDatetimeLocal(b.startDateTime)} →{' '}
                       {toDatetimeLocal(b.endDateTime)}
                     </td>
-                    <td>{b.requestedByUserId}</td>
-                    <td>{b.expectedAttendees}</td>
                     <td>
-                      <span className={`hub-tag hub-tag--booking-${b.status?.toLowerCase()}`}>
-                        {b.status}
+                      <span className={`hub-status hub-status--${b.status.toLowerCase()}`}>
+                        {b.status.replaceAll('_', ' ')}
                       </span>
                     </td>
                     <td className="hub-table__clip">{b.adminReason || b.purpose}</td>
@@ -324,7 +297,7 @@ export default function BookingsPage() {
                       {(b.status === 'APPROVED' || b.status === 'PENDING') && (
                         <button
                           type="button"
-                          className="hub-btn hub-btn--small hub-btn--bookings-secondary"
+                          className="hub-btn hub-btn--small hub-btn--warning"
                           onClick={() => cancelBooking(b.id)}
                         >
                           Cancel
@@ -332,7 +305,7 @@ export default function BookingsPage() {
                       )}
                       <button
                         type="button"
-                        className="hub-btn hub-btn--small hub-btn--bookings-danger"
+                        className="hub-btn hub-btn--small hub-btn--danger"
                         onClick={() => removeBooking(b.id)}
                       >
                         Delete

@@ -3,6 +3,8 @@ import Layout from './layout/Layout'
 import HomePage from './pages/HomePage'
 import ResourcesPage from './pages/ResourcesPage'
 import BookingsPage from './pages/BookingsPage'
+import UserBookingsPage from './pages/UserBookingsPage'
+import AdminBookingsPage from './pages/AdminBookingsPage'
 import TicketsPage from './pages/TicketsPage'
 import TicketList from './pages/TicketList'
 import TicketDetails from './pages/TicketDetails'
@@ -29,6 +31,22 @@ function AppRoutes() {
         <Route index element={<HomePage />} />
         <Route path="resources" element={<ResourcesPage />} />
         <Route path="bookings" element={<BookingsPage />} />
+        <Route
+          path="user-bookings"
+          element={
+            <ProtectedRoute>
+              <UserBookingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin-bookings"
+          element={
+            <AdminRoute>
+              <AdminBookingsPage />
+            </AdminRoute>
+          }
+        />
         <Route path="tickets" element={<TicketsPage />} />
         <Route path="ticket-list" element={<TicketList />} />
         <Route path="ticket-details/:id" element={<TicketDetails />} />
