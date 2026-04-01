@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -58,6 +59,16 @@ public class BookingController {
 	@PutMapping("/{id}/cancel")
 	public Booking cancel(@PathVariable String id) {
 		return bookingService.cancel(id);
+	}
+
+	@GetMapping("/{id}/check-in")
+	public Booking getCheckInDetails(@PathVariable String id) {
+		return bookingService.getCheckInDetails(id);
+	}
+
+	@PatchMapping("/check-in/verify")
+	public Booking verifyCheckIn(@Valid @RequestBody BookingCheckInRequest body) {
+		return bookingService.verifyCheckIn(body.getToken(), body.getVerifiedBy());
 	}
 
 	@DeleteMapping("/{id}")

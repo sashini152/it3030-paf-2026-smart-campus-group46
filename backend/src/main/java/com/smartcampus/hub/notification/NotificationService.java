@@ -14,9 +14,13 @@ import com.smartcampus.hub.common.NotFoundException;
 public class NotificationService {
 
 	private final NotificationRepository notificationRepository;
+	private final NotificationPreferenceService preferenceService;
 
-	public NotificationService(NotificationRepository notificationRepository) {
+	public NotificationService(
+			NotificationRepository notificationRepository,
+			NotificationPreferenceService preferenceService) {
 		this.notificationRepository = notificationRepository;
+		this.preferenceService = preferenceService;
 	}
 
 	public List<Notification> list(NotificationType type, Boolean onlyUnread, String targetUserId) {
@@ -29,7 +33,7 @@ public class NotificationService {
 		}
 		if (targetUserId != null && !targetUserId.isBlank()) {
 			String key = targetUserId.trim();
-			stream = stream.filter(item -> key.equals(item.getTargetUserId()));
+			stream = stream.filter(item -> item.getTargetUserId() == null || key.equals(item.getTargetUserId()));
 		}
 		List<Notification> items = stream
 				.sorted(Comparator.comparing(Notification::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
@@ -98,12 +102,16 @@ public class NotificationService {
 			String targetUserId,
 			String referenceType,
 			String referenceId) {
+		String cleanTarget = cleanOptional(targetUserId);
+		if (cleanTarget != null && !preferenceService.isEnabled(cleanTarget, type)) {
+			return null;
+		}
 		Notification item = new Notification();
 		Instant now = Instant.now();
 		item.setTitle(clean(title));
 		item.setMessage(clean(message));
 		item.setType(type);
-		item.setTargetUserId(cleanOptional(targetUserId));
+		item.setTargetUserId(cleanTarget);
 		item.setReferenceType(cleanOptional(referenceType));
 		item.setReferenceId(cleanOptional(referenceId));
 		item.setRead(false);
@@ -130,4 +138,3 @@ public class NotificationService {
 		return value.trim();
 	}
 }
-

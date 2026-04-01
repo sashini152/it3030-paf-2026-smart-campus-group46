@@ -8,12 +8,17 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
+import java.util.Set;
 
 @Component
 public class SimpleOAuth2SuccessHandler implements AuthenticationSuccessHandler {
+
+    private static final Set<String> ADMIN_EMAILS = Set.of(
+            "sashini.unilocatelk@gmail.com",
+            "hafzanahamed99@gmail.com");
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -29,23 +34,21 @@ public class SimpleOAuth2SuccessHandler implements AuthenticationSuccessHandler 
         System.out.println("Email: " + email);
         System.out.println("Name: " + name);
 
-        // Assign role based on email domain
-        String role = "USER"; // Default role
+        // Default every Google login to USER unless it matches an approved admin rule.
+        String role = "USER";
         boolean isAdmin = false;
 
         if (email != null) {
-            if (email.endsWith("@admin.com")) {
+            String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+            if (normalizedEmail.endsWith("@admin.com")) {
                 isAdmin = true;
                 System.out.println("Admin match: @admin.com domain");
-            } else if (email.endsWith("@slit.lk")) {
+            } else if (normalizedEmail.endsWith("@slit.lk")) {
                 isAdmin = true;
                 System.out.println("Admin match: @slit.lk domain");
-            } else if (email.equals("sashini.unilocatelk@gmail.com")) {
+            } else if (ADMIN_EMAILS.contains(normalizedEmail)) {
                 isAdmin = true;
-                System.out.println("Admin match: sashini.unilocatelk@gmail.com exact match");
-            } else if (email.equals("hafzanahamed99@gmail.com")) {
-                isAdmin = true;
-                System.out.println("Admin match: hafzanahamed99@gmail.com exact match");
+                System.out.println("Admin match: approved admin email");
             }
         }
 

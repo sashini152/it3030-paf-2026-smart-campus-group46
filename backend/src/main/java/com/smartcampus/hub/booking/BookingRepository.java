@@ -13,4 +13,6 @@ public interface BookingRepository extends MongoRepository<Booking, String> {
 
 	@Query("{ resourceId: ?0, status: 'APPROVED', _id: { $ne: ?3 }, startDateTime: { $lt: ?2 }, endDateTime: { $gt: ?1 } }")
 	List<Booking> findOverlappingApprovedExcluding(String resourceId, Instant start, Instant end, String excludeId);
+
+	Booking findByCheckInToken(String checkInToken);
 }

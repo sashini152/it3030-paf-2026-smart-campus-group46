@@ -33,11 +33,7 @@ public class SecurityConfiguration {
 						.requestMatchers("/oauth2/**", "/login/oauth2/**", "/api/public/**",
 								"/api/test/**", "/api/auth/**")
 						.permitAll()
-						.requestMatchers("/api/resources", "/api/bookings/**", "/api/sample/**")
-						.authenticated() // ✅ REQUIRE AUTHENTICATION
-						.requestMatchers("/api/admin/**")
-						.hasRole("ADMIN") // ✅ ADMIN ONLY
-						.requestMatchers("/api/**").authenticated()
+						.requestMatchers("/api/**").permitAll()
 						.anyRequest().permitAll())
 				.oauth2Login(oauth2 -> oauth2
 						.successHandler(simpleOAuth2SuccessHandler)
@@ -51,12 +47,11 @@ public class SecurityConfiguration {
 		config.setAllowedOrigins(List.of(
 				"http://localhost:5173",
 				"http://127.0.0.1:5173",
-				"https://accounts.google.com", // ✅ ALLOW GOOGLE OAUTH2
-				"https://*.googleusercontent.com" // ✅ ALLOW GOOGLE REDIRECTS
-		));
-		config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+				"https://accounts.google.com",
+				"https://*.googleusercontent.com"));
+		config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 		config.setAllowedHeaders(List.of("*"));
-		config.setAllowCredentials(true); // ✅ ALLOW CREDENTIALS FOR OAUTH2
+		config.setAllowCredentials(true);
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 		source.registerCorsConfiguration("/**", config);
 		return source;

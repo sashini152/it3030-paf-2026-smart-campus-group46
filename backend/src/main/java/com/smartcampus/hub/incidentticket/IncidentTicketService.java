@@ -20,7 +20,9 @@ public class IncidentTicketService {
 
     public IncidentTicketDto create(IncidentTicketDto dto) {
         IncidentTicket entity = mapToEntity(dto);
-        entity.setCreatedAt(LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        entity.setCreatedAt(now);
+        entity.setUpdatedAt(now);
         IncidentTicket saved = repository.save(entity);
         notificationService.publish(
             NotificationType.TICKET,
@@ -51,6 +53,8 @@ public class IncidentTicketService {
         existing.setDescription(dto.getDescription());
         existing.setStatus(dto.getStatus());
         existing.setCreatedBy(dto.getCreatedBy());
+        existing.setUpdatedAt(LocalDateTime.now());
+        updateSlaFields(existing, previousStatus, dto.getStatus());
 
         IncidentTicket saved = repository.save(existing);
         if (saved.getStatus() != null && !saved.getStatus().equals(previousStatus)) {
@@ -81,6 +85,9 @@ public class IncidentTicketService {
         dto.setStatus(entity.getStatus());
         dto.setCreatedBy(entity.getCreatedBy());
         dto.setCreatedAt(entity.getCreatedAt());
+        dto.setUpdatedAt(entity.getUpdatedAt());
+        dto.setFirstResponseAt(entity.getFirstResponseAt());
+        dto.setResolvedAt(entity.getResolvedAt());
         return dto;
     }
 
@@ -92,6 +99,33 @@ public class IncidentTicketService {
         entity.setStatus(dto.getStatus());
         entity.setCreatedBy(dto.getCreatedBy());
         entity.setCreatedAt(dto.getCreatedAt());
+        entity.setUpdatedAt(dto.getUpdatedAt());
+        entity.setFirstResponseAt(dto.getFirstResponseAt());
+        entity.setResolvedAt(dto.getResolvedAt());
         return entity;
+    }
+
+    public IncidentTicketDto markFirstResponseIfNeeded(String ticketId) {
+        IncidentTicket ticket = repository.findById(ticketId)
+            .orElseThrow(() -> new NotFoundException("Incident ticket not found with id " + ticketId));
+        if (ticket.getFirstResponseAt() == null) {
+            ticket.setFirstResponseAt(LocalDateTime.now());
+            ticket.setUpdatedAt(LocalDateTime.now());
+            ticket = repository.save(ticket);
+        }
+        return mapToDto(ticket);
+    }
+
+    private static void updateSlaFields(IncidentTicket ticket, String previousStatus, String nextStatus) {
+        if (ticket.getFirstResponseAt() == null && "IN_PROGRESS".equals(nextStatus)) {
+            ticket.setFirstResponseAt(LocalDateTime.now());
+        }
+        if ("RESOLVED".equals(nextStatus) || "CLOSED".equals(nextStatus)) {
+            if (ticket.getResolvedAt() == null) {
+                ticket.setResolvedAt(LocalDateTime.now());
+            }
+        } else if (("RESOLVED".equals(previousStatus) || "CLOSED".equals(previousStatus)) && !"CLOSED".equals(nextStatus)) {
+            ticket.setResolvedAt(null);
+        }
     }
 }

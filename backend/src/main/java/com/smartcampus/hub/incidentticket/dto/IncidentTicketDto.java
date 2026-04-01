@@ -25,4 +25,10 @@ public class IncidentTicketDto {
     private String createdBy;
 
     private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
+
+    private LocalDateTime firstResponseAt;
+
+    private LocalDateTime resolvedAt;
 }

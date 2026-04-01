@@ -18,6 +18,9 @@ public class Booking {
 	private int expectedAttendees;
 	private BookingStatus status;
 	private String adminReason;
+	private String checkInToken;
+	private Instant checkedInAt;
+	private String checkedInBy;
 	private Instant createdAt;
 	private Instant updatedAt;
 
@@ -91,6 +94,30 @@ public class Booking {
 
 	public void setAdminReason(String adminReason) {
 		this.adminReason = adminReason;
+	}
+
+	public String getCheckInToken() {
+		return checkInToken;
+	}
+
+	public void setCheckInToken(String checkInToken) {
+		this.checkInToken = checkInToken;
+	}
+
+	public Instant getCheckedInAt() {
+		return checkedInAt;
+	}
+
+	public void setCheckedInAt(Instant checkedInAt) {
+		this.checkedInAt = checkedInAt;
+	}
+
+	public String getCheckedInBy() {
+		return checkedInBy;
+	}
+
+	public void setCheckedInBy(String checkedInBy) {
+		this.checkedInBy = checkedInBy;
 	}
 
 	public Instant getCreatedAt() {

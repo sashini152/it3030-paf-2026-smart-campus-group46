@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
@@ -98,6 +99,9 @@ public class BookingService {
 		}
 		b.setStatus(BookingStatus.APPROVED);
 		b.setAdminReason(null);
+		if (b.getCheckInToken() == null || b.getCheckInToken().isBlank()) {
+			b.setCheckInToken(UUID.randomUUID().toString());
+		}
 		b.setUpdatedAt(Instant.now());
 		Booking saved = bookingRepository.save(b);
 		notificationService.publish(
@@ -135,6 +139,8 @@ public class BookingService {
 			throw new IllegalStateException("Only APPROVED or PENDING bookings can be cancelled");
 		}
 		b.setStatus(BookingStatus.CANCELLED);
+		b.setCheckedInAt(null);
+		b.setCheckedInBy(null);
 		b.setUpdatedAt(Instant.now());
 		Booking saved = bookingRepository.save(b);
 		notificationService.publish(
@@ -152,6 +158,45 @@ public class BookingService {
 			throw new NotFoundException("Booking not found");
 		}
 		bookingRepository.deleteById(id);
+	}
+
+	public Booking getCheckInDetails(String id) {
+		Booking booking = getById(id);
+		if (booking.getStatus() != BookingStatus.APPROVED) {
+			throw new IllegalStateException("Only approved bookings can be checked in");
+		}
+		if (booking.getCheckInToken() == null || booking.getCheckInToken().isBlank()) {
+			booking.setCheckInToken(UUID.randomUUID().toString());
+			booking.setUpdatedAt(Instant.now());
+			booking = bookingRepository.save(booking);
+		}
+		return booking;
+	}
+
+	public Booking verifyCheckIn(String token, String verifiedBy) {
+		Booking booking = bookingRepository.findByCheckInToken(token == null ? null : token.trim());
+		if (booking == null) {
+			throw new NotFoundException("Booking check-in token not found");
+		}
+		if (booking.getStatus() != BookingStatus.APPROVED) {
+			throw new IllegalStateException("Only approved bookings can be checked in");
+		}
+		if (booking.getCheckedInAt() == null) {
+			booking.setCheckedInAt(Instant.now());
+		}
+		if (verifiedBy != null && !verifiedBy.isBlank()) {
+			booking.setCheckedInBy(verifiedBy.trim());
+		}
+		booking.setUpdatedAt(Instant.now());
+		Booking saved = bookingRepository.save(booking);
+		notificationService.publish(
+				NotificationType.BOOKING,
+				"Booking checked in",
+				"Your approved booking was verified at check-in.",
+				saved.getRequestedByUserId(),
+				"BOOKING",
+				saved.getId());
+		return saved;
 	}
 
 	private static void validateRange(Instant start, Instant end) {
