@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { getSessionRole, isAdminRole } from '../utils/session'
 import sliitLogo from '../assets/sliit-logo.png'
+import { getSessionRole, isAdminRole } from '../utils/session'
+
+const navigationItems = [
+  { to: '/resources', label: 'Resources' },
+  { to: '/bookings', label: 'Bookings' },
+  { to: '/tickets', label: 'Tickets' },
+  { to: '/notifications', label: 'Notifications' },
+  { to: '/login', label: 'Sign in' },
+]
 
 const linkClass = ({ isActive }) =>
   'hub-nav__link' + (isActive ? ' hub-nav__link--active' : '')
@@ -34,35 +42,27 @@ export default function Layout() {
             <span className="hub-brand__text">Smart Campus Hub</span>
           </NavLink>
           <nav className="hub-nav" aria-label="Main">
-            <NavLink to="/resources" className={linkClass}>
-              Resources
-            </NavLink>
-            <NavLink to="/bookings" className={linkClass}>
-              Bookings
-            </NavLink>
-            <NavLink to="/tickets" className={linkClass}>
-              Tickets
-            </NavLink>
+            {navigationItems.slice(0, 3).map((item) => (
+              <NavLink key={item.to} to={item.to} className={linkClass}>
+                {item.label}
+              </NavLink>
+            ))}
             {isAdminRole(role) && (
               <NavLink to="/admin" className={linkClass}>
                 Dashboard
               </NavLink>
             )}
-            <NavLink to="/notifications" className={linkClass}>
-              Notifications
-            </NavLink>
-            <NavLink to="/login" className={linkClass}>
-              Sign in
-            </NavLink>
+            {navigationItems.slice(3).map((item) => (
+              <NavLink key={item.to} to={item.to} className={linkClass}>
+                {item.label}
+              </NavLink>
+            ))}
           </nav>
         </div>
       </header>
       <main className="hub-main">
         <Outlet />
       </main>
-      <footer className="hub-footer">
-        <p>IT3030 · Smart Campus Operations Hub</p>
-      </footer>
     </div>
   )
 }
