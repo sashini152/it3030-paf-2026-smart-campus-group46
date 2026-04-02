@@ -25,6 +25,10 @@ spring:
             token-uri: https://oauth2.googleapis.com/token
             user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
             user-name-attribute: sub
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 logging:
   level:
@@ -35,3 +39,12 @@ logging:
 
 server:
   port: 8081
+
+app:
+  upload:
+    dir: ${UPLOAD_DIR:uploads}
+    max-images-per-ticket: 3
+    allowed-content-types:
+      - image/jpeg
+      - image/png
+      - image/webp

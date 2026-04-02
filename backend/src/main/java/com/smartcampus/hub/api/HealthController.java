@@ -16,3 +16,5 @@ public class HealthController {
 		return Map.of("status", "ok", "service", "smart-campus-hub");
 	}
 }
+
+
