@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ParallaxPanel from '../components/ParallaxPanel'
 import Reveal from '../components/Reveal'
-import Tooltip from '../components/Tooltip'
 
 const modules = [
   {
@@ -118,9 +117,6 @@ export default function HomePage() {
                 <div key={metric.label} className="hub-home-hero__metric">
                   <div className="hub-home-hero__metric-top">
                     <span className="hub-home-hero__metric-value">{metric.value}</span>
-                    <Tooltip text={metric.tooltip} tone="ticket">
-                      <span className="hub-home-hero__metric-info">i</span>
-                    </Tooltip>
                   </div>
                   <span className="hub-home-hero__metric-label">{metric.label}</span>
                 </div>

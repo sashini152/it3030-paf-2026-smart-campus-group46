@@ -1,6 +1,16 @@
 import { TICKET_TRACKING_STEPS, getTicketStatusIndex } from '../utils/ticketPresentation'
 
 export default function TicketProgress({ status, compact = false, className = '' }) {
+  if (status === 'REJECTED') {
+    return (
+      <div
+        className={`rounded-2xl border border-[#B4182D] bg-white px-4 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[#B4182D] ${className}`.trim()}
+      >
+        Rejected by admin
+      </div>
+    )
+  }
+
   const currentStep = getTicketStatusIndex(status)
 
   return (

@@ -1,6 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
-import { buildQuery, deleteRequest, getJson, postJson, putJson } from '../api/client'
-import { useAuth } from '../contexts/AuthContext'
+import { deleteRequest } from '../api/client'
 import { useLocation } from 'react-router-dom'
 import EmptyState from '../components/EmptyState'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -9,16 +8,17 @@ import Reveal from '../components/Reveal'
 import SurfaceCard from '../components/SurfaceCard'
 import Tooltip from '../components/Tooltip'
 import AdminSidebar from '../components/AdminSidebar'
+import { formatTicketStatus, getAllowedTicketStatusTransitions, normalizeTicketWorkflowStatus, TICKET_STATUSES } from '../utils/ticketPresentation'
+import * as ticketService from '../services/ticketService'
 
-const STATUSES = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'WAITING_FOR_CLIENT', 'WAITING_FOR_SUPPORT']
+const STATUSES = TICKET_STATUSES
 
 const statConfig = [
   { key: 'open', label: 'Open', accent: 'text-[#181A2F]', tone: 'border-[#242E49] bg-white text-[#181A2F]' },
   { key: 'inProgress', label: 'In Progress', accent: 'text-white', tone: 'border-[#37415C] bg-[#242E49] text-white' },
   { key: 'resolved', label: 'Resolved', accent: 'text-[#181A2F]', tone: 'border-[#FDA481] bg-[#FDA481] text-[#181A2F]' },
   { key: 'closed', label: 'Closed', accent: 'text-white', tone: 'border-[#54162B] bg-[#54162B] text-white' },
-  { key: 'waitingForClient', label: 'Waiting for Client', accent: 'text-white', tone: 'border-[#B4182D] bg-[#B4182D] text-white' },
-  { key: 'waitingForSupport', label: 'Waiting for Support', accent: 'text-white', tone: 'border-[#37415C] bg-[#37415C] text-white' },
+  { key: 'rejected', label: 'Rejected', accent: 'text-white', tone: 'border-[#B4182D] bg-[#B4182D] text-white' },
 ]
 
 function formatFilterLabel(status) {
@@ -37,7 +37,6 @@ function formatDate(iso) {
 }
 
 export default function AdminTicketsPage() {
-  const { user } = useAuth()
   const location = useLocation()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -52,20 +51,18 @@ export default function AdminTicketsPage() {
 
   // Calculate statistics
   const stats = useMemo(() => {
-    const open = items.filter(t => t.status === 'OPEN').length
-    const inProgress = items.filter(t => t.status === 'IN_PROGRESS').length
-    const resolved = items.filter(t => t.status === 'RESOLVED').length
-    const closed = items.filter(t => t.status === 'CLOSED').length
-    const waitingForClient = items.filter(t => t.status === 'WAITING_FOR_CLIENT').length
-    const waitingForSupport = items.filter(t => t.status === 'WAITING_FOR_SUPPORT').length
+    const open = items.filter(t => normalizeTicketWorkflowStatus(t.status) === 'OPEN').length
+    const inProgress = items.filter(t => normalizeTicketWorkflowStatus(t.status) === 'IN_PROGRESS').length
+    const resolved = items.filter(t => normalizeTicketWorkflowStatus(t.status) === 'RESOLVED').length
+    const closed = items.filter(t => normalizeTicketWorkflowStatus(t.status) === 'CLOSED').length
+    const rejected = items.filter(t => normalizeTicketWorkflowStatus(t.status) === 'REJECTED').length
     
     return {
       open,
       inProgress,
       resolved,
       closed,
-      waitingForClient,
-      waitingForSupport
+      rejected,
     }
   }, [items])
 
@@ -75,7 +72,7 @@ export default function AdminTicketsPage() {
     
     // Apply status filter
     if (filters.status && filters.status !== 'ALL') {
-      filtered = filtered.filter(item => item.status === filters.status)
+      filtered = filtered.filter(item => normalizeTicketWorkflowStatus(item.status) === filters.status)
     }
     
     // Apply priority filter
@@ -91,7 +88,9 @@ export default function AdminTicketsPage() {
       filtered = filtered.filter(item => 
         item.title?.toLowerCase().includes(query) ||
         item.description?.toLowerCase().includes(query) ||
-        item.reportedBy?.toLowerCase().includes(query)
+        item.createdByName?.toLowerCase().includes(query) ||
+        item.createdBy?.toLowerCase().includes(query) ||
+        item.userEmail?.toLowerCase().includes(query)
       )
     }
     
@@ -102,30 +101,35 @@ export default function AdminTicketsPage() {
     setLoading(true)
     setError(null)
     try {
-      const q = buildQuery({
-        status: filters.status && filters.status !== 'ALL' ? filters.status : undefined,
-        priority: filters.priority || undefined,
-        q: filters.q || undefined,
-      })
-      const data = await getJson(`/api/tickets${q}`)
+      const data = await ticketService.fetchAllTickets()
       setItems(Array.isArray(data) ? data : [])
     } catch (e) {
-      setError(e.message)
+      setError(e?.message || 'The ticket service did not respond successfully.')
       setItems([])
     } finally {
       setLoading(false)
     }
   }
 
-  const handleUpdateStatus = async (ticketId, newStatus) => {
-    setProcessing(prev => ({ ...prev, [ticketId]: 'updating' }))
+  const handleUpdateStatus = async (ticket, newStatus) => {
+    setProcessing(prev => ({ ...prev, [ticket.id]: 'updating' }))
     try {
-      await putJson(`/api/tickets/${ticketId}`, { status: newStatus })
+      let rejectionReason = ''
+      if (newStatus === 'REJECTED') {
+        rejectionReason = window.prompt('Enter the rejection reason for this ticket:')
+        if (rejectionReason === null) {
+          return
+        }
+        if (!rejectionReason.trim()) {
+          throw new Error('Rejection reason is required.')
+        }
+      }
+      await ticketService.updateStatus(ticket.id, newStatus, rejectionReason.trim())
       await load()
     } catch (e) {
       setError(e.message)
     } finally {
-      setProcessing(prev => ({ ...prev, [ticketId]: null }))
+      setProcessing(prev => ({ ...prev, [ticket.id]: null }))
     }
   }
 
@@ -254,6 +258,10 @@ export default function AdminTicketsPage() {
                         {filteredItems.map((ticket, index) => {
                           const hovered = hoveredTicketId === ticket.id
                           const isProcessing = processing[ticket.id]
+                          const currentStatus = normalizeTicketWorkflowStatus(ticket.status)
+                          const allowedStatuses = [currentStatus, ...getAllowedTicketStatusTransitions(ticket.status)].filter(
+                            (status, statusIndex, values) => status && values.indexOf(status) === statusIndex
+                          )
 
                           return (
                             <tr
@@ -272,8 +280,8 @@ export default function AdminTicketsPage() {
                                 </p>
                               </td>
                               <td className="bg-white px-4 py-4 text-sm text-[#181A2F]">
-                                <div className="font-medium">{ticket.reportedBy || 'Unknown User'}</div>
-                                <div className="text-xs text-[#37415C]">{ticket.reportedEmail || ''}</div>
+                                <div className="font-medium">{ticket.createdByName || ticket.createdBy || 'Unknown User'}</div>
+                                <div className="text-xs text-[#37415C]">{ticket.userEmail || ''}</div>
                               </td>
                               <td className="bg-white px-4 py-4 text-sm text-[#181A2F]">
                                 <span className={`text-xs px-2 py-1 rounded-full ${
@@ -290,27 +298,27 @@ export default function AdminTicketsPage() {
                               </td>
                               <td className="bg-white px-4 py-4">
                                 <span className={`text-xs px-2 py-1 rounded-full ${
-                                  ticket.status === 'OPEN' ? 'bg-amber-100 text-amber-800' :
-                                  ticket.status === 'IN_PROGRESS' ? 'bg-sky-100 text-sky-800' :
-                                  ticket.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' :
-                                  ticket.status === 'CLOSED' ? 'bg-slate-100 text-slate-700' :
-                                  ticket.status === 'WAITING_FOR_CLIENT' ? 'bg-violet-100 text-violet-800' :
+                                  currentStatus === 'OPEN' ? 'bg-amber-100 text-amber-800' :
+                                  currentStatus === 'IN_PROGRESS' ? 'bg-sky-100 text-sky-800' :
+                                  currentStatus === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' :
+                                  currentStatus === 'CLOSED' ? 'bg-slate-100 text-slate-700' :
+                                  currentStatus === 'REJECTED' ? 'bg-rose-100 text-rose-800' :
                                   'bg-orange-100 text-orange-800'
                                 }`}>
-                                  {formatFilterLabel(ticket.status)}
+                                  {formatFilterLabel(currentStatus)}
                                 </span>
                               </td>
                               <td className="rounded-r-[18px] bg-white px-4 py-4">
                                 <div className="flex gap-2">
                                   <select
-                                    value={ticket.status}
-                                    onChange={(e) => handleUpdateStatus(ticket.id, e.target.value)}
-                                    disabled={isProcessing === 'updating'}
+                                    value={currentStatus}
+                                    onChange={(e) => handleUpdateStatus(ticket, e.target.value)}
+                                    disabled={isProcessing === 'updating' || allowedStatuses.length <= 1}
                                     className="text-xs px-2 py-1 border border-gray-300 rounded text-gray-700 disabled:opacity-50"
                                   >
-                                    {STATUSES.map((status) => (
+                                    {allowedStatuses.map((status) => (
                                       <option key={status} value={status}>
-                                        {formatFilterLabel(status)}
+                                        {formatTicketStatus(status)}
                                       </option>
                                     ))}
                                   </select>

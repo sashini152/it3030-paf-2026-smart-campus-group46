@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Reveal from './Reveal'
 import Tooltip from './Tooltip'
 import * as ticketService from '../services/ticketService'
+import { useAuth } from '../contexts/AuthContext'
+import { getStudentIdentity, persistStudentIdentity } from '../utils/studentIdentity'
 
 const categories = ['HARDWARE', 'SOFTWARE', 'NETWORK', 'OTHER']
 const priorities = ['LOW', 'MEDIUM', 'HIGH']
@@ -51,8 +53,11 @@ function hasLettersAndSpacesOnly(value) {
 }
 
 export default function TicketForm({ onCreated }) {
+  const { user } = useAuth()
+  const identity = getStudentIdentity(user)
   const [userName, setUserName] = useState(localStorage.getItem('ticket.userName') || '')
   const [userEmail, setUserEmail] = useState(localStorage.getItem('ticket.userEmail') || '')
+  const [studentId, setStudentId] = useState(identity.studentId || '')
   const [resource, setResource] = useState('')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -64,6 +69,7 @@ export default function TicketForm({ onCreated }) {
   const [submitting, setSubmitting] = useState(false)
   const [serverError, setServerError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+  const fileInputRef = useRef(null)
 
   const previews = useMemo(
     () => files.map((file) => ({ name: file.name, size: file.size, url: URL.createObjectURL(file) })),
@@ -75,6 +81,18 @@ export default function TicketForm({ onCreated }) {
       previews.forEach((preview) => URL.revokeObjectURL(preview.url))
     }
   }, [previews])
+
+  useEffect(() => {
+    if (!userName.trim() && identity.displayName) {
+      setUserName(identity.displayName)
+    }
+    if (!userEmail.trim() && identity.email) {
+      setUserEmail(identity.email)
+    }
+    if (!studentId.trim() && identity.studentId) {
+      setStudentId(identity.studentId)
+    }
+  }, [identity.displayName, identity.email, identity.studentId, studentId, userEmail, userName])
 
   const validate = () => {
     const nextErrors = {}
@@ -127,21 +145,39 @@ export default function TicketForm({ onCreated }) {
     setPriority('MEDIUM')
     setFiles([])
     setErrors({})
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const applySelectedFiles = (fileList, clearNativeInput = false) => {
+    if (fileList.length > 3) {
+      setFiles([])
+      setErrors((current) => ({
+        ...current,
+        files: 'You can upload a maximum of 3 images only.',
+      }))
+      if (clearNativeInput && fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+      return
+    }
+
+    setFiles(fileList)
+    setErrors((current) => ({ ...current, files: undefined }))
   }
 
   const handleFiles = (event) => {
-    const fileList = Array.from(event.target.files || []).slice(0, 3)
-    setFiles(fileList)
+    const fileList = Array.from(event.target.files || [])
+    applySelectedFiles(fileList, true)
     setDragActive(false)
-    setErrors((current) => ({ ...current, files: undefined }))
   }
 
   const handleDrop = (event) => {
     event.preventDefault()
     setDragActive(false)
-    const fileList = Array.from(event.dataTransfer.files || []).slice(0, 3)
-    setFiles(fileList)
-    setErrors((current) => ({ ...current, files: undefined }))
+    const fileList = Array.from(event.dataTransfer.files || [])
+    applySelectedFiles(fileList)
   }
 
   const preventDefault = (event) => {
@@ -160,26 +196,35 @@ export default function TicketForm({ onCreated }) {
 
     setSubmitting(true)
     try {
+      const normalizedName = sanitizeWhitespace(userName)
+      const reporterId = sanitizeWhitespace(studentId) || userEmail.trim() || normalizedName
+      persistStudentIdentity({
+        studentId: reporterId,
+        name: normalizedName,
+        email: userEmail.trim(),
+      })
       const payload = {
         title: sanitizeWhitespace(title),
         description: sanitizeWhitespace(description),
         category,
         priority,
         resource: sanitizeWhitespace(resource),
-        createdBy: sanitizeWhitespace(userName),
+        createdBy: reporterId,
+        createdByName: normalizedName,
         userEmail: userEmail.trim(),
       }
 
-      const created = await ticketService.createTicket({
+      let created = await ticketService.createStandardTicket({
         ...payload,
       })
 
       if (files.length) {
         await ticketService.uploadTicketImages(created.id, files)
+        created = await ticketService.fetchAnyTicket(created.id)
       }
 
       resetForm()
-      setSuccessMessage('Ticket submitted successfully. The support team can now review it.')
+      setSuccessMessage(`Ticket submitted successfully with ID ${created.id}. The support team can now review it.`)
       if (onCreated) onCreated(created)
     } catch (error) {
       setServerError(error.message || 'Unable to create ticket.')
@@ -244,7 +289,19 @@ export default function TicketForm({ onCreated }) {
             <p className="mt-1 text-sm text-white/75">These details help the team identify who reported the issue and where to reply.</p>
           </div>
 
-          <div className="grid gap-5 md:grid-cols-2">
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <label className="block">
+              <span className="text-sm font-medium text-white">Student ID</span>
+              <input
+                type="text"
+                value={studentId}
+                readOnly
+                className={inputClass}
+                placeholder="Student ID will appear here"
+              />
+              <FieldHint>Replies are linked to this ID so admins can keep each student thread separate.</FieldHint>
+            </label>
+
             <label className="block">
               <span className="text-sm font-medium text-white">Full name</span>
               <input
@@ -287,18 +344,6 @@ export default function TicketForm({ onCreated }) {
 
           <div className="space-y-5">
             <label className="block">
-              <span className="text-sm font-medium text-white">Resource or location</span>
-              <input
-                type="text"
-                value={resource}
-                onChange={(event) => setResource(event.target.value)}
-                className={inputClass}
-                placeholder="Library level 2, Lab B, Main hall projector"
-              />
-              {errors.resource ? <FieldError>{errors.resource}</FieldError> : <FieldHint>Include building, floor, room, or specific asset name.</FieldHint>}
-            </label>
-
-            <label className="block">
               <span className="flex items-center gap-2 text-sm font-medium text-white">
                 <span>Short title</span>
                 <Tooltip text="Keep it simple and readable. Numbers and special characters are not allowed in the title." tone="ticket">
@@ -315,6 +360,18 @@ export default function TicketForm({ onCreated }) {
                 placeholder="Projector not turning on"
               />
               {errors.title ? <FieldError>{errors.title}</FieldError> : <FieldHint>Use letters and spaces only. Example: Projector not turning on</FieldHint>}
+            </label>
+
+            <label className="block">
+              <span className="text-sm font-medium text-white">Resource or location</span>
+              <input
+                type="text"
+                value={resource}
+                onChange={(event) => setResource(event.target.value)}
+                className={inputClass}
+                placeholder="Library level 2, Lab B, Main hall projector"
+              />
+              {errors.resource ? <FieldError>{errors.resource}</FieldError> : <FieldHint>Include building, floor, room, or specific asset name.</FieldHint>}
             </label>
 
             <label className="block">
@@ -424,8 +481,8 @@ export default function TicketForm({ onCreated }) {
             )}
           >
             <p className="text-base font-semibold text-inherit">Drag and drop images here</p>
-            <p className="mt-2 text-sm text-inherit opacity-75">Or choose files manually. PNG and JPG only, up to 5MB each.</p>
-            <input type="file" accept="image/*" multiple onChange={handleFiles} className="mx-auto mt-5 block text-sm text-inherit" />
+            <p className="mt-2 text-sm text-inherit opacity-75">Or choose files manually. PNG and JPG only, up to 5MB each, maximum 3 images.</p>
+            <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFiles} className="mx-auto mt-5 block text-sm text-inherit" />
           </div>
 
           {errors.files ? <FieldError>{errors.files}</FieldError> : <FieldHint>Screenshots and device photos often reduce back-and-forth.</FieldHint>}

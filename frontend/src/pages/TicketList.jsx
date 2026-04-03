@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
-import ChatBot from '../components/ChatBot'
+import { Link, useNavigate } from 'react-router-dom'
 import EmptyState from '../components/EmptyState'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ParallaxPanel from '../components/ParallaxPanel'
@@ -8,21 +7,26 @@ import Reveal from '../components/Reveal'
 import StatusBadge from '../components/StatusBadge'
 import SurfaceCard from '../components/SurfaceCard'
 import Tooltip from '../components/Tooltip'
+import { useAuth } from '../contexts/AuthContext'
 import { useTickets } from '../hooks/useTickets'
 import {
   TICKET_STATUS_OPTIONS,
   formatTicketDateTime,
+  formatTicketStatus,
   getTicketPriorityTone,
   getTicketSummaryStats,
+  normalizeTicketWorkflowStatus,
 } from '../utils/ticketPresentation'
+import { getTicketDisplayId } from '../utils/ticketIdentity'
+import { getStudentIdentity, getTicketReporterLabel, ticketMatchesStudent } from '../utils/studentIdentity'
+import { isAdminRole } from '../utils/session'
 
 const statConfig = [
   { key: 'open', label: 'Open', accent: 'text-[#181A2F]', tone: 'border-[#242E49] bg-white text-[#181A2F]' },
   { key: 'inProgress', label: 'In progress', accent: 'text-white', tone: 'border-[#37415C] bg-[#242E49] text-white' },
   { key: 'resolved', label: 'Resolved', accent: 'text-[#181A2F]', tone: 'border-[#FDA481] bg-[#FDA481] text-[#181A2F]' },
   { key: 'closed', label: 'Closed', accent: 'text-white', tone: 'border-[#54162B] bg-[#54162B] text-white' },
-  { key: 'waitingForClient', label: 'Waiting for client', accent: 'text-white', tone: 'border-[#B4182D] bg-[#B4182D] text-white' },
-  { key: 'waitingForSupport', label: 'Waiting for support', accent: 'text-white', tone: 'border-[#37415C] bg-[#37415C] text-white' },
+  { key: 'rejected', label: 'Rejected', accent: 'text-white', tone: 'border-[#B4182D] bg-[#B4182D] text-white' },
 ]
 
 const insightSlides = [
@@ -32,7 +36,7 @@ const insightSlides = [
   },
   {
     title: 'Use waiting states clearly',
-    body: 'WAITING_FOR_CLIENT and WAITING_FOR_SUPPORT tell students exactly why a ticket is paused.',
+    body: 'Keep IN_PROGRESS tickets updated so students can see that support has started working on the issue.',
   },
   {
     title: 'Keep updates visible',
@@ -45,11 +49,15 @@ function formatFilterLabel(status) {
 }
 
 export default function TicketList() {
+  const navigate = useNavigate()
+  const { user } = useAuth()
   const { tickets, loading, error } = useTickets()
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [hoveredTicketId, setHoveredTicketId] = useState(null)
   const [activeInsight, setActiveInsight] = useState(0)
   const [pauseInsights, setPauseInsights] = useState(false)
+  const isAdmin = isAdminRole(user?.role)
+  const studentIdentity = getStudentIdentity(user)
 
   useEffect(() => {
     if (pauseInsights) return undefined
@@ -59,12 +67,17 @@ export default function TicketList() {
     return () => clearInterval(timer)
   }, [pauseInsights])
 
-  const filteredTickets = useMemo(() => {
-    if (statusFilter === 'ALL') return tickets
-    return tickets.filter((ticket) => ticket.status === statusFilter)
-  }, [statusFilter, tickets])
+  const visibleTickets = useMemo(() => {
+    if (isAdmin) return tickets
+    return tickets.filter((ticket) => ticketMatchesStudent(ticket, user))
+  }, [isAdmin, tickets, user])
 
-  const stats = useMemo(() => getTicketSummaryStats(tickets), [tickets])
+  const filteredTickets = useMemo(() => {
+    if (statusFilter === 'ALL') return visibleTickets
+    return visibleTickets.filter((ticket) => normalizeTicketWorkflowStatus(ticket.status) === statusFilter)
+  }, [statusFilter, visibleTickets])
+
+  const stats = useMemo(() => getTicketSummaryStats(visibleTickets), [visibleTickets])
 
   return (
     <div className="hub-page hub-ticket-flow space-y-8 rounded-[36px] bg-[linear-gradient(180deg,#181A2F_0%,#242E49_52%,#37415C_100%)] p-6 text-white sm:p-8">
@@ -85,7 +98,7 @@ export default function TicketList() {
         </section>
       </Reveal>
 
-      <Reveal className="grid gap-4 md:grid-cols-2 xl:grid-cols-6" delay={80}>
+      <Reveal className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5" delay={80}>
         {statConfig.map((card, index) => (
           <ParallaxPanel
             key={card.key}
@@ -98,14 +111,16 @@ export default function TicketList() {
         ))}
       </Reveal>
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <section className="space-y-6">
         <Reveal delay={130}>
           <SurfaceCard className="space-y-5 !border-[#FDA481] !bg-white !text-[#181A2F] shadow-none">
             <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div>
                 <h2 className="text-xl font-semibold text-[#181A2F]">Ticket list</h2>
                 <p className="mt-2 text-sm leading-6 text-[#37415C]">
-                  Each row links to a full ticket thread with comments, progress, and status history.
+                  {isAdmin
+                    ? 'Each row links to a full ticket thread with comments, progress, and status history.'
+                    : `Showing tickets for ${studentIdentity.studentId || studentIdentity.displayName}. Open a row to view your full ticket thread.`}
                 </p>
               </div>
 
@@ -173,21 +188,22 @@ export default function TicketList() {
 
             {!loading && !error && filteredTickets.length > 0 && (
               <div className="overflow-x-auto rounded-[24px] border border-[#37415C] bg-[#242E49] p-2">
-                <table className="min-w-full border-separate border-spacing-y-2">
+                <table className="w-full table-fixed border-separate border-spacing-y-2">
                   <thead>
                     <tr className="text-left text-sm text-[#FDA481]">
-                      <th className="px-4 py-3 font-semibold">Ticket</th>
-                      <th className="px-4 py-3 font-semibold">Student</th>
-                      <th className="px-4 py-3 font-semibold">Assigned</th>
-                      <th className="px-4 py-3 font-semibold">Category</th>
-                      <th className="px-4 py-3 font-semibold">Status</th>
-                      <th className="px-4 py-3 font-semibold">Priority</th>
-                      <th className="px-4 py-3 font-semibold">Updated</th>
+                      <th className="w-[24%] px-3 py-3 font-semibold">Ticket</th>
+                      <th className="w-[16%] px-3 py-3 font-semibold">Ticket ID</th>
+                      <th className="w-[13%] px-3 py-3 font-semibold">Student</th>
+                      <th className="w-[11%] px-3 py-3 font-semibold">Assigned</th>
+                      <th className="w-[9%] px-3 py-3 font-semibold">Category</th>
+                      <th className="w-[10%] px-3 py-3 font-semibold">Status</th>
+                      <th className="w-[6%] px-3 py-3 font-semibold">Priority</th>
+                      <th className="w-[11%] px-3 py-3 font-semibold">Updated</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredTickets.map((ticket, index) => {
-                      const student = ticket.createdBy || 'Student'
+                      const student = getTicketReporterLabel(ticket)
                       const technician = ticket.assignedTechnician || 'Unassigned'
                       const hovered = hoveredTicketId === ticket.id
 
@@ -196,43 +212,42 @@ export default function TicketList() {
                           key={`${ticket.ticketSource || 'ticket'}:${ticket.id}`}
                           onMouseEnter={() => setHoveredTicketId(ticket.id)}
                           onMouseLeave={() => setHoveredTicketId(null)}
+                          onDoubleClick={() => navigate(`/ticket-details/${ticket.id}`)}
                           className={`hub-ticket-list-row align-top transition ${hovered ? 'hub-ticket-list-row--active' : ''}`}
                           style={{ animationDelay: `${index * 55}ms` }}
+                          title="Double-click to open full ticket details"
                         >
-                          <td className="rounded-l-[18px] bg-white px-4 py-4">
-                            <Link
-                              to={`/ticket-details/${ticket.id}`}
-                              className="inline-flex items-center gap-2 text-sm font-semibold text-[#181A2F] hover:text-[#B4182D]"
-                            >
-                              <span>{ticket.title}</span>
-                              <span
-                                className={`text-sm text-[#B4182D] transition ${hovered ? 'translate-x-1' : ''}`}
-                                aria-hidden="true"
+                          <td className="rounded-l-[18px] bg-white px-3 py-3">
+                              <Link
+                                to={`/ticket-details/${ticket.id}`}
+                                className="inline-flex text-sm font-semibold text-[#181A2F] hover:text-[#B4182D]"
                               >
-                                {'->'}
-                              </span>
-                            </Link>
-                            <p className="mt-1 max-w-[28ch] text-xs leading-5 text-[#37415C]">
-                              {ticket.description?.slice(0, 90)}
-                              {ticket.description?.length > 90 ? '...' : ''}
-                            </p>
+                                <span className="truncate">{ticket.title}</span>
+                              </Link>
                           </td>
-                          <td className="bg-white px-4 py-4 text-sm text-[#181A2F]">{student}</td>
-                          <td className="bg-white px-4 py-4 text-sm text-[#181A2F]">{technician}</td>
-                          <td className="bg-white px-4 py-4 text-sm text-[#181A2F]">
-                            {ticket.category || 'General'}
+                          <td className="bg-white px-3 py-3 text-sm font-semibold text-[#54162B]">
+                            <span className="block truncate">{getTicketDisplayId(ticket)}</span>
                           </td>
-                          <td className="bg-white px-4 py-4">
+                          <td className="bg-white px-3 py-3 text-sm text-[#181A2F]">
+                            <span className="block truncate">{student}</span>
+                          </td>
+                          <td className="bg-white px-3 py-3 text-sm text-[#181A2F]">
+                            <span className="block truncate">{technician}</span>
+                          </td>
+                          <td className="bg-white px-3 py-3 text-sm text-[#181A2F]">
+                            <span className="block truncate">{ticket.category || 'General'}</span>
+                          </td>
+                          <td className="bg-white px-3 py-3">
                             <StatusBadge status={ticket.status} />
                           </td>
                           <td
-                            className={`bg-white px-4 py-4 text-sm font-semibold ${getTicketPriorityTone(
+                            className={`bg-white px-3 py-3 text-sm font-semibold ${getTicketPriorityTone(
                               ticket.priority
                             )}`}
                           >
                             {ticket.priority || 'LOW'}
                           </td>
-                          <td className="rounded-r-[18px] bg-white px-4 py-4 text-sm text-[#37415C]">
+                          <td className="rounded-r-[18px] bg-white px-3 py-3 text-xs leading-5 text-[#37415C]">
                             {formatTicketDateTime(ticket.updatedAt)}
                           </td>
                         </tr>
@@ -245,11 +260,11 @@ export default function TicketList() {
           </SurfaceCard>
         </Reveal>
 
-        <aside className="space-y-6 xl:sticky xl:top-24 xl:self-start">
+        <div className="grid gap-6 xl:grid-cols-2">
           <Reveal delay={200}>
             <ParallaxPanel strength={10}>
               <SurfaceCard
-                className="space-y-4 !border-[#54162B] !bg-[#54162B] !text-white shadow-none"
+                className="space-y-4 !border-[#FDA481] !bg-white !text-[#181A2F] shadow-none"
                 onMouseEnter={() => setPauseInsights(true)}
                 onMouseLeave={() => setPauseInsights(false)}
               >
@@ -257,8 +272,8 @@ export default function TicketList() {
                   Queue Insights
                 </p>
                 <div key={activeInsight} className="hub-ticket-insight hub-fade-slide">
-                  <h3 className="text-base font-semibold text-white">{insightSlides[activeInsight].title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-white">{insightSlides[activeInsight].body}</p>
+                  <h3 className="text-base font-semibold text-[#181A2F]">{insightSlides[activeInsight].title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-[#37415C]">{insightSlides[activeInsight].body}</p>
                 </div>
 
                 <div className="hub-ticket-insight__controls">
@@ -304,10 +319,18 @@ export default function TicketList() {
 
           <Reveal delay={260}>
             <ParallaxPanel strength={9}>
-              <ChatBot />
+              <SurfaceCard className="space-y-4 !border-[#FDA481] !bg-white !text-[#181A2F] shadow-none">
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#FDA481]">
+                  Live ticket threads
+                </p>
+                <h2 className="text-xl font-semibold text-[#181A2F]">Reply from the exact ticket page</h2>
+                <p className="text-sm leading-6 text-[#37415C]">
+                  Each student ticket has its own live chat board under that ticket. Open the ticket by its ticket ID to reply separately and keep the correct conversation history.
+                </p>
+              </SurfaceCard>
             </ParallaxPanel>
           </Reveal>
-        </aside>
+        </div>
       </section>
     </div>
   )

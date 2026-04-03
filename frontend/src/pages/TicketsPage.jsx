@@ -1,17 +1,18 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import ChatBot from '../components/ChatBot'
 import EmptyState from '../components/EmptyState'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ParallaxPanel from '../components/ParallaxPanel'
 import Reveal from '../components/Reveal'
-import StatusBadge from '../components/StatusBadge'
 import SurfaceCard from '../components/SurfaceCard'
 import TicketProgress from '../components/TicketProgress'
 import TicketForm from '../components/TicketForm'
 import Tooltip from '../components/Tooltip'
+import { useAuth } from '../contexts/AuthContext'
 import { useTickets } from '../hooks/useTickets'
-import { formatTicketDate } from '../utils/ticketPresentation'
+import { getTicketDisplayId } from '../utils/ticketIdentity'
+import { formatTicketDate, normalizeTicketWorkflowStatus } from '../utils/ticketPresentation'
+import { getStudentIdentity, getTicketReporterLabel, ticketMatchesStudent } from '../utils/studentIdentity'
 
 const helpItems = [
   {
@@ -29,52 +30,58 @@ const helpItems = [
 ]
 
 export default function TicketsPage() {
+  const { user } = useAuth()
   const { tickets, loading, error, reload } = useTickets()
-  const studentName = localStorage.getItem('ticket.userName') || ''
+  const studentIdentity = getStudentIdentity(user)
   const [openHelpIndex, setOpenHelpIndex] = useState(0)
 
   const trackedTickets = useMemo(() => {
     const sorted = [...tickets].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
-    if (!studentName.trim()) return sorted.slice(0, 4)
+    if (!studentIdentity.studentId.trim()) return sorted.slice(0, 4)
 
-    const mine = sorted.filter(
-      (ticket) => (ticket.createdBy || '').trim().toLowerCase() === studentName.trim().toLowerCase()
-    )
+    const mine = sorted.filter((ticket) => ticketMatchesStudent(ticket, user))
 
     return mine.slice(0, 4)
-  }, [studentName, tickets])
+  }, [studentIdentity.studentId, tickets, user])
 
   const queueStats = useMemo(() => {
     return [
       {
-        label: 'Open queue',
-        value: tickets.filter((ticket) => ticket.status === 'OPEN').length,
+        label: 'Open',
+        value: tickets.filter((ticket) => normalizeTicketWorkflowStatus(ticket.status) === 'OPEN').length,
+        tone: 'border-[#37415C] bg-white text-[#181A2F]',
       },
       {
         label: 'In progress',
-        value: tickets.filter((ticket) => ticket.status === 'IN_PROGRESS').length,
+        value: tickets.filter((ticket) => normalizeTicketWorkflowStatus(ticket.status) === 'IN_PROGRESS').length,
+        tone: 'border-[#242E49] bg-[#242E49] text-white',
       },
       {
         label: 'Resolved',
-        value: tickets.filter((ticket) => ticket.status === 'RESOLVED').length,
+        value: tickets.filter((ticket) => normalizeTicketWorkflowStatus(ticket.status) === 'RESOLVED').length,
+        tone: 'border-[#FDA481] bg-[#FDA481] text-[#181A2F]',
+      },
+      {
+        label: 'Closed',
+        value: tickets.filter((ticket) => normalizeTicketWorkflowStatus(ticket.status) === 'CLOSED').length,
+        tone: 'border-[#54162B] bg-[#54162B] text-white',
+      },
+      {
+        label: 'Rejected',
+        value: tickets.filter((ticket) => normalizeTicketWorkflowStatus(ticket.status) === 'REJECTED').length,
+        tone: 'border-[#B4182D] bg-[#B4182D] text-white',
       },
     ]
   }, [tickets])
 
   return (
     <div className="hub-page hub-page--tickets hub-ticket-flow space-y-8 rounded-[36px] bg-white p-6 text-[#181A2F] sm:p-8">
-      <Reveal className="grid gap-4 sm:grid-cols-3" delay={20}>
+      <Reveal className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5" delay={20}>
         {queueStats.map((stat, index) => (
           <ParallaxPanel
             key={stat.label}
             strength={8 + index}
-            className={`hub-lift rounded-[24px] border p-5 shadow-none ${
-              index === 0
-                ? 'border-[#37415C] bg-white text-[#181A2F]'
-                : index === 1
-                  ? 'border-[#242E49] bg-[#242E49] text-white'
-                  : 'border-[#FDA481] bg-[#FDA481] text-[#181A2F]'
-            }`}
+            className={`hub-lift rounded-[24px] border p-5 shadow-none ${stat.tone}`}
           >
             <p className="text-xs font-semibold uppercase tracking-[0.24em]">
               {stat.label}
@@ -130,7 +137,13 @@ export default function TicketsPage() {
 
           <Reveal delay={170}>
             <ParallaxPanel strength={9}>
-              <ChatBot />
+              <SurfaceCard className="space-y-4 !border-[#FDA481] !bg-white !text-[#181A2F] shadow-none">
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#FDA481]">Live replies</p>
+                <h2 className="text-xl font-semibold text-[#181A2F]">Use the chat inside your ticket</h2>
+                <p className="text-sm leading-6 text-[#37415C]">
+                  Each ticket has its own reply thread. Open your ticket from the tracker below to read admin messages and send your reply in the correct conversation.
+                </p>
+              </SurfaceCard>
             </ParallaxPanel>
           </Reveal>
 
@@ -154,9 +167,9 @@ export default function TicketsPage() {
               </Link>
             </div>
 
-            {studentName && (
+            {studentIdentity.studentId && (
               <p className="mt-3 text-sm text-[#37415C]">
-                Showing tickets submitted by <span className="font-semibold text-[#181A2F]">{studentName}</span>.
+                Showing tickets for <span className="font-semibold text-[#181A2F]">{studentIdentity.studentId}</span>.
               </p>
             )}
 
@@ -190,10 +203,18 @@ export default function TicketsPage() {
                             {ticket.title}
                           </Link>
                           <p className="mt-1 text-xs text-[#FDA481]">
-                            {ticket.createdBy || 'Anonymous'} / {formatTicketDate(ticket.createdAt)}
+                            {getTicketReporterLabel(ticket)} / {formatTicketDate(ticket.createdAt)}
+                          </p>
+                          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#FDA481]/90">
+                            Ticket ID {getTicketDisplayId(ticket)}
                           </p>
                         </div>
-                        <StatusBadge status={ticket.status} />
+                        <Link
+                          to={`/ticket-details/${ticket.id}`}
+                          className="inline-flex items-center rounded-full border border-white bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#242E49] transition hover:border-[#FDA481] hover:bg-[#FDA481] hover:text-[#181A2F] hover:no-underline"
+                        >
+                          Open
+                        </Link>
                       </div>
 
                       <TicketProgress status={ticket.status} compact className="mt-4" />

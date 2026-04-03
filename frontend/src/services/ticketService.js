@@ -88,6 +88,7 @@ export function createTicket(data) {
     title: data.title,
     description: data.description,
     createdBy: data.createdBy,
+    createdByName: data.createdByName,
     status: data.status || 'OPEN',
   })
 }
@@ -99,6 +100,9 @@ export function createStandardTicket(data) {
     category: data.category,
     priority: data.priority,
     createdBy: data.createdBy,
+    createdByName: data.createdByName,
+    userEmail: data.userEmail,
+    resource: data.resource,
     status: data.status || 'OPEN',
     imageUrls: data.imageUrls || [],
   })
@@ -112,21 +116,25 @@ export function deleteTicket(ticketId) {
   return deleteJson(`${TICKET_BASE_PATH}/${ticketId}`)
 }
 
-export function assignTechnician(ticketId, technicianId) {
-  return postJson(`${TICKET_BASE_PATH}/${ticketId}/assign`, { technicianId })
+export function assignTechnician(ticketId, assignedTechnician) {
+  return patchJson(`${STANDARD_TICKET_BASE_PATH}/${ticketId}/assign`, { assignedTechnician })
 }
 
-export function updateStatus(ticketId, status) {
-  return patchJson(`${TICKET_BASE_PATH}/${ticketId}/status`, { status })
+export function updateResolutionNotes(ticketId, resolutionNotes) {
+  return patchJson(`${STANDARD_TICKET_BASE_PATH}/${ticketId}/resolution-notes`, { resolutionNotes })
 }
 
-export async function updateAnyTicketStatus(ticket, status) {
+export function updateStatus(ticketId, status, rejectionReason) {
+  return patchJson(`${TICKET_BASE_PATH}/${ticketId}/status`, { status, rejectionReason })
+}
+
+export async function updateAnyTicketStatus(ticket, status, rejectionReason) {
   if (!ticket?.id) {
     throw new Error('Ticket id is required')
   }
 
   if (ticket.ticketSource === STANDARD_SOURCE) {
-    const updated = await patchJson(`${STANDARD_TICKET_BASE_PATH}/${ticket.id}/status`, { status })
+    const updated = await patchJson(`${STANDARD_TICKET_BASE_PATH}/${ticket.id}/status`, { status, rejectionReason })
     return normalizeTicket(updated, STANDARD_SOURCE)
   }
 
@@ -137,6 +145,8 @@ export async function updateAnyTicketStatus(ticket, status) {
       description: ticket.description || '',
       status,
       createdBy: ticket.createdBy || 'system',
+      createdByName: ticket.createdByName || ticket.createdBy || 'Student',
+      rejectionReason,
     })
     return normalizeTicket(updated, INCIDENT_SOURCE)
   }
@@ -148,11 +158,97 @@ export async function updateAnyTicketStatus(ticket, status) {
       description: ticket.description || '',
       status,
       createdBy: ticket.createdBy || 'system',
+      createdByName: ticket.createdByName || ticket.createdBy || 'Student',
+      rejectionReason,
     })
     return normalizeTicket(updated, INCIDENT_SOURCE)
   } catch (incidentError) {
-    const updated = await patchJson(`${STANDARD_TICKET_BASE_PATH}/${ticket.id}/status`, { status })
+    const updated = await patchJson(`${STANDARD_TICKET_BASE_PATH}/${ticket.id}/status`, { status, rejectionReason })
     return normalizeTicket(updated, STANDARD_SOURCE)
+  }
+}
+
+export async function updateAnyTicketAssignment(ticket, assignedTechnician) {
+  if (!ticket?.id) {
+    throw new Error('Ticket id is required')
+  }
+
+  if (ticket.ticketSource === STANDARD_SOURCE) {
+    const updated = await patchJson(`${STANDARD_TICKET_BASE_PATH}/${ticket.id}/assign`, { assignedTechnician })
+    return normalizeTicket(updated, STANDARD_SOURCE)
+  }
+
+  if (ticket.ticketSource === INCIDENT_SOURCE) {
+    const updated = await putJson(`${TICKET_BASE_PATH}/${ticket.id}`, {
+      id: ticket.id,
+      title: ticket.title || 'Untitled',
+      description: ticket.description || '',
+      status: ticket.status || 'OPEN',
+      createdBy: ticket.createdBy || 'system',
+      assignedTechnician,
+      resolutionNotes: ticket.resolutionNotes || '',
+      rejectionReason: ticket.rejectionReason || '',
+    })
+    return normalizeTicket(updated, INCIDENT_SOURCE)
+  }
+
+  try {
+    const updated = await patchJson(`${STANDARD_TICKET_BASE_PATH}/${ticket.id}/assign`, { assignedTechnician })
+    return normalizeTicket(updated, STANDARD_SOURCE)
+  } catch (standardError) {
+    const updated = await putJson(`${TICKET_BASE_PATH}/${ticket.id}`, {
+      id: ticket.id,
+      title: ticket.title || 'Untitled',
+      description: ticket.description || '',
+      status: ticket.status || 'OPEN',
+      createdBy: ticket.createdBy || 'system',
+      assignedTechnician,
+      resolutionNotes: ticket.resolutionNotes || '',
+      rejectionReason: ticket.rejectionReason || '',
+    })
+    return normalizeTicket(updated, INCIDENT_SOURCE)
+  }
+}
+
+export async function updateAnyTicketResolutionNotes(ticket, resolutionNotes) {
+  if (!ticket?.id) {
+    throw new Error('Ticket id is required')
+  }
+
+  if (ticket.ticketSource === STANDARD_SOURCE) {
+    const updated = await patchJson(`${STANDARD_TICKET_BASE_PATH}/${ticket.id}/resolution-notes`, { resolutionNotes })
+    return normalizeTicket(updated, STANDARD_SOURCE)
+  }
+
+  if (ticket.ticketSource === INCIDENT_SOURCE) {
+    const updated = await putJson(`${TICKET_BASE_PATH}/${ticket.id}`, {
+      id: ticket.id,
+      title: ticket.title || 'Untitled',
+      description: ticket.description || '',
+      status: ticket.status || 'OPEN',
+      createdBy: ticket.createdBy || 'system',
+      assignedTechnician: ticket.assignedTechnician || '',
+      resolutionNotes,
+      rejectionReason: ticket.rejectionReason || '',
+    })
+    return normalizeTicket(updated, INCIDENT_SOURCE)
+  }
+
+  try {
+    const updated = await patchJson(`${STANDARD_TICKET_BASE_PATH}/${ticket.id}/resolution-notes`, { resolutionNotes })
+    return normalizeTicket(updated, STANDARD_SOURCE)
+  } catch (standardError) {
+    const updated = await putJson(`${TICKET_BASE_PATH}/${ticket.id}`, {
+      id: ticket.id,
+      title: ticket.title || 'Untitled',
+      description: ticket.description || '',
+      status: ticket.status || 'OPEN',
+      createdBy: ticket.createdBy || 'system',
+      assignedTechnician: ticket.assignedTechnician || '',
+      resolutionNotes,
+      rejectionReason: ticket.rejectionReason || '',
+    })
+    return normalizeTicket(updated, INCIDENT_SOURCE)
   }
 }
 
@@ -178,6 +274,12 @@ export async function deleteAnyTicket(ticket) {
 
 export async function uploadTicketImages(ticketId, files) {
   if (!files?.length) return []
-  // Image upload is not exposed by the current incident ticket controller yet.
-  return []
+  const formData = new FormData()
+  files.forEach((file) => formData.append('files', file))
+  const { data } = await api.post(`${STANDARD_TICKET_BASE_PATH}/${ticketId}/images`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+  return Array.isArray(data?.imageUrls) ? data.imageUrls : []
 }

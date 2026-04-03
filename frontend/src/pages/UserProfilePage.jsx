@@ -8,6 +8,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import ParallaxPanel from '../components/ParallaxPanel'
 import Reveal from '../components/Reveal'
 import Tooltip from '../components/Tooltip'
+import { getTicketReporterLabel, getUserLookupKeys } from '../utils/studentIdentity'
 
 function formatDate(iso) {
   if (!iso) return ''
@@ -110,10 +111,11 @@ export default function UserProfilePage() {
         try {
           const ticketsData = await getJson('/api/tickets')
           if (Array.isArray(ticketsData)) {
+            const userKeys = new Set(getUserLookupKeys(user).map((value) => String(value).trim().toLowerCase()))
             const userTickets = ticketsData.filter((ticket) =>
-              ticket.createdBy === user?.email ||
-              ticket.email === user?.email ||
-              ticket.submittedBy === user?.email
+              [ticket.createdBy, ticket.createdByName, ticket.email, ticket.submittedBy]
+                .filter(Boolean)
+                .some((value) => userKeys.has(String(value).trim().toLowerCase()))
             )
             setTickets(userTickets)
           } else {
@@ -434,6 +436,7 @@ export default function UserProfilePage() {
                       <div>
                         <strong>{ticket.title || 'Support request'}</strong>
                         <p>{ticket.description || 'No description provided.'}</p>
+                        <small>{getTicketReporterLabel(ticket)}</small>
                       </div>
                       <div className="hub-profile-ticket__meta">
                         <span className={`hub-profile-pill hub-profile-pill--${(ticket.status || 'OPEN').toLowerCase().replaceAll('_', '-')}`}>

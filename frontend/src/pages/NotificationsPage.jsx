@@ -5,6 +5,7 @@ import ParallaxPanel from '../components/ParallaxPanel'
 import Reveal from '../components/Reveal'
 import Tooltip from '../components/Tooltip'
 import { useAuth } from '../contexts/AuthContext'
+import { getUserLookupKeys } from '../utils/studentIdentity'
 
 const notificationTypes = ['ALL', 'BOOKING', 'TICKET', 'COMMENT', 'SYSTEM']
 const digestSlides = [
@@ -53,8 +54,8 @@ export default function NotificationsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [activeDigest, setActiveDigest] = useState(0)
 
-  const userKeys = useMemo(() => [...new Set([user?.email, user?.name].filter(Boolean))], [user?.email, user?.name])
-  const preferenceKey = user?.email || user?.name || ''
+  const userKeys = useMemo(() => getUserLookupKeys(user), [user])
+  const preferenceKey = user?.studentId || user?.email || user?.name || ''
 
   const loadNotifications = useCallback(async () => {
     setLoading(true)
