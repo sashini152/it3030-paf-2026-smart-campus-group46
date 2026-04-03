@@ -24,6 +24,12 @@ public class IncidentTicketDto {
     @NotBlank(message = "Created by is required")
     private String createdBy;
 
+    private String assignedTechnician;
+
+    private String resolutionNotes;
+
+    private String rejectionReason;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

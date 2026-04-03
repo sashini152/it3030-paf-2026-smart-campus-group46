@@ -20,6 +20,12 @@ public class SimpleOAuth2SuccessHandler implements AuthenticationSuccessHandler 
             "sashini.unilocatelk@gmail.com",
             "hafzanahamed99@gmail.com");
 
+    private final AppUserService appUserService;
+
+    public SimpleOAuth2SuccessHandler(AppUserService appUserService) {
+        this.appUserService = appUserService;
+    }
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
             Authentication authentication) throws IOException {
@@ -56,6 +62,11 @@ public class SimpleOAuth2SuccessHandler implements AuthenticationSuccessHandler 
             role = "ADMIN";
         }
 
+        AppUser appUser = appUserService.ensureUser(
+                email != null ? email : "unknown@example.com",
+                name != null ? name : "Unknown",
+                role);
+
         System.out.println("Assigned Role: " + role);
 
         // Generate a simple token for testing
@@ -63,11 +74,12 @@ public class SimpleOAuth2SuccessHandler implements AuthenticationSuccessHandler 
 
         // Redirect to frontend with user data
         String redirectUrl = String.format(
-                "http://localhost:5173/login?token=%s&role=%s&name=%s&email=%s",
+                "http://localhost:5173/login?token=%s&role=%s&name=%s&email=%s&studentId=%s",
                 URLEncoder.encode(token, StandardCharsets.UTF_8),
                 URLEncoder.encode(role, StandardCharsets.UTF_8),
-                URLEncoder.encode(name != null ? name : "Unknown", StandardCharsets.UTF_8),
-                URLEncoder.encode(email != null ? email : "unknown@example.com", StandardCharsets.UTF_8));
+                URLEncoder.encode(appUser.getName() != null ? appUser.getName() : "Unknown", StandardCharsets.UTF_8),
+                URLEncoder.encode(appUser.getEmail() != null ? appUser.getEmail() : "unknown@example.com", StandardCharsets.UTF_8),
+                URLEncoder.encode(appUser.getStudentId() != null ? appUser.getStudentId() : "", StandardCharsets.UTF_8));
         System.out.println(" Redirecting to: " + redirectUrl);
         response.sendRedirect(redirectUrl);
     }

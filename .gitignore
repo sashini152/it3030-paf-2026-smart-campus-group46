@@ -1,7 +1,9 @@
 # Backend
 backend/target/
+backend/uploads/
 backend/.idea/
 backend/*.iml
+incident-ticket-service/target/
 
 # Frontend
 frontend/node_modules/

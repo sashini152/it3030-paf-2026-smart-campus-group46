@@ -20,5 +20,7 @@ public class CommentDto {
     @NotBlank(message = "Created by is required")
     private String createdBy;
 
+    private String createdByName;
+
     private LocalDateTime createdAt;
 }

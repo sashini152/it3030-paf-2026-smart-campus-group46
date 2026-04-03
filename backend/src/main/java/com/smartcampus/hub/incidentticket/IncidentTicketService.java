@@ -24,12 +24,10 @@ public class IncidentTicketService {
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
         IncidentTicket saved = repository.save(entity);
-        notificationService.publish(
-            NotificationType.TICKET,
+        publishNotificationSafely(
             "New incident ticket submitted",
             "Ticket \"" + saved.getTitle() + "\" is now OPEN.",
             saved.getCreatedBy(),
-            "TICKET",
             saved.getId()
         );
         return mapToDto(saved);
@@ -53,17 +51,19 @@ public class IncidentTicketService {
         existing.setDescription(dto.getDescription());
         existing.setStatus(dto.getStatus());
         existing.setCreatedBy(dto.getCreatedBy());
+        existing.setAssignedTechnician(dto.getAssignedTechnician());
+        existing.setResolutionNotes(dto.getResolutionNotes());
+        existing.setRejectionReason(normalizeRejectionReason(dto.getStatus(), dto.getRejectionReason()));
         existing.setUpdatedAt(LocalDateTime.now());
+        validateStatusTransition(previousStatus, dto.getStatus(), existing.getRejectionReason());
         updateSlaFields(existing, previousStatus, dto.getStatus());
 
         IncidentTicket saved = repository.save(existing);
         if (saved.getStatus() != null && !saved.getStatus().equals(previousStatus)) {
-            notificationService.publish(
-                NotificationType.TICKET,
+            publishNotificationSafely(
                 "Ticket status updated",
                 "Ticket \"" + saved.getTitle() + "\" moved to " + saved.getStatus() + ".",
                 saved.getCreatedBy(),
-                "TICKET",
                 saved.getId()
             );
         }
@@ -84,6 +84,9 @@ public class IncidentTicketService {
         dto.setDescription(entity.getDescription());
         dto.setStatus(entity.getStatus());
         dto.setCreatedBy(entity.getCreatedBy());
+        dto.setAssignedTechnician(entity.getAssignedTechnician());
+        dto.setResolutionNotes(entity.getResolutionNotes());
+        dto.setRejectionReason(entity.getRejectionReason());
         dto.setCreatedAt(entity.getCreatedAt());
         dto.setUpdatedAt(entity.getUpdatedAt());
         dto.setFirstResponseAt(entity.getFirstResponseAt());
@@ -98,6 +101,9 @@ public class IncidentTicketService {
         entity.setDescription(dto.getDescription());
         entity.setStatus(dto.getStatus());
         entity.setCreatedBy(dto.getCreatedBy());
+        entity.setAssignedTechnician(dto.getAssignedTechnician());
+        entity.setResolutionNotes(dto.getResolutionNotes());
+        entity.setRejectionReason(dto.getRejectionReason());
         entity.setCreatedAt(dto.getCreatedAt());
         entity.setUpdatedAt(dto.getUpdatedAt());
         entity.setFirstResponseAt(dto.getFirstResponseAt());
@@ -126,6 +132,55 @@ public class IncidentTicketService {
             }
         } else if (("RESOLVED".equals(previousStatus) || "CLOSED".equals(previousStatus)) && !"CLOSED".equals(nextStatus)) {
             ticket.setResolvedAt(null);
+        }
+    }
+
+    private static String normalizeRejectionReason(String status, String rejectionReason) {
+        if (!"REJECTED".equals(status)) {
+            return null;
+        }
+        if (rejectionReason == null || rejectionReason.isBlank()) {
+            throw new IllegalArgumentException("Rejection reason is required when status is REJECTED");
+        }
+        return rejectionReason.trim();
+    }
+
+    private static void validateStatusTransition(String previousStatus, String nextStatus, String rejectionReason) {
+        if (nextStatus == null || nextStatus.isBlank()) {
+            throw new IllegalArgumentException("Status is required");
+        }
+        String current = previousStatus == null || previousStatus.isBlank() ? "OPEN" : previousStatus;
+        if (current.equals(nextStatus)) {
+            return;
+        }
+        boolean allowed = switch (current) {
+            case "OPEN" -> "IN_PROGRESS".equals(nextStatus) || "REJECTED".equals(nextStatus);
+            case "IN_PROGRESS" -> "RESOLVED".equals(nextStatus) || "REJECTED".equals(nextStatus);
+            case "RESOLVED" -> "CLOSED".equals(nextStatus);
+            case "WAITING_FOR_CLIENT", "WAITING_FOR_SUPPORT" -> "IN_PROGRESS".equals(nextStatus) || "REJECTED".equals(nextStatus);
+            case "CLOSED", "REJECTED" -> false;
+            default -> false;
+        };
+        if (!allowed) {
+            throw new IllegalArgumentException("Invalid ticket status transition");
+        }
+        if ("REJECTED".equals(nextStatus) && (rejectionReason == null || rejectionReason.isBlank())) {
+            throw new IllegalArgumentException("Rejection reason is required when status is REJECTED");
+        }
+    }
+
+    private void publishNotificationSafely(String title, String message, String targetUserId, String referenceId) {
+        try {
+            notificationService.publish(
+                NotificationType.TICKET,
+                title,
+                message,
+                targetUserId,
+                "TICKET",
+                referenceId
+            );
+        } catch (RuntimeException ignored) {
+            // Ticket persistence should succeed even if notification creation fails.
         }
     }
 }
