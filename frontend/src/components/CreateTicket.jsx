@@ -1,6 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import SurfaceCard from './SurfaceCard'
 import { createStandardTicket } from '../services/ticketService'
+import { useAuth } from '../contexts/AuthContext'
+import { getStudentIdentity, persistStudentIdentity } from '../utils/studentIdentity'
 
 const categories = ['HARDWARE', 'SOFTWARE', 'NETWORK', 'OTHER']
 const priorities = ['LOW', 'MEDIUM', 'HIGH']
@@ -21,7 +23,10 @@ function FieldError({ children }) {
 }
 
 export default function CreateTicket({ onCreated }) {
+  const { user } = useAuth()
+  const identity = getStudentIdentity(user)
   const [createdBy, setCreatedBy] = useState(localStorage.getItem('ticket.userName') || '')
+  const [studentId] = useState(identity.studentId || '')
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState('HARDWARE')
   const [description, setDescription] = useState('')
@@ -30,6 +35,7 @@ export default function CreateTicket({ onCreated }) {
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [serverMessage, setServerMessage] = useState('')
+  const fileInputRef = useRef(null)
 
   const attachmentNames = useMemo(() => attachments.map((file) => file.name), [attachments])
 
@@ -77,9 +83,15 @@ export default function CreateTicket({ onCreated }) {
     try {
       const normalizedName = sanitizeWhitespace(createdBy)
       localStorage.setItem('ticket.userName', normalizedName)
+      persistStudentIdentity({
+        studentId: studentId || user?.studentId || user?.email || normalizedName,
+        name: normalizedName,
+        email: user?.email || '',
+      })
 
       const created = await createStandardTicket({
-        createdBy: normalizedName,
+        createdBy: studentId || user?.studentId || user?.email || normalizedName,
+        createdByName: normalizedName,
         title: sanitizeWhitespace(title),
         category,
         description: sanitizeWhitespace(description),
@@ -93,6 +105,9 @@ export default function CreateTicket({ onCreated }) {
       setPriority('MEDIUM')
       setAttachments([])
       setErrors({})
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
       setServerMessage(`Ticket created successfully with ID ${created.id}.`)
       if (onCreated) onCreated(created)
     } catch (error) {
@@ -103,7 +118,20 @@ export default function CreateTicket({ onCreated }) {
   }
 
   function handleAttachments(event) {
-    setAttachments(Array.from(event.target.files || []).slice(0, 3))
+    const selectedFiles = Array.from(event.target.files || [])
+    if (selectedFiles.length > 3) {
+      setAttachments([])
+      setErrors((current) => ({
+        ...current,
+        attachments: 'You can upload a maximum of 3 images only.',
+      }))
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+      return
+    }
+
+    setAttachments(selectedFiles)
     setErrors((current) => ({ ...current, attachments: undefined }))
   }
 
@@ -201,6 +229,7 @@ export default function CreateTicket({ onCreated }) {
       <label className="block">
         <span className="text-sm font-medium text-[#1e293b]">Attachments</span>
         <input
+          ref={fileInputRef}
           type="file"
           multiple
           accept="image/*"

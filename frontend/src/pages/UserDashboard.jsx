@@ -7,6 +7,7 @@ import ParallaxPanel from '../components/ParallaxPanel'
 import Reveal from '../components/Reveal'
 import SurfaceCard from '../components/SurfaceCard'
 import Tooltip from '../components/Tooltip'
+import { getStudentIdentity, getTicketReporterLabel, ticketMatchesStudent } from '../utils/studentIdentity'
 
 const statConfig = [
   { key: 'myBookings', label: 'My Bookings', accent: 'text-[#181A2F]', tone: 'border-[#242E49] bg-white text-[#181A2F]' },
@@ -30,6 +31,7 @@ function formatDate(iso) {
 
 export default function UserDashboard() {
   const { user } = useAuth()
+  const studentIdentity = getStudentIdentity(user)
   const [myBookings, setMyBookings] = useState([])
   const [myTickets, setMyTickets] = useState([])
   const [availableResources, setAvailableResources] = useState([])
@@ -70,7 +72,7 @@ export default function UserDashboard() {
         // Fetch user tickets
         const ticketsData = await getJson('/api/tickets')
         const userTickets = Array.isArray(ticketsData)
-          ? ticketsData.filter(ticket => ticket.createdBy === user?.email)
+          ? ticketsData.filter(ticket => ticketMatchesStudent(ticket, user))
           : []
         setMyTickets(userTickets)
 
@@ -88,10 +90,10 @@ export default function UserDashboard() {
       }
     }
 
-    if (user?.email) {
+    if (user?.email || studentIdentity.studentId) {
       loadUserData()
     }
-  }, [user?.email])
+  }, [studentIdentity.studentId, user, user?.email])
 
   // Get recent activities
   const recentBookings = useMemo(() => {
@@ -209,7 +211,7 @@ export default function UserDashboard() {
                         <div key={ticket.id} className="flex items-center justify-between p-3 bg-[#242E49] rounded-lg">
                           <div>
                             <p className="text-sm font-medium text-white">{ticket.title || 'Untitled'}</p>
-                            <p className="text-xs text-[#FDA481]">{formatDate(ticket.createdAt)}</p>
+                            <p className="text-xs text-[#FDA481]">{getTicketReporterLabel(ticket)} / {formatDate(ticket.createdAt)}</p>
                           </div>
                           <span className={`text-xs px-2 py-1 rounded-full ${
                             ticket.status === 'OPEN' ? 'bg-amber-100 text-amber-800' :

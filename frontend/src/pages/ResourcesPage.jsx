@@ -172,7 +172,7 @@ export default function ResourcesPage() {
             {isAdmin
               ? 'Catalogue bookable spaces and equipment. Filter the list, then add or edit entries. Bookings only allow '
               : 'Browse available spaces and equipment. Filter the catalogue and explore only '}
-            <code>ACTIVE</code> resources.
+            <span className="hub-inline-status-pill">ACTIVE</span> resources.
           </p>
         </div>
       </Reveal>

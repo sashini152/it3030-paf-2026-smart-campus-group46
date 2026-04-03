@@ -8,6 +8,8 @@ public class CreateCommentRequest {
 	@NotBlank(message = "Author is required")
 	private String author;
 
+	private String authorName;
+
 	@NotBlank(message = "Content is required")
 	@Size(max = 500, message = "Comment must not exceed 500 characters")
 	private String content;
@@ -26,5 +28,13 @@ public class CreateCommentRequest {
 
 	public void setContent(String content) {
 		this.content = content;
+	}
+
+	public String getAuthorName() {
+		return authorName;
+	}
+
+	public void setAuthorName(String authorName) {
+		this.authorName = authorName;
 	}
 }

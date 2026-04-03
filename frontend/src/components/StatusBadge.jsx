@@ -3,7 +3,7 @@ import { formatTicketStatus, getTicketStatusTone } from '../utils/ticketPresenta
 export default function StatusBadge({ status, className = '' }) {
   return (
     <span
-      className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] ${getTicketStatusTone(status)} ${className}`.trim()}
+      className={`inline-flex min-w-[124px] items-center justify-center rounded-[999px] border px-4 py-2 text-center text-[11px] font-semibold uppercase leading-[1.25] tracking-[0.18em] shadow-[0_8px_18px_rgba(24,26,47,0.08)] ${getTicketStatusTone(status)} ${className}`.trim()}
     >
       {formatTicketStatus(status)}
     </span>

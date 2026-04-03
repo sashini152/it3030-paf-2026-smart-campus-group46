@@ -21,6 +21,7 @@ export default function LoginPage() {
         const role = urlParams.get('role')
         const name = urlParams.get('name')
         const email = urlParams.get('email')
+        const studentId = urlParams.get('studentId')
         const error = urlParams.get('error')
 
         if (error) {
@@ -29,7 +30,7 @@ export default function LoginPage() {
         }
 
         if (token && role && name) {
-          const userData = { name, role, email }
+          const userData = { name, role, email, studentId: studentId || '' }
           login(userData, token)
           window.history.replaceState({}, document.title, window.location.pathname)
           setTimeout(() => {
@@ -82,7 +83,7 @@ export default function LoginPage() {
 
         <div className="hub-auth-panel">
           <div className="hub-auth-panel__orb" aria-hidden="true" />
-          <div className="flex flex-wrap gap-3 justify-center">
+          <div className="hub-auth-actions flex flex-wrap gap-3 justify-center">
             <button
               type="button"
               className="hub-btn hub-btn--primary hub-auth-button"
@@ -93,7 +94,7 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <div className="mt-6 text-center">
+          <div className="hub-auth-footer text-center">
             <p className="hub-auth-note">
               New here? <Link to="/signup">Create an account</Link>
             </p>

@@ -48,7 +48,7 @@ export default function SignupPage() {
 
         <div className="hub-auth-panel">
           <div className="hub-auth-panel__orb" aria-hidden="true" />
-          <div className="flex flex-wrap gap-3 justify-center">
+          <div className="hub-auth-actions flex flex-wrap gap-3 justify-center">
             <button
               type="button"
               className="hub-btn hub-btn--primary hub-auth-button"
@@ -59,7 +59,7 @@ export default function SignupPage() {
             </button>
           </div>
 
-          <div className="mt-6 text-center">
+          <div className="hub-auth-footer text-center">
             <p className="hub-auth-note">
               Already have an account? <Link to="/login">Sign in</Link>
             </p>

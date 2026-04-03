@@ -4,16 +4,25 @@ import { deleteJson, getJson, patchJson, postJson, putJson } from '../api/client
 import { useAuth } from '../contexts/AuthContext'
 import { useTickets } from '../hooks/useTickets'
 import { deleteAnyTicket, updateAnyTicketStatus } from '../services/ticketService'
+import { getTicketReporterLabel } from '../utils/studentIdentity'
+import { normalizeTicketWorkflowStatus } from '../utils/ticketPresentation'
 
 const SECTIONS = ['overview', 'resources', 'bookings', 'tickets', 'notifications']
 const RESOURCE_TYPES = ['LECTURE_HALL', 'LAB', 'MEETING_ROOM', 'EQUIPMENT']
 const RESOURCE_STATUSES = ['ACTIVE', 'OUT_OF_SERVICE']
 const BOOKING_FILTERS = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']
-const TICKET_STATUSES = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED', 'WAITING_FOR_CLIENT', 'WAITING_FOR_SUPPORT']
+const TICKET_STATUSES = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED']
 const NOTIFICATION_TYPES = ['BOOKING', 'TICKET', 'COMMENT', 'SYSTEM']
 const emptyResource = { type: 'LECTURE_HALL', name: '', capacity: 0, location: '', availabilityWindows: '', status: 'ACTIVE' }
 const emptyNotice = { title: '', message: '', type: 'SYSTEM', targetUserId: '' }
 const ADMIN_REQUEST_TIMEOUT_MS = 4000
+const TICKET_GRAPH_COLORS = {
+  OPEN: 'bg-sky-500',
+  IN_PROGRESS: 'bg-indigo-500',
+  RESOLVED: 'bg-emerald-500',
+  CLOSED: 'bg-slate-500',
+  REJECTED: 'bg-rose-500',
+}
 
 function cls(...values) { return values.filter(Boolean).join(' ') }
 function label(value) { return (value || '').replaceAll('_', ' ') }
@@ -44,6 +53,16 @@ function durationLabel(minutes) {
   const hours = Math.floor(minutes / 60)
   const remainder = minutes % 60
   return remainder ? `${hours}h ${remainder}m` : `${hours}h`
+}
+function formatChartDay(value) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '-'
+  return date.toLocaleDateString(undefined, { weekday: 'short' })
+}
+function formatShortDate(value) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '-'
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
 export default function AdminDashboard() {
@@ -131,7 +150,7 @@ export default function AdminDashboard() {
     let resolutionTotal = 0
     let resolutionCount = 0
     tickets.forEach((ticket) => {
-      if (['OPEN', 'IN_PROGRESS', 'WAITING_FOR_CLIENT', 'WAITING_FOR_SUPPORT'].includes(ticket.status)) active += 1
+      if (['OPEN', 'IN_PROGRESS'].includes(normalizeTicketWorkflowStatus(ticket.status))) active += 1
       const firstResponseMinutes = minutesBetween(ticket.createdAt, ticket.firstResponseAt)
       if (firstResponseMinutes !== null) { firstResponseTotal += firstResponseMinutes; firstResponseCount += 1 }
       const resolutionMinutes = minutesBetween(ticket.createdAt, ticket.resolvedAt)
@@ -142,6 +161,51 @@ export default function AdminDashboard() {
       avgFirstResponse: firstResponseCount ? Math.round(firstResponseTotal / firstResponseCount) : null,
       avgResolution: resolutionCount ? Math.round(resolutionTotal / resolutionCount) : null,
     }
+  }, [tickets])
+
+  const ticketStatusChart = useMemo(() => {
+    const counts = TICKET_STATUSES.map((status) => ({
+      status,
+      count: tickets.filter((item) => normalizeTicketWorkflowStatus(item.status || 'OPEN') === status).length,
+    })).filter((item) => item.count > 0)
+    const total = counts.reduce((sum, item) => sum + item.count, 0)
+    return { counts, total }
+  }, [tickets])
+
+  const ticketRaisedTrend = useMemo(() => {
+    const days = 7
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const points = Array.from({ length: days }, (_, index) => {
+      const day = new Date(today)
+      day.setDate(today.getDate() - (days - index - 1))
+      const key = day.toISOString().slice(0, 10)
+      return { key, date: day, count: 0 }
+    })
+
+    const pointMap = new Map(points.map((point) => [point.key, point]))
+
+    tickets.forEach((ticket) => {
+      const createdAt = new Date(ticket.createdAt || ticket.updatedAt || 0)
+      if (Number.isNaN(createdAt.getTime())) return
+      const key = new Date(createdAt.getFullYear(), createdAt.getMonth(), createdAt.getDate())
+        .toISOString()
+        .slice(0, 10)
+      const point = pointMap.get(key)
+      if (point) point.count += 1
+    })
+
+    const max = Math.max(...points.map((point) => point.count), 1)
+    const path = points
+      .map((point, index) => {
+        const x = points.length === 1 ? 50 : (index / (points.length - 1)) * 100
+        const y = 100 - (point.count / max) * 100
+        return `${index === 0 ? 'M' : 'L'} ${x} ${y}`
+      })
+      .join(' ')
+
+    return { points, max, path }
   }, [tickets])
 
   async function saveResource(event) {
@@ -226,21 +290,183 @@ export default function AdminDashboard() {
                 </div>
                 <div className="grid gap-5 lg:grid-cols-2">
                   <section className="hub-quarter-fade rounded-[24px] border border-slate-200 bg-white p-5">
-                    <h2 className="text-xl font-semibold">Usage analytics</h2>
-                    <p className="mt-1 text-sm text-slate-500">Top resources and peak approved-booking hours.</p>
+                    <h2 className="text-xl font-semibold">Tickets raised over time</h2>
+                    <p className="mt-1 text-sm text-slate-500">Line chart for the last 7 days of ticket submissions.</p>
+                    {ticketsLoading ? (
+                      <p className="mt-3 text-sm text-slate-500">Loading tickets...</p>
+                    ) : (
+                      <div className="mt-4 space-y-4">
+                        <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+                          <div className="mb-4 flex items-end justify-between gap-4">
+                            <div>
+                              <p className="text-sm font-medium text-slate-500">Total raised this week</p>
+                              <p className="mt-1 text-3xl font-semibold text-slate-900">
+                                {ticketRaisedTrend.points.reduce((sum, point) => sum + point.count, 0)}
+                              </p>
+                            </div>
+                            <p className="text-sm text-slate-500">
+                              Peak day: {Math.max(...ticketRaisedTrend.points.map((point) => point.count), 0)}
+                            </p>
+                          </div>
+
+                          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-44 w-full overflow-visible">
+                            <line x1="0" y1="100" x2="100" y2="100" stroke="#cbd5e1" strokeWidth="1.2" />
+                            <line x1="0" y1="0" x2="0" y2="100" stroke="#cbd5e1" strokeWidth="1.2" />
+                            <path
+                              d={ticketRaisedTrend.path}
+                              fill="none"
+                              stroke="#2563eb"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            {ticketRaisedTrend.points.map((point, index) => {
+                              const x = ticketRaisedTrend.points.length === 1 ? 50 : (index / (ticketRaisedTrend.points.length - 1)) * 100
+                              const y = 100 - (point.count / ticketRaisedTrend.max) * 100
+                              return (
+                                <circle key={point.key} cx={x} cy={y} r="2.6" fill="#2563eb" stroke="#ffffff" strokeWidth="1.4" />
+                              )
+                            })}
+                          </svg>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-7">
+                          {ticketRaisedTrend.points.map((point) => (
+                            <div key={point.key} className="rounded-2xl border border-slate-200 bg-white p-3 text-center">
+                              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                {formatChartDay(point.date)}
+                              </p>
+                              <p className="mt-2 text-2xl font-semibold text-slate-900">{point.count}</p>
+                              <p className="mt-1 text-xs text-slate-500">{formatShortDate(point.date)}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </section>
+
+                  <section className="hub-quarter-fade rounded-[24px] border border-slate-200 bg-white p-5">
+                    <h2 className="text-xl font-semibold">Ticket status stack</h2>
+                    <p className="mt-1 text-sm text-slate-500">Stacked status view for the current raised-ticket queue.</p>
+                    {ticketsLoading ? (
+                      <p className="mt-3 text-sm text-slate-500">Loading tickets...</p>
+                    ) : (
+                      <div className="mt-4 space-y-4">
+                        {ticketStatusChart.counts.length === 0 ? (
+                          <p className="text-sm text-slate-500">No tickets yet.</p>
+                        ) : (
+                          <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                              <p className="text-sm font-medium text-slate-500">Total tracked tickets</p>
+                              <p className="text-2xl font-semibold text-slate-900">{ticketStatusChart.total}</p>
+                            </div>
+                            <div className="overflow-hidden rounded-full bg-white">
+                              <div className="flex h-5 w-full">
+                                {ticketStatusChart.counts.map((item) => (
+                                  <div
+                                    key={item.status}
+                                    className={cls(
+                                      TICKET_GRAPH_COLORS[item.status] || 'bg-slate-400',
+                                      item.count === 0 ? 'hidden' : ''
+                                    )}
+                                    style={{
+                                      width: ticketStatusChart.total
+                                        ? `${(item.count / ticketStatusChart.total) * 100}%`
+                                        : '0%',
+                                    }}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {ticketStatusChart.counts.map((item) => (
+                            <div key={item.status} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className={cls(
+                                      'h-3 w-3 rounded-full',
+                                      TICKET_GRAPH_COLORS[item.status] || 'bg-slate-400'
+                                    )}
+                                  />
+                                  <span className="text-sm font-medium text-slate-700">{label(item.status)}</span>
+                                </div>
+                                <span className="text-sm font-semibold text-slate-900">{item.count}</span>
+                              </div>
+                              <p className="mt-2 text-xs text-slate-500">
+                                {ticketStatusChart.total
+                                  ? `${Math.round((item.count / ticketStatusChart.total) * 100)}% of current queue`
+                                  : 'No tickets yet'}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </section>
+
+                  <section className="hub-quarter-fade rounded-[30px] border border-sky-100 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-6 shadow-[0_20px_45px_rgba(148,163,184,0.14)]">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.26em] text-sky-500">Usage analytics</p>
+                        <h2 className="mt-2 text-2xl font-semibold text-slate-900">Resource rhythm</h2>
+                        <p className="mt-1 text-sm text-slate-500">Top resources and peak approved-booking hours.</p>
+                      </div>
+                      <div className="hidden h-14 w-14 rounded-[20px] bg-[radial-gradient(circle_at_30%_30%,#7dd3fc,transparent_58%),linear-gradient(135deg,#eff6ff,#dbeafe)] sm:block" />
+                    </div>
                     {analyticsError && <p className="mt-3 text-sm text-rose-600">{analyticsError}</p>}
                     {analyticsLoading ? <p className="mt-3 text-sm text-slate-500">Loading analytics...</p> : <div className="mt-4 space-y-5">
-                      <div><h3 className="text-sm font-semibold text-slate-900">Top resources</h3><div className="mt-3 space-y-3">{analytics.topResources.length === 0 ? <p className="text-sm text-slate-500">No approved bookings yet.</p> : analytics.topResources.map((item) => <div key={item.resourceId}><div className="mb-1 flex items-center justify-between text-sm"><span className="font-medium text-slate-700">{item.resourceName}</span><span className="text-slate-500">{item.bookingCount}</span></div><div className="h-2 rounded-full bg-slate-100"><div className="h-2 rounded-full bg-emerald-500" style={{ width: `${(item.bookingCount / maxResourceCount) * 100}%` }} /></div></div>)}</div></div>
-                      <div><h3 className="text-sm font-semibold text-slate-900">Peak booking hours</h3><div className="mt-3 space-y-3">{analytics.peakBookingHours.length === 0 ? <p className="text-sm text-slate-500">No approved bookings yet.</p> : analytics.peakBookingHours.map((item) => <div key={item.hour}><div className="mb-1 flex items-center justify-between text-sm"><span className="font-medium text-slate-700">{item.label}</span><span className="text-slate-500">{item.bookingCount}</span></div><div className="h-2 rounded-full bg-slate-100"><div className="h-2 rounded-full bg-sky-500" style={{ width: `${(item.bookingCount / maxHourCount) * 100}%` }} /></div></div>)}</div></div>
+                      <div className="rounded-[26px] border border-emerald-100 bg-[linear-gradient(180deg,#ffffff_0%,#f0fdf4_100%)] p-4">
+                        <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-600">Top resources</h3>
+                        <div className="mt-3 space-y-4">
+                          {analytics.topResources.length === 0 ? <p className="text-sm text-slate-500">No approved bookings yet.</p> : analytics.topResources.map((item) => <div key={item.resourceId} className="rounded-[20px] bg-white/90 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"><div className="mb-2 flex items-center justify-between text-sm"><span className="font-semibold text-slate-700">{item.resourceName}</span><span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">{item.bookingCount}</span></div><div className="h-2.5 rounded-full bg-emerald-50"><div className="h-2.5 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500" style={{ width: `${(item.bookingCount / maxResourceCount) * 100}%` }} /></div></div>)}
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-600">Peak booking hours</h3>
+                        <div className="mt-3">
+                          {analytics.peakBookingHours.length === 0 ? (
+                            <p className="text-sm text-slate-500">No approved bookings yet.</p>
+                          ) : (
+                            <div className="rounded-[26px] border border-sky-100 bg-[linear-gradient(180deg,#f8fbff_0%,#eff6ff_100%)] p-5">
+                              <div className="flex min-h-[220px] items-end gap-4">
+                                {analytics.peakBookingHours.map((item) => (
+                                  <div key={item.hour} className="flex min-w-0 flex-1 flex-col items-center gap-3">
+                                    <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-sky-600 shadow-sm">{item.bookingCount}</span>
+                                    <div className="flex h-36 w-full items-end rounded-[24px] border border-white/70 bg-white/90 px-2 py-2 shadow-[inset_0_10px_18px_rgba(191,219,254,0.3)]">
+                                      <div
+                                        className="w-full rounded-[18px] bg-gradient-to-t from-sky-500 via-cyan-400 to-sky-300 shadow-[0_10px_20px_rgba(14,165,233,0.28)]"
+                                        style={{
+                                          height: `${Math.max((item.bookingCount / maxHourCount) * 100, 12)}%`,
+                                        }}
+                                      />
+                                    </div>
+                                    <span className="text-center text-[11px] font-medium leading-4 text-slate-600">
+                                      {item.label}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>}
                   </section>
-                  <section className="hub-quarter-fade rounded-[24px] border border-slate-200 bg-white p-5">
-                    <h2 className="text-xl font-semibold">Ticket SLA summary</h2>
-                    <div className="mt-4 grid gap-4 md:grid-cols-2">
-                      <article className="rounded-2xl bg-slate-50 p-4"><p className="text-sm text-slate-500">Average first response</p><p className="mt-2 text-2xl font-semibold text-slate-900">{durationLabel(ticketSummary.avgFirstResponse)}</p></article>
-                      <article className="rounded-2xl bg-slate-50 p-4"><p className="text-sm text-slate-500">Average resolution</p><p className="mt-2 text-2xl font-semibold text-slate-900">{durationLabel(ticketSummary.avgResolution)}</p></article>
+                  <section className="hub-quarter-fade rounded-[30px] border border-rose-100 bg-[linear-gradient(180deg,#ffffff_0%,#fff7fb_100%)] p-6 shadow-[0_20px_45px_rgba(244,114,182,0.08)]">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.26em] text-rose-500">Ticket care</p>
+                        <h2 className="mt-2 text-2xl font-semibold text-slate-900">SLA summary</h2>
+                      </div>
+                      <div className="hidden h-14 w-14 rounded-[20px] bg-[radial-gradient(circle_at_30%_30%,#f9a8d4,transparent_58%),linear-gradient(135deg,#fff1f2,#ffe4e6)] sm:block" />
                     </div>
-                    <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">First response is captured when support first picks up a ticket or leaves an admin/support comment. Resolution time ends when a ticket moves to RESOLVED or CLOSED.</div>
+                    <div className="mt-4 grid gap-4 md:grid-cols-2">
+                      <article className="rounded-[24px] border border-rose-100 bg-[linear-gradient(180deg,#ffffff_0%,#fff1f2_100%)] p-5 shadow-[0_12px_24px_rgba(251,113,133,0.08)]"><p className="text-sm font-medium text-slate-500">Average first response</p><p className="mt-3 text-3xl font-semibold text-slate-900">{durationLabel(ticketSummary.avgFirstResponse)}</p><p className="mt-2 text-xs uppercase tracking-[0.16em] text-rose-500">Support pickup speed</p></article>
+                      <article className="rounded-[24px] border border-amber-100 bg-[linear-gradient(180deg,#ffffff_0%,#fffbeb_100%)] p-5 shadow-[0_12px_24px_rgba(251,191,36,0.08)]"><p className="text-sm font-medium text-slate-500">Average resolution</p><p className="mt-3 text-3xl font-semibold text-slate-900">{durationLabel(ticketSummary.avgResolution)}</p><p className="mt-2 text-xs uppercase tracking-[0.16em] text-amber-500">End-to-end closure</p></article>
+                    </div>
+                    <div className="mt-4 rounded-[24px] border border-slate-200 bg-white/80 p-4 text-sm leading-7 text-slate-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">First response is captured when support first picks up a ticket or leaves an admin/support comment. Resolution time ends when a ticket moves to RESOLVED or CLOSED.</div>
                   </section>
                 </div>
               </div>
@@ -256,8 +482,21 @@ export default function AdminDashboard() {
                     <input type="number" min={0} required placeholder="Capacity" value={resourceForm.capacity} onChange={(event) => setResourceForm((current) => ({ ...current, capacity: event.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2" />
                     <input required placeholder="Location" value={resourceForm.location} onChange={(event) => setResourceForm((current) => ({ ...current, location: event.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2" />
                     <input placeholder="Availability window" value={resourceForm.availabilityWindows} onChange={(event) => setResourceForm((current) => ({ ...current, availabilityWindows: event.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2 md:col-span-2" />
-                    <select value={resourceForm.status} onChange={(event) => setResourceForm((current) => ({ ...current, status: event.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2">{RESOURCE_STATUSES.map((item) => <option key={item} value={item}>{label(item)}</option>)}</select>
-                    <div className="flex items-center gap-2"><button type="submit" className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">{resourceEditId ? 'Update' : 'Create'}</button>{resourceEditId && <button type="button" onClick={() => { setResourceEditId(null); setResourceForm(emptyResource) }} className="rounded-xl border border-slate-300 px-4 py-2 text-sm">Cancel</button>}</div>
+                    <select value={resourceForm.status} onChange={(event) => setResourceForm((current) => ({ ...current, status: event.target.value }))} className="min-h-[50px] rounded-xl border border-slate-300 px-3 py-2">{RESOURCE_STATUSES.map((item) => <option key={item} value={item}>{label(item)}</option>)}</select>
+                    <div className="flex items-stretch gap-2 md:self-end">
+                      <button type="submit" className="min-h-[50px] rounded-xl bg-emerald-500 px-5 py-2 text-sm font-semibold text-white">
+                        {resourceEditId ? 'Update' : 'Create'}
+                      </button>
+                      {resourceEditId && (
+                        <button
+                          type="button"
+                          onClick={() => { setResourceEditId(null); setResourceForm(emptyResource) }}
+                          className="min-h-[50px] rounded-xl border border-slate-300 px-5 py-2 text-sm"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </div>
                   </form>
                   {resourcesError && <p className="mt-2 text-sm text-rose-600">{resourcesError}</p>}
                 </section>
@@ -280,7 +519,7 @@ export default function AdminDashboard() {
               <section className="hub-quarter-fade rounded-[24px] border border-slate-200 bg-white p-5">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-semibold">Ticket operations</h2><input value={ticketQuery} onChange={(event) => setTicketQuery(event.target.value)} placeholder="Search ticket..." className="rounded-xl border border-slate-300 px-3 py-2 text-sm" /></div>
                 {ticketsError && <p className="mb-2 text-sm text-rose-600">{String(ticketsError.message || ticketsError)}</p>}
-                {ticketsLoading ? <p className="text-sm text-slate-500">Loading...</p> : <div className="overflow-x-auto"><table className="min-w-full text-sm"><thead><tr className="text-left text-xs text-slate-500"><th className="py-2">Title</th><th>Reporter</th><th>Status</th><th>First response</th><th>Resolution</th><th>Actions</th></tr></thead><tbody>{visibleTickets.map((item) => <tr key={`${item.ticketSource || 'ticket'}:${item.id}`} className="border-t border-slate-100"><td className="py-2"><p className="font-semibold">{item.title}</p><p className="max-w-[280px] text-xs text-slate-500">{item.description?.slice(0, 70)}</p></td><td>{item.createdBy || '-'}</td><td><select value={item.status || 'OPEN'} disabled={busyId === item.id} onChange={(event) => updateTicketStatus(item, event.target.value)} className="rounded-xl border border-slate-300 px-2 py-1 text-xs">{TICKET_STATUSES.map((status) => <option key={status} value={status}>{label(status)}</option>)}</select></td><td>{durationLabel(minutesBetween(item.createdAt, item.firstResponseAt))}</td><td>{durationLabel(minutesBetween(item.createdAt, item.resolvedAt))}</td><td className="space-x-2"><Link to={`/ticket-details/${item.id}`} className="rounded-lg border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:no-underline">View</Link><button type="button" disabled={busyId === item.id} onClick={() => deleteTicket(item)} className="rounded-lg bg-rose-500 px-2 py-1 text-xs text-white">Delete</button></td></tr>)}</tbody></table></div>}
+                {ticketsLoading ? <p className="text-sm text-slate-500">Loading...</p> : <div className="overflow-x-auto"><table className="min-w-full text-sm"><thead><tr className="text-left text-xs text-slate-500"><th className="py-2">Title</th><th>Reporter</th><th>Status</th><th>First response</th><th>Resolution</th><th>Actions</th></tr></thead><tbody>{visibleTickets.map((item) => <tr key={`${item.ticketSource || 'ticket'}:${item.id}`} className="border-t border-slate-100"><td className="py-2"><p className="font-semibold">{item.title}</p><p className="max-w-[280px] text-xs text-slate-500">{item.description?.slice(0, 70)}</p></td><td><p>{getTicketReporterLabel(item)}</p><p className="text-[11px] text-slate-400">{item.createdBy || '-'}</p></td><td><select value={normalizeTicketWorkflowStatus(item.status || 'OPEN')} disabled={busyId === item.id} onChange={(event) => updateTicketStatus(item, event.target.value)} className="rounded-xl border border-slate-300 px-2 py-1 text-xs">{TICKET_STATUSES.map((status) => <option key={status} value={status}>{label(status)}</option>)}</select></td><td>{durationLabel(minutesBetween(item.createdAt, item.firstResponseAt))}</td><td>{durationLabel(minutesBetween(item.createdAt, item.resolvedAt))}</td><td className="space-x-2"><Link to={`/ticket-details/${item.id}`} className="rounded-lg border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:no-underline">View</Link><button type="button" disabled={busyId === item.id} onClick={() => deleteTicket(item)} className="rounded-lg bg-rose-500 px-2 py-1 text-xs text-white">Delete</button></td></tr>)}</tbody></table></div>}
               </section>
             )}
 

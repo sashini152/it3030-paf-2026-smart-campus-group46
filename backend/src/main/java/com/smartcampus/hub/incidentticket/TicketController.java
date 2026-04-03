@@ -1,11 +1,13 @@
 package com.smartcampus.hub.incidentticket;
 
 import java.net.URI;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,8 +18,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.smartcampus.hub.incidentticket.dto.CommentDto;
 
@@ -31,10 +35,12 @@ public class TicketController {
 
 	private final TicketService ticketService;
 	private final CommentService commentService;
+	private final FileUploadService fileUploadService;
 
-	public TicketController(TicketService ticketService, CommentService commentService) {
+	public TicketController(TicketService ticketService, CommentService commentService, FileUploadService fileUploadService) {
 		this.ticketService = ticketService;
 		this.commentService = commentService;
+		this.fileUploadService = fileUploadService;
 	}
 
 	@PostMapping
@@ -63,8 +69,27 @@ public class TicketController {
 	}
 
 	@PatchMapping("/{id}/status")
-	public Ticket updateStatus(@PathVariable String id, @RequestBody Map<String, String> body) {
-		return ticketService.updateStatus(id, body.get("status"));
+	public Ticket updateStatus(@PathVariable String id, @Valid @RequestBody UpdateTicketStatusRequest body) {
+		return ticketService.updateStatus(id, body.getStatus(), body.getRejectionReason());
+	}
+
+	@PatchMapping("/{id}/assign")
+	public Ticket assignTechnician(@PathVariable String id, @RequestBody UpdateTicketAssignmentRequest body) {
+		return ticketService.assignTechnician(id, body.getAssignedTechnician());
+	}
+
+	@PatchMapping("/{id}/resolution-notes")
+	public Ticket updateResolutionNotes(@PathVariable String id, @RequestBody UpdateTicketResolutionNotesRequest body) {
+		return ticketService.updateResolutionNotes(id, body.getResolutionNotes());
+	}
+
+	@PostMapping(path = "/{ticketId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public Map<String, Object> uploadImages(@PathVariable String ticketId, @RequestParam("files") List<MultipartFile> files) {
+		List<String> imageUrls = fileUploadService.uploadTicketImages(ticketId, files);
+		Map<String, Object> response = new LinkedHashMap<>();
+		response.put("ticketId", ticketId);
+		response.put("imageUrls", imageUrls);
+		return response;
 	}
 
 	@GetMapping("/{ticketId}/comments")
@@ -79,6 +104,7 @@ public class TicketController {
 		dto.setTicketId(ticketId);
 		dto.setContent(body.getContent());
 		dto.setCreatedBy(body.getAuthor());
+		dto.setCreatedByName(body.getAuthorName());
 		CommentDto created = commentService.create(dto);
 		if (isSupportAuthor(body.getAuthor())) {
 			ticketService.markFirstResponseIfNeeded(ticketId);
