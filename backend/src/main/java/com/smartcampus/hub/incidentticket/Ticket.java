@@ -26,7 +26,29 @@ public class Ticket {
 
     private String createdBy;
 
+    private String createdByName;
+
+    private String userEmail;
+
+    private String resource;
+
+    private String category;
+
+    private String priority;
+
+    private String assignedTechnician;
+
+    private String resolutionNotes;
+
+    private String rejectionReason;
+
     private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
+
+    private LocalDateTime firstResponseAt;
+
+    private LocalDateTime resolvedAt;
 
     private List<String> imageUrls;
 }

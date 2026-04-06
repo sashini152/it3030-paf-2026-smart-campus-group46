@@ -45,6 +45,7 @@ public class CommentService {
         existing.setContent(dto.getContent());
         existing.setTicketId(dto.getTicketId());
         existing.setCreatedBy(dto.getCreatedBy());
+        existing.setCreatedByName(dto.getCreatedByName());
 
         return mapToDto(repository.save(existing));
     }
@@ -62,6 +63,8 @@ public class CommentService {
         dto.setContent(entity.getContent());
         dto.setTicketId(entity.getTicketId());
         dto.setCreatedBy(entity.getCreatedBy());
+        dto.setCreatedByName(entity.getCreatedByName());
+        dto.setCreatedAt(entity.getCreatedAt());
         return dto;
     }
 
@@ -71,6 +74,8 @@ public class CommentService {
         entity.setContent(dto.getContent());
         entity.setTicketId(dto.getTicketId());
         entity.setCreatedBy(dto.getCreatedBy());
+        entity.setCreatedByName(dto.getCreatedByName());
+        entity.setCreatedAt(dto.getCreatedAt());
         return entity;
     }
 }

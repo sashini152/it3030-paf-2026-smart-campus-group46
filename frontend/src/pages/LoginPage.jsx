@@ -1,97 +1,104 @@
 import { useEffect, useState } from 'react'
-import { useAuth } from '../contexts/AuthContext.jsx'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function LoginPage() {
-  const { login } = useAuth()
-  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
+  const { login, user, loading } = useAuth()
+  const [processing, setProcessing] = useState(false)
+
+  useEffect(() => {
+    if (user) {
+      navigate(user.role === 'ADMIN' ? '/admin' : '/')
+    }
+  }, [user, navigate])
 
   useEffect(() => {
     const checkOAuthCallback = () => {
-      // Check if we have OAuth callback parameters
-      const urlParams = new URLSearchParams(window.location.search)
-      const token = urlParams.get('token')
-      const role = urlParams.get('role')
-      const name = urlParams.get('name')
-      const email = urlParams.get('email')
+      try {
+        const urlParams = new URLSearchParams(window.location.search)
+        const token = urlParams.get('token')
+        const role = urlParams.get('role')
+        const name = urlParams.get('name')
+        const email = urlParams.get('email')
+        const studentId = urlParams.get('studentId')
+        const error = urlParams.get('error')
 
-      console.log('OAuth callback params:', { token, role, name, email })
-      console.log('Full URL:', window.location.href)
-      console.log('Search string:', window.location.search)
-
-      if (token && role && name) {
-        // Successful OAuth login
-        const userData = {
-          name: decodeURIComponent(name),
-          role: decodeURIComponent(role),
-          email: decodeURIComponent(email) || 'sashinigeshani1@gmail.com',
-          id: 'user-id-placeholder',
-          // Additional user data will be fetched from /api/auth/me
+        if (error) {
+          setProcessing(false)
+          return
         }
-        
-        console.log('User data created:', userData)
-        
-        login(userData, token)
-        
-        // Store user data in localStorage for fallback
-        localStorage.setItem('userName', userData.name)
-        localStorage.setItem('userEmail', userData.email)
-        localStorage.setItem('userRole', userData.role)
-        
-        // Clean up URL
-        window.history.replaceState({}, document.title, window.location.pathname)
-        
-        // Redirect to dashboard
-        console.log('Redirecting to dashboard...')
-        window.location.href = '/dashboard'
-      } else {
-        console.log('No OAuth callback parameters found, showing login page')
-        setLoading(false)
+
+        if (token && role && name) {
+          const userData = { name, role, email, studentId: studentId || '' }
+          login(userData, token)
+          window.history.replaceState({}, document.title, window.location.pathname)
+          setTimeout(() => {
+            navigate(role === 'ADMIN' ? '/admin' : '/')
+          }, 100)
+          return
+        }
+
+        setProcessing(false)
+      } catch {
+        setProcessing(false)
       }
     }
 
     const timeoutId = setTimeout(checkOAuthCallback, 100)
     return () => clearTimeout(timeoutId)
-  }, [login])
+  }, [login, navigate])
 
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:8081/oauth2/authorization/google'
+    setProcessing(true)
+    window.location.assign('http://localhost:8081/oauth2/authorization/google')
   }
 
-  if (loading) {
+  if (loading || processing) {
     return (
-      <div className="hub-login">
-        <div className="hub-loading">Processing login...</div>
+      <div className="hub-page hub-page--narrow">
+        <div className="text-center">
+          <h1>Signing in...</h1>
+          <p>Please wait while we authenticate you with Google.</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="hub-login">
-      <div className="hub-login-card">
-        <div className="hub-login-header">
-          <h1>Smart Campus Hub</h1>
-          <p>Sign in to access your dashboard</p>
-        </div>
-
-        <div className="hub-login-form">
-          <button
-            onClick={handleGoogleLogin}
-            className="hub-button hub-button--google hub-button--full-width"
-          >
-            <svg className="hub-button-icon" width="20" height="20" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
-            Continue with Google
-          </button>
-        </div>
-
-        <div className="hub-login-footer">
-          <p>
-            By signing in, you agree to our Terms of Service and Privacy Policy
+    <div className="hub-page hub-page--narrow hub-auth-page">
+      <div className="hub-auth-card hub-auth-card--playful">
+        <div className="hub-auth-hero">
+          <p className="hub-auth-kicker">Welcome back</p>
+          <h1>Smart Campus Login</h1>
+          <p className="hub-lead">
+            Sign in with your Google account to open the student workspace and continue where you left off.
           </p>
+          <div className="hub-auth-pills">
+            <span>Bookings</span>
+            <span>Tickets</span>
+            <span>Notifications</span>
+          </div>
+        </div>
+
+        <div className="hub-auth-panel">
+          <div className="hub-auth-panel__orb" aria-hidden="true" />
+          <div className="hub-auth-actions flex flex-wrap gap-3 justify-center">
+            <button
+              type="button"
+              className="hub-btn hub-btn--primary hub-auth-button"
+              onClick={handleGoogleLogin}
+              disabled={processing}
+            >
+              Sign in with Google
+            </button>
+          </div>
+
+          <div className="hub-auth-footer text-center">
+            <p className="hub-auth-note">
+              New here? <Link to="/signup">Create an account</Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

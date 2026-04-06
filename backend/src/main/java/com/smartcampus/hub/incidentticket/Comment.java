@@ -23,5 +23,7 @@ public class Comment {
 
     private String createdBy;
 
+    private String createdByName;
+
     private LocalDateTime createdAt;
 }
