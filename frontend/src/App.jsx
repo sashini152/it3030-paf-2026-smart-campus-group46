@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import NotificationsPage from './pages/NotificationsPage'
@@ -8,11 +8,19 @@ import OAuthSuccessPage from './pages/OAuthSuccessPage'
 
 function HomePage() {
   const { user, logout } = useAuth()
-  const navigate = useNavigate()
 
-  function handleLogout() {
+  async function handleLogout() {
+    try {
+      await fetch('http://localhost:8081/logout', {
+        method: 'POST',
+        credentials: 'include',
+      })
+    } catch (e) {
+      // ignore backend logout error
+    }
+
     logout()
-    navigate('/login')
+    window.location.href = 'http://localhost:5173/login'
   }
 
   return (
@@ -74,7 +82,11 @@ function HomePage() {
                   <Link to="/notifications" className="primary-cta">
                     Open notifications
                   </Link>
-                  <button type="button" className="secondary-cta" onClick={handleLogout}>
+                  <button
+                    type="button"
+                    className="secondary-cta"
+                    onClick={handleLogout}
+                  >
                     Logout
                   </button>
                 </>
