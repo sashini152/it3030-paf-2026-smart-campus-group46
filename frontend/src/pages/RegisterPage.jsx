@@ -1,17 +1,18 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { postJson } from '../api/client'
-import { useAuth } from '../auth/AuthContext'
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const [form, setForm] = useState({
+    name: '',
     email: '',
     password: '',
+    role: 'USER',
   })
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const { login } = useAuth()
   const navigate = useNavigate()
 
   function handleChange(e) {
@@ -25,22 +26,25 @@ export default function LoginPage() {
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
+    setSuccess('')
 
-    if (!form.email.trim() || !form.password.trim()) {
-      setError('Please enter email and password')
+    if (!form.name.trim() || !form.email.trim() || !form.password.trim()) {
+      setError('Please fill all fields')
       return
     }
 
     try {
       setLoading(true)
-      const data = await postJson('/api/auth/login', {
+      await postJson('/api/auth/register', {
+        name: form.name.trim(),
         email: form.email.trim(),
         password: form.password,
+        role: form.role,
       })
-      login(data)
-      navigate('/')
+      setSuccess('Registration successful')
+      setTimeout(() => navigate('/login'), 1000)
     } catch (err) {
-      setError(err.message || 'Login failed')
+      setError(err.message || 'Registration failed')
     } finally {
       setLoading(false)
     }
@@ -57,7 +61,7 @@ export default function LoginPage() {
 
           <div className="nav-links">
             <Link to="/">Home</Link>
-            <Link to="/register">Register</Link>
+            <Link to="/login">Sign in</Link>
           </div>
         </div>
       </div>
@@ -66,17 +70,28 @@ export default function LoginPage() {
         <div className="auth-layout">
           <div className="auth-brand-card">
             <div className="auth-badge">SMART CAMPUS HUB</div>
-            <h1>Welcome back</h1>
+            <h1>Create account</h1>
             <p>
-              Sign in to access your account, notifications, and role-based
-              Smart Campus services.
+              Register as a USER or ADMIN to access booking, notification, and
+              role-based features in the Smart Campus platform.
             </p>
           </div>
 
           <div className="auth-card">
-            <h2>Sign in</h2>
+            <h2>Register</h2>
 
             <form onSubmit={handleSubmit} className="auth-form">
+              <div className="auth-field">
+                <label>Name</label>
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="Enter your name"
+                  value={form.name}
+                  onChange={handleChange}
+                />
+              </div>
+
               <div className="auth-field">
                 <label>Email</label>
                 <input
@@ -93,29 +108,30 @@ export default function LoginPage() {
                 <input
                   type="password"
                   name="password"
-                  placeholder="Enter your password"
+                  placeholder="Create a password"
                   value={form.password}
                   onChange={handleChange}
                 />
               </div>
 
+              <div className="auth-field">
+                <label>Role</label>
+                <select name="role" value={form.role} onChange={handleChange}>
+                  <option value="USER">USER</option>
+                  <option value="ADMIN">ADMIN</option>
+                </select>
+              </div>
+
               {error && <p className="auth-error">{error}</p>}
+              {success && <p className="auth-success">{success}</p>}
 
               <button type="submit" className="auth-primary-btn" disabled={loading}>
-                {loading ? 'Signing in...' : 'Sign in'}
+                {loading ? 'Registering...' : 'Create account'}
               </button>
-
-              <a
-                href="http://localhost:8081/oauth2/authorization/google"
-                className="auth-primary-btn"
-                style={{ textDecoration: 'none', marginTop: '6px' }}
-              >
-                Continue with Google
-              </a>
             </form>
 
             <p className="auth-footer">
-              Don’t have an account? <Link to="/register">Create account</Link>
+              Already have an account? <Link to="/login">Sign in</Link>
             </p>
           </div>
         </div>

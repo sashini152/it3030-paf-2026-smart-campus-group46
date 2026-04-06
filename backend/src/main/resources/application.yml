@@ -1,11 +1,22 @@
 spring:
   application:
     name: hub
+
   data:
     mongodb:
-      # Default DB name appears in Compass as a database once documents exist.
-      # Override: set env MONGODB_URI (e.g. Atlas connection string).
       uri: ${MONGODB_URI:mongodb://localhost:27017/smartcampus}
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: 596465616390-5e5ghregsm8bipuiak5r3js6t8sri7do.apps.googleusercontent.com
+            client-secret: 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
+            scope:
+              - openid
+              - profile
+              - email
 
 server:
   port: 8081

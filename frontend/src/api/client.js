@@ -5,20 +5,27 @@ async function handleResponse(res) {
     if (res.status === 204) return null
     return res.json()
   }
+
   const text = await res.text()
   let message = text || res.statusText
+
   try {
     const j = JSON.parse(text)
     if (j.error) message = j.error
   } catch {
-    /* keep message */
+    // keep original message
   }
+
   throw new Error(message)
 }
 
 export async function getJson(path) {
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { Accept: 'application/json' },
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
   })
   return handleResponse(res)
 }
@@ -26,6 +33,7 @@ export async function getJson(path) {
 export async function postJson(path, body) {
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
+    credentials: 'include',
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
@@ -38,6 +46,7 @@ export async function postJson(path, body) {
 export async function putJson(path, body) {
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'PUT',
+    credentials: 'include',
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
@@ -48,17 +57,25 @@ export async function putJson(path, body) {
 }
 
 export async function deleteRequest(path) {
-  const res = await fetch(`${API_BASE}${path}`, { method: 'DELETE' })
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  })
   return handleResponse(res)
 }
 
 export function buildQuery(params) {
   const q = new URLSearchParams()
+
   Object.entries(params).forEach(([k, v]) => {
     if (v !== undefined && v !== null && String(v).trim() !== '') {
       q.set(k, String(v).trim())
     }
   })
+
   const s = q.toString()
   return s ? `?${s}` : ''
 }
