@@ -107,8 +107,7 @@ export default function LoginPage() {
 
               <a
                 href="http://localhost:8081/oauth2/authorization/google"
-                className="auth-primary-btn"
-                style={{ textDecoration: 'none', marginTop: '6px' }}
+                className="auth-primary-btn google-btn"
               >
                 Continue with Google
               </a>
