@@ -30,6 +30,7 @@ api.interceptors.response.use(
         : error.response?.data?.message || error.message
     return Promise.reject(new Error(message))
   }
+<<<<<<< HEAD
 )
 
 api.interceptors.request.use(
@@ -80,3 +81,79 @@ export async function patchJson(path, payload) {
 }
 
 export { api }
+=======
+
+  const text = await res.text()
+  let message = text || res.statusText
+
+  try {
+    const j = JSON.parse(text)
+    if (j.error) message = j.error
+  } catch {
+    // keep original message
+  }
+
+  throw new Error(message)
+}
+
+export async function getJson(path) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  })
+  return handleResponse(res)
+}
+
+export async function postJson(path, body) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+  return handleResponse(res)
+}
+
+export async function putJson(path, body) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  return handleResponse(res)
+}
+
+export async function deleteRequest(path) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  })
+  return handleResponse(res)
+}
+
+export function buildQuery(params) {
+  const q = new URLSearchParams()
+
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && String(v).trim() !== '') {
+      q.set(k, String(v).trim())
+    }
+  })
+
+  const s = q.toString()
+  return s ? `?${s}` : ''
+}
+>>>>>>> 4b40911d003429830a1ef19786124d62873a6777

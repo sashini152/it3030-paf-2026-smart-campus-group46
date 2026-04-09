@@ -1,35 +1,65 @@
 package com.smartcampus.hub.auth;
 
-import java.time.LocalDateTime;
-
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Document(collection = "app_users")
+@Document(collection = "users")
 public class AppUser {
 
     @Id
     private String id;
-
-    @Indexed(unique = true)
-    private String email;
-
     private String name;
+    private String email;
+    private String password;
+    private AppRole role;
 
-    private String role;
+    public AppUser() {
+    }
 
-    @Indexed(unique = true, sparse = true)
-    private String studentId;
+    public AppUser(String name, String email, String password, AppRole role) {
+        this.name = name;
+        this.email = email;
+        this.password = password;
+        this.role = role;
+    }
 
-    private LocalDateTime createdAt;
+    public String getId() {
+        return id;
+    }
 
-    private LocalDateTime updatedAt;
+    public String getName() {
+        return name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public AppRole getRole() {
+        return role;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public void setRole(AppRole role) {
+        this.role = role;
+    }
 }

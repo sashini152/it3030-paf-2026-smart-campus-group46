@@ -1,54 +1,16 @@
 spring:
   application:
     name: hub
+
   data:
     mongodb:
       uri: ${MONGODB_URI:mongodb://localhost:27017/smartcampus}
   main:
     allow-bean-definition-overriding: true
-  security:
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: 698958812390-85rb4i9ce3l95fcfrtkff7lh72dpei6e.apps.googleusercontent.com
-<<<<<<< HEAD
-            client-secret: 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 # ✅ CORRECT NEW CLIENT SECRET
-            redirect-uri: "http://localhost:8081/login/oauth2/code/google" # ✅ EXPLICIT REDIRECT URI
-=======
-            client-secret: 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
-            redirect-uri: "http://localhost:8081/login/oauth2/code/google"
->>>>>>> 572d8cc98dd92cbe1965d5420533fa82934da73d
-            scope:
-              - email
-              - profile
-        provider:
-          google:
-            authorization-uri: https://accounts.google.com/o/oauth2/auth
-            token-uri: https://oauth2.googleapis.com/token
-            user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
-<<<<<<< HEAD
-            user-name-attribute: sub # ✅ FIXED: was 'subemail'
-=======
-            user-name-attribute: sub
->>>>>>> 572d8cc98dd92cbe1965d5420533fa82934da73d
 
 logging:
   level:
-    org.springframework.security.oauth2: TRACE
-    org.springframework.security.oauth2.client: TRACE
-    org.springframework.security.oauth2.client.registration: TRACE
     com.smartcampus.hub: DEBUG
 
 server:
   port: 8081
-
-# JWT Configuration
-jwt:
-  secret: ${JWT_SECRET:mySecretKey123456789012345678901234567890}
-  expiration: 86400000 # 24 hours in milliseconds
-
-# File upload configuration
-spring.servlet.multipart:
-  max-file-size: 10MB
-  max-request-size: 10MB

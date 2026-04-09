@@ -1,45 +1,41 @@
 package com.smartcampus.hub.config;
 
-import com.smartcampus.hub.auth.SimpleOAuth2SuccessHandler;
 import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.http.HttpMethod;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
 public class SecurityConfiguration {
-
-	private final SimpleOAuth2SuccessHandler simpleOAuth2SuccessHandler;
-
-	public SecurityConfiguration(SimpleOAuth2SuccessHandler simpleOAuth2SuccessHandler) {
-		this.simpleOAuth2SuccessHandler = simpleOAuth2SuccessHandler;
-	}
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http
 				.cors(Customizer.withDefaults())
-				.csrf(AbstractHttpConfigurer::disable)
+				.csrf(csrf -> csrf.disable())
 				.authorizeHttpRequests(auth -> auth
-						.requestMatchers("/oauth2/**", "/login/oauth2/**", "/api/public/**",
-								"/api/test/**", "/api/auth/**")
-						.permitAll()
-						.requestMatchers("/api/**").permitAll()
-						.anyRequest().permitAll())
-				.oauth2Login(oauth2 -> oauth2
-						.successHandler(simpleOAuth2SuccessHandler)
-						.permitAll());
+						.requestMatchers("/", "/error").permitAll()
+						.requestMatchers("/api/auth/**").permitAll()
+						.requestMatchers("/api/resources/**").permitAll()
+						.requestMatchers("/api/bookings/**").permitAll()
+						.requestMatchers("/api/notifications/**").permitAll()
+						.anyRequest().authenticated())
+				.oauth2Login(oauth -> oauth
+						.defaultSuccessUrl("http://localhost:5173/oauth-success", true))
+				.logout(logout -> logout
+						.logoutUrl("/logout")
+						.logoutSuccessUrl("http://localhost:5173/login")
+						.invalidateHttpSession(true)
+						.clearAuthentication(true)
+						.deleteCookies("JSESSIONID"));
 		return http.build();
 	}
 
