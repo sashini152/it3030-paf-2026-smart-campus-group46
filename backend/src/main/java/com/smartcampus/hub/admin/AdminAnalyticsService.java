@@ -11,8 +11,8 @@ import org.springframework.stereotype.Service;
 import com.smartcampus.hub.booking.Booking;
 import com.smartcampus.hub.booking.BookingRepository;
 import com.smartcampus.hub.booking.BookingStatus;
-import com.smartcampus.hub.resource.Resource;
-import com.smartcampus.hub.resource.ResourceRepository;
+import com.smartcampus.hub.model.Resource;
+import com.smartcampus.hub.repository.ResourceRepository;
 
 @Service
 public class AdminAnalyticsService {

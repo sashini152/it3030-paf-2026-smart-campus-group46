@@ -34,7 +34,8 @@ public class NotificationPreferenceService {
 		}
 		NotificationPreference preference = get(userId);
 		return switch (type) {
-			case BOOKING -> preference.isBookingEnabled();
+			case BOOKING, BOOKING_CREATED, BOOKING_APPROVED, BOOKING_REJECTED, BOOKING_CANCELLED, BOOKING_CHECKED_IN ->
+				preference.isBookingEnabled();
 			case TICKET -> preference.isTicketEnabled();
 			case COMMENT -> preference.isCommentEnabled();
 			case SYSTEM -> preference.isSystemEnabled();

@@ -27,6 +27,7 @@ public class SecurityConfiguration {
 						.requestMatchers("/api/resources/**").permitAll()
 						.requestMatchers("/api/bookings/**").permitAll()
 						.requestMatchers("/api/notifications/**").permitAll()
+						.requestMatchers("/api/auth/me").permitAll()
 						.anyRequest().authenticated())
 				.oauth2Login(oauth -> oauth
 						.defaultSuccessUrl("http://localhost:5173/oauth-success", true))

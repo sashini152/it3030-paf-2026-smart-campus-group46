@@ -30,74 +30,10 @@ api.interceptors.response.use(
         : error.response?.data?.message || error.message
     return Promise.reject(new Error(message))
   }
-<<<<<<< HEAD
 )
 
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
-  },
-  (error) => Promise.reject(error)
-)
-
-export function buildQuery(params) {
-  const esc = encodeURIComponent
-  const query = Object.entries(params)
-    .filter(([, value]) => value !== undefined && value !== '')
-    .map(([key, value]) => `${esc(key)}=${esc(value)}`)
-    .join('&')
-  return query ? `?${query}` : ''
-}
-
 export async function getJson(path) {
-  const { data } = await api.get(path)
-  return data
-}
-
-export async function postJson(path, payload) {
-  const { data } = await api.post(path, payload)
-  return data
-}
-
-export async function putJson(path, payload) {
-  const { data } = await api.put(path, payload)
-  return data
-}
-
-export async function deleteJson(path) {
-  const { data } = await api.delete(path)
-  return data
-}
-
-export const deleteRequest = deleteJson
-
-export async function patchJson(path, payload) {
-  const { data } = await api.patch(path, payload)
-  return data
-}
-
-export { api }
-=======
-
-  const text = await res.text()
-  let message = text || res.statusText
-
-  try {
-    const j = JSON.parse(text)
-    if (j.error) message = j.error
-  } catch {
-    // keep original message
-  }
-
-  throw new Error(message)
-}
-
-export async function getJson(path) {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
     credentials: 'include',
     headers: {
       Accept: 'application/json',
@@ -108,7 +44,7 @@ export async function getJson(path) {
 }
 
 export async function postJson(path, body) {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -121,7 +57,7 @@ export async function postJson(path, body) {
 }
 
 export async function putJson(path, body) {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
     method: 'PUT',
     credentials: 'include',
     headers: {
@@ -134,7 +70,7 @@ export async function putJson(path, body) {
 }
 
 export async function deleteRequest(path) {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
     method: 'DELETE',
     credentials: 'include',
     headers: {
@@ -156,4 +92,33 @@ export function buildQuery(params) {
   const s = q.toString()
   return s ? `?${s}` : ''
 }
->>>>>>> 4b40911d003429830a1ef19786124d62873a6777
+
+async function handleResponse(res) {
+  if (!res.ok) {
+    const text = await res.text()
+    let message = text || res.statusText
+
+    try {
+      const j = JSON.parse(text)
+      if (j.error) message = j.error
+    } catch {
+      // keep original message
+    }
+
+    throw new Error(message)
+  }
+
+  const text = await res.text()
+  let message = text || res.statusText
+
+  try {
+    const j = JSON.parse(text)
+    if (j.error) message = j.error
+  } catch {
+    // keep original message
+  }
+
+  throw new Error(message)
+}
+
+export { api }
