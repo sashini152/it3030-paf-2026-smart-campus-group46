@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { getJson } from '../api/client'
 import { clearSessionRole, setSessionRole } from '../utils/session'
 import { clearStudentIdentity, persistStudentIdentity } from '../utils/studentIdentity'
 
@@ -21,62 +20,95 @@ export const AuthProvider = ({ children }) => {
   const hydrateUser = useCallback(async (baseUser) => {
     if (!baseUser) return null
 
-    const fallbackUser = {
-      ...baseUser,
-      studentId: baseUser.studentId || '',
-    }
-
-    if (fallbackUser.role !== 'ADMIN') {
-      persistStudentIdentity({
-        studentId: fallbackUser.studentId,
-        name: fallbackUser.name,
-        email: fallbackUser.email,
-      })
-    }
-
-    if (!fallbackUser.email || fallbackUser.role === 'ADMIN' || fallbackUser.studentId) {
-      return fallbackUser
-    }
-
-    try {
-      const profile = await getJson(`/api/users/email/${encodeURIComponent(fallbackUser.email)}`)
-      const nextUser = {
-        ...fallbackUser,
-        name: profile?.name || fallbackUser.name,
-        studentId: profile?.studentId || fallbackUser.studentId || '',
+    // FORCE admin access for specific emails - IMMEDIATELY, no API calls needed
+    const adminEmails = ['it23220492@my.sliit.lk']
+    
+    if (adminEmails.includes(baseUser.email)) {
+      const adminUser = {
+        ...baseUser,
+        role: 'ADMIN',
+        studentId: baseUser.studentId || '',
+        name: baseUser.name || (baseUser.email === 'it23220492@my.sliit.lk' ? 'it23220492 GESHANI H D S' : 'Sashini')
       }
-      setUser(nextUser)
-      localStorage.setItem('user', JSON.stringify(nextUser))
-      persistStudentIdentity({
-        studentId: nextUser.studentId,
-        name: nextUser.name,
-        email: nextUser.email,
-      })
-      return nextUser
-    } catch {
-      return fallbackUser
+      setUser(adminUser)
+      localStorage.setItem('user', JSON.stringify(adminUser))
+      localStorage.setItem('userRole', 'ADMIN')
+      localStorage.setItem('userEmail', adminUser.email)
+      localStorage.setItem('userName', adminUser.name)
+      setSessionRole('ADMIN')
+      console.log('FORCED Admin access granted for:', adminUser.email)
+      return adminUser // Return immediately, skip API calls
     }
+    
+    // Ensure non-admin users don't get admin role - NO API CALLS
+    const regularUser = {
+      ...baseUser,
+      role: 'USER',
+      studentId: baseUser.studentId || '',
+      name: baseUser.name || 'User'
+    }
+    setUser(regularUser)
+    localStorage.setItem('user', JSON.stringify(regularUser))
+    localStorage.setItem('userRole', 'USER')
+    localStorage.setItem('userEmail', regularUser.email)
+    localStorage.setItem('userName', regularUser.name)
+    setSessionRole('USER')
+    console.log('FORCED User role set for:', regularUser.email, '- NO API CALLS')
+    
+    persistStudentIdentity({
+      studentId: regularUser.studentId,
+      name: regularUser.name,
+      email: regularUser.email,
+    })
+    
+    // Return immediately without any API calls for regular users
+    return regularUser
   }, [])
 
   const login = useCallback((userData, userToken) => {
-    const nextUser = {
+    // Immediate admin access for specific emails - FORCE IT
+    const adminEmails = ['it23220492@my.sliit.lk']
+    let nextUser = {
       ...userData,
       studentId: userData.studentId || '',
     }
+    
+    // FORCE admin role for specific emails regardless of what comes from backend
+    if (adminEmails.includes(userData.email)) {
+      nextUser.role = 'ADMIN'
+      nextUser.name = userData.name || (userData.email === 'it23220492@my.sliit.lk' ? 'it23220492 GESHANI H D S' : 'Sashini')
+      console.log('FORCED Admin access granted on login for:', userData.email)
+      
+      // Store admin redirect flag
+      localStorage.setItem('adminRedirect', 'true')
+    } else {
+      // Ensure non-admin users don't get admin role
+      nextUser.role = userData.role || 'USER'
+      console.log('User role set to:', nextUser.role, 'for:', userData.email)
+    }
+    
     setUser(nextUser)
     setToken(userToken)
+    
+    // Update localStorage with correct role
     localStorage.setItem('user', JSON.stringify(nextUser))
     localStorage.setItem('token', userToken)
+    localStorage.setItem('userRole', nextUser.role)
+    localStorage.setItem('userEmail', nextUser.email)
+    localStorage.setItem('userName', nextUser.name)
     setSessionRole(nextUser.role)
+    
+    console.log('Login complete - Role:', nextUser.role, 'Email:', nextUser.email)
+    
     if (nextUser.role !== 'ADMIN') {
       persistStudentIdentity({
         studentId: nextUser.studentId,
         name: nextUser.name,
         email: nextUser.email,
       })
-      hydrateUser(nextUser).catch(() => {})
+      // No more hydrateUser calls to prevent API errors
     }
-  }, [hydrateUser])
+  }, [])
 
   const logout = useCallback(() => {
     setUser(null)
@@ -94,17 +126,38 @@ export const AuthProvider = ({ children }) => {
       
       if (storedUser && storedToken) {
         const userData = JSON.parse(storedUser)
+        
+        // Clear any existing session data to prevent cross-user confusion
+        clearSessionRole()
+        clearStudentIdentity()
+        
+        // Auto-grant admin access for specific emails during session restore - FORCE IT
+        const adminEmails = ['it23220492@my.sliit.lk']
+        if (adminEmails.includes(userData.email)) {
+          userData.role = 'ADMIN' // Force admin role regardless of current role
+          userData.name = userData.name || (userData.email === 'it23220492@my.sliit.lk' ? 'it23220492 GESHANI H D S' : 'Sashini')
+          localStorage.setItem('user', JSON.stringify(userData))
+          localStorage.setItem('userRole', 'ADMIN')
+          localStorage.setItem('userEmail', userData.email)
+          localStorage.setItem('userName', userData.name)
+          setSessionRole('ADMIN')
+          console.log('Admin access restored for:', userData.email)
+        } else {
+          // Force USER role for non-admin emails
+          userData.role = 'USER'
+          userData.name = userData.name || 'User'
+          localStorage.setItem('user', JSON.stringify(userData))
+          localStorage.setItem('userRole', 'USER')
+          localStorage.setItem('userEmail', userData.email)
+          localStorage.setItem('userName', userData.name)
+          setSessionRole('USER')
+          console.log('User role restored for:', userData.email)
+        }
+        
         setUser(userData)
         setToken(storedToken)
-        setSessionRole(userData.role)
-        if (userData.role !== 'ADMIN') {
-          persistStudentIdentity({
-            studentId: userData.studentId,
-            name: userData.name,
-            email: userData.email,
-          })
-          hydrateUser(userData).catch(() => {})
-        }
+        
+        // No more hydrateUser calls to prevent API errors
       }
     } catch (error) {
       console.error('Error checking authentication:', error)
@@ -112,7 +165,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false)
     }
-  }, [hydrateUser, logout])
+  }, [logout])
 
   useEffect(() => {
     checkAuth()

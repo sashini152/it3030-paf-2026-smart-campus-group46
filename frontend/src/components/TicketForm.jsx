@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Reveal from './Reveal'
 import Tooltip from './Tooltip'
 import * as ticketService from '../services/ticketService'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../auth/useAuth'
 import { getStudentIdentity, persistStudentIdentity } from '../utils/studentIdentity'
 
 const categories = ['HARDWARE', 'SOFTWARE', 'NETWORK', 'OTHER']

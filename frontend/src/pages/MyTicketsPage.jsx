@@ -1,4 +1,4 @@
-import { useAuth } from "../contexts/AuthContext.jsx";
+import { useAuth } from '../auth/useAuth';
 import { useNavigate } from "react-router-dom";
 
 export default function MyTicketsPage() {
@@ -54,3 +54,4 @@ export default function MyTicketsPage() {
     </div>
   );
 }
+

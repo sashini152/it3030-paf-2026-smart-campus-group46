@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from "../contexts/AuthContext.jsx";
+import { useAuth } from '../auth/useAuth';
 import { useNavigate, useLocation } from "react-router-dom";
 
 export default function MyBookingsPage() {
@@ -10,6 +10,8 @@ export default function MyBookingsPage() {
   const [loading, setLoading] = useState(true);
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [selectedResource, setSelectedResource] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
 
   const fetchUserBookings = async () => {
     try {
@@ -71,13 +73,40 @@ export default function MyBookingsPage() {
   };
 
   const handleCreateBooking = async (bookingData) => {
+    // Prevent duplicate submissions
+    if (submitting) {
+      return;
+    }
+
     const token = localStorage.getItem('token');
     const userEmail = user?.email || localStorage.getItem('userEmail');
+    
+    // Validate booking data
+    if (!bookingData.startDateTime || !bookingData.endDateTime || !bookingData.purpose) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    // Validate time logic
+    const startTime = new Date(bookingData.startDateTime);
+    const endTime = new Date(bookingData.endDateTime);
+    if (startTime >= endTime) {
+      setError('End time must be after start time');
+      return;
+    }
+
+    if (startTime <= new Date()) {
+      setError('Start time must be in the future');
+      return;
+    }
+    
+    setSubmitting(true);
+    setError(null);
     
     try {
       const response = await fetch('http://localhost:8081/api/bookings/create', {
         method: 'POST',
-        credentials: 'include', // ✅ IMPORTANT for OAuth2 session
+        credentials: 'include', // IMPORTANT for OAuth2 session
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -90,10 +119,17 @@ export default function MyBookingsPage() {
         setSelectedResource(null);
         fetchUserBookings(); // Refresh the bookings list
       } else {
-        console.error('Failed to create booking');
+        const errorText = await response.text();
+        if (response.status === 409) {
+          setError('Booking conflict: This time slot is already booked or conflicts with an existing reservation. Please choose a different time.');
+        } else {
+          setError(errorText || 'Failed to create booking. Please try again.');
+        }
       }
     } catch (error) {
-      console.error('Error creating booking:', error);
+      setError(error.message || 'Error creating booking. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -136,6 +172,12 @@ export default function MyBookingsPage() {
           <p className="text-gray-600 mb-4">
             {selectedResource.type} • {selectedResource.location} • Capacity: {selectedResource.capacity}
           </p>
+          
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
+            </div>
+          )}
           
           <form onSubmit={(e) => {
             e.preventDefault();
@@ -192,9 +234,10 @@ export default function MyBookingsPage() {
             <div className="flex gap-4">
               <button
                 type="submit"
-                className="flex-1 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
+                className="flex-1 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                disabled={submitting}
               >
-                Create Booking
+                {submitting ? 'Creating Booking...' : 'Create Booking'}
               </button>
               <button
                 type="button"
@@ -256,3 +299,4 @@ export default function MyBookingsPage() {
     </div>
   );
 }
+

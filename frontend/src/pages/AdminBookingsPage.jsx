@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getJson, putJson } from '../api/client'
-import '../styles/home.css'
 
 function toDatetimeLocal(iso) {
   if (!iso) return ''
@@ -145,3 +144,4 @@ export default function AdminBookingsPage() {
     </div>
   )
 }
+

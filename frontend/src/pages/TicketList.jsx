@@ -7,7 +7,7 @@ import Reveal from '../components/Reveal'
 import StatusBadge from '../components/StatusBadge'
 import SurfaceCard from '../components/SurfaceCard'
 import Tooltip from '../components/Tooltip'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../auth/useAuth'
 import { useTickets } from '../hooks/useTickets'
 import {
   TICKET_STATUS_OPTIONS,
@@ -335,3 +335,4 @@ export default function TicketList() {
     </div>
   )
 }
+

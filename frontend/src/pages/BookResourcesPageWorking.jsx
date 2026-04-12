@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useAuth } from "../contexts/AuthContext.jsx";
+import { useAuth } from '../auth/useAuth';
 import { useNavigate } from "react-router-dom";
 
 export default function BookResourcesPageWorking() {
@@ -178,3 +178,4 @@ export default function BookResourcesPageWorking() {
     </div>
   );
 }
+

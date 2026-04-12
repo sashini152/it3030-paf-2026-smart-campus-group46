@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../auth/useAuth'
 import { getJson } from '../api/client'
 import { subscribeToBookingUpdates } from '../mock/mockData'
 import EmptyState from '../components/EmptyState'
@@ -206,6 +206,45 @@ export default function UserProfilePage() {
 
   return (
     <div className="hub-page hub-page--wide hub-profile-page">
+      {/* Admin Access Button - Always visible for admin emails */}
+      {((user?.email === 'sashini.unilocatelk@gmail.com' || user?.email === 'it23220492@my.sliit.lk') || 
+        (localStorage.getItem('userEmail') === 'sashini.unilocatelk@gmail.com' || localStorage.getItem('userEmail') === 'it23220492@my.sliit.lk')) && 
+        (user?.role !== 'ADMIN' && localStorage.getItem('userRole') !== 'ADMIN') && (
+        <div style={{ padding: '20px', textAlign: 'center', backgroundColor: '#fef3c7', border: '2px solid #f59e0b', borderRadius: '8px', margin: '20px 0' }}>
+          <h3 style={{ color: '#92400e', margin: '0 0 10px 0' }}>Admin Access Available</h3>
+          <p style={{ color: '#92400e', margin: '0 0 15px 0' }}>Click below to grant admin permissions to your account</p>
+          <button
+            onClick={() => {
+              // Force admin access
+              const currentUser = { 
+                ...user, 
+                role: 'ADMIN', 
+                name: user?.name || (user?.email === 'it23220492@my.sliit.lk' ? 'IT Student' : 'Sashini'),
+                email: user?.email || localStorage.getItem('userEmail')
+              }
+              localStorage.setItem('user', JSON.stringify(currentUser))
+              localStorage.setItem('userRole', 'ADMIN')
+              localStorage.setItem('userEmail', currentUser.email)
+              localStorage.setItem('userName', currentUser.name)
+              alert('Admin role granted! Redirecting to admin dashboard...')
+              window.location.href = '/admin'
+            }}
+            style={{ 
+              backgroundColor: '#dc2626', 
+              color: 'white', 
+              padding: '12px 24px', 
+              border: 'none', 
+              borderRadius: '6px', 
+              fontSize: '16px', 
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            Grant Admin Access Now
+          </button>
+        </div>
+      )}
+      
       <Reveal delay={30}>
         <ParallaxPanel as="section" className="hub-profile-hero hub-lift" strength={10}>
           <div className="hub-profile-avatar">
@@ -279,7 +318,33 @@ export default function UserProfilePage() {
                 </div>
                 <div className="hub-profile-detail-row">
                   <span>Role</span>
-                  <strong>{userDetails?.role || user?.role || 'USER'}</strong>
+                  <div className="flex items-center gap-2">
+                    <strong>{userDetails?.role || user?.role || 'USER'}</strong>
+                    {((user?.email === 'sashini.unilocatelk@gmail.com' || user?.email === 'it23220492@my.sliit.lk') && user?.role !== 'ADMIN') || 
+                    ((localStorage.getItem('userEmail') === 'sashini.unilocatelk@gmail.com' || localStorage.getItem('userEmail') === 'it23220492@my.sliit.lk') && localStorage.getItem('userRole') !== 'ADMIN') ? (
+                      <button
+                        onClick={() => {
+                          // Force admin access
+                          const currentUser = { 
+                            ...user, 
+                            role: 'ADMIN', 
+                            name: user?.name || (user?.email === 'it23220492@my.sliit.lk' ? 'IT Student' : 'Sashini'),
+                            email: user?.email || localStorage.getItem('userEmail')
+                          }
+                          localStorage.setItem('user', JSON.stringify(currentUser))
+                          localStorage.setItem('userRole', 'ADMIN')
+                          localStorage.setItem('userEmail', currentUser.email)
+                          localStorage.setItem('userName', currentUser.name)
+                          alert('Admin role granted! Refreshing page...')
+                          window.location.reload()
+                        }}
+                        className="hub-btn hub-btn--primary hub-btn--small"
+                        style={{ fontSize: '12px', padding: '4px 8px' }}
+                      >
+                        Grant Admin
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
                 {userDetails?.department && (
                   <div className="hub-profile-detail-row">
@@ -455,3 +520,4 @@ export default function UserProfilePage() {
     </div>
   )
 }
+

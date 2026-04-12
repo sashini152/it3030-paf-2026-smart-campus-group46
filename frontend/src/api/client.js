@@ -80,6 +80,31 @@ export async function deleteRequest(path) {
   return handleResponse(res)
 }
 
+export async function deleteJson(path) {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  })
+  return handleResponse(res)
+}
+
+export async function patchJson(path, body) {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  return handleResponse(res)
+}
+
 export function buildQuery(params) {
   const q = new URLSearchParams()
 
@@ -97,28 +122,30 @@ async function handleResponse(res) {
   if (!res.ok) {
     const text = await res.text()
     let message = text || res.statusText
+    let errorData = {}
 
     try {
       const j = JSON.parse(text)
       if (j.error) message = j.error
+      errorData = j
     } catch {
       // keep original message
     }
 
-    throw new Error(message)
+    const error = new Error(message)
+    error.status = res.status
+    error.statusText = res.statusText
+    error.data = errorData
+    throw error
   }
 
   const text = await res.text()
-  let message = text || res.statusText
-
+  
   try {
-    const j = JSON.parse(text)
-    if (j.error) message = j.error
+    return JSON.parse(text)
   } catch {
-    // keep original message
+    return text || res.statusText
   }
-
-  throw new Error(message)
 }
 
 export { api }

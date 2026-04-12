@@ -1,4 +1,4 @@
-import { useAuth } from '../contexts/AuthContext.jsx'
+import { useAuth } from '../auth/useAuth'
 import { useNavigate } from 'react-router-dom'
 
 export default function UnauthorizedPage() {
@@ -43,3 +43,4 @@ export default function UnauthorizedPage() {
     </div>
   )
 }
+

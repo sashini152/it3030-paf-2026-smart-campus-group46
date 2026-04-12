@@ -1,6 +1,6 @@
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import sliitLogo from '../assets/sliit-logo.png'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../auth/useAuth'
 import { isAdminRole } from '../utils/session'
 
 const signedInNavigationItems = [
@@ -21,26 +21,11 @@ const guestNavigationItems = [
 const adminNavigationItems = [{ to: '/admin', label: 'Dashboard' }]
 
 const linkClass = ({ isActive }) =>
-  'hub-nav__link' + (isActive ? ' hub-nav__link--active' : '')
+  `hub-nav__link${isActive ? ' hub-nav__link--active' : ''}`
 
 export default function Layout() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
-  const location = useLocation()
-  const isHomePage = location.pathname === '/'
-  const isResourcesPage = location.pathname.startsWith('/resources')
-  const isBookingsPage =
-    location.pathname.startsWith('/bookings') ||
-    location.pathname.startsWith('/user-bookings') ||
-    location.pathname.startsWith('/admin-bookings')
-  const isUserBookingsPage = location.pathname.startsWith('/user-bookings')
-  const isTicketsPage =
-    location.pathname.startsWith('/tickets') ||
-    location.pathname.startsWith('/ticket-list') ||
-    location.pathname.startsWith('/ticket-details')
-  const isNotificationsPage = location.pathname.startsWith('/notifications')
-  const isProfilePage = location.pathname.startsWith('/profile')
-  const isAuthPage = location.pathname.startsWith('/login') || location.pathname.startsWith('/signup')
 
   const isAdmin = isAdminRole(user?.role)
   const bookingPageRoute = isAdmin ? '/admin-bookings' : user ? '/user-bookings' : '/bookings'
@@ -56,13 +41,7 @@ export default function Layout() {
   }
 
   return (
-    <div
-      className={`hub-app${isHomePage ? ' hub-app--home' : ''}${
-        isResourcesPage ? ' hub-app--resources' : ''
-      }${isBookingsPage ? ' hub-app--bookings' : ''}${isUserBookingsPage ? ' hub-app--user-bookings' : ''}${isTicketsPage ? ' hub-app--tickets' : ''}${
-        isNotificationsPage ? ' hub-app--notifications' : ''
-      }${isProfilePage ? ' hub-app--profile' : ''}${isAuthPage ? ' hub-app--auth' : ''}`}
-    >
+    <div className="hub-app">
       <header className="hub-header">
         <div className="hub-header__inner">
           <NavLink to="/" className="hub-brand" end>

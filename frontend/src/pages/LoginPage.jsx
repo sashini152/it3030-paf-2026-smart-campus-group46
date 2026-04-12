@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { postJson } from '../api/client'
-import { useAuth } from '../auth/AuthContext'
+import { useAuth } from '../auth/useAuth'
 
 export default function LoginPage() {
   const [form, setForm] = useState({
@@ -47,38 +47,43 @@ export default function LoginPage() {
   }
 
   return (
-    <>
-      <div className="topbar">
-        <div className="topbar-inner">
-          <Link to="/" className="brand">
-            <div className="brand-badge">??</div>
-            <span>Smart Campus Hub</span>
+    <div className="hub-app hub-app--auth">
+      <header className="hub-header">
+        <div className="hub-header__inner">
+          <Link to="/" className="hub-brand">
+            <span className="hub-brand__text">Smart Campus Hub</span>
           </Link>
 
-          <div className="nav-links">
-            <Link to="/">Home</Link>
-            <Link to="/register">Register</Link>
-          </div>
+          <nav className="hub-nav">
+            <Link to="/" className="hub-nav__link">Home</Link>
+            <Link to="/register" className="hub-nav__link">Register</Link>
+          </nav>
         </div>
-      </div>
+      </header>
 
-      <div className="auth-shell">
-        <div className="auth-layout">
-          <div className="auth-brand-card">
-            <div className="auth-badge">SMART CAMPUS HUB</div>
+      <main className="hub-main">
+        <div className="hub-auth-card hub-auth-card--playful">
+          <div className="hub-auth-hero">
+            <div className="hub-auth-kicker">SMART CAMPUS HUB</div>
             <h1>Welcome back</h1>
-            <p>
+            <p className="hub-lead">
               Sign in to access your account, notifications, and role-based
               Smart Campus services.
             </p>
+            <div className="hub-auth-pills">
+              <span>Resources</span>
+              <span>Bookings</span>
+              <span>Tickets</span>
+            </div>
           </div>
 
-          <div className="auth-card">
+          <div className="hub-auth-panel">
+            <div className="hub-auth-panel__orb"></div>
             <h2>Sign in</h2>
 
-            <form onSubmit={handleSubmit} className="auth-form">
-              <div className="auth-field">
-                <label>Email</label>
+            <form onSubmit={handleSubmit}>
+              <div className="hub-field">
+                <span>Email</span>
                 <input
                   type="email"
                   name="email"
@@ -88,8 +93,8 @@ export default function LoginPage() {
                 />
               </div>
 
-              <div className="auth-field">
-                <label>Password</label>
+              <div className="hub-field">
+                <span>Password</span>
                 <input
                   type="password"
                   name="password"
@@ -99,26 +104,30 @@ export default function LoginPage() {
                 />
               </div>
 
-              {error && <p className="auth-error">{error}</p>}
+              {error && <p className="hub-alert hub-alert--error">{error}</p>}
 
-              <button type="submit" className="auth-primary-btn" disabled={loading}>
-                {loading ? 'Signing in...' : 'Sign in'}
-              </button>
+              <div className="hub-auth-actions">
+                <button type="submit" className="hub-btn hub-btn--primary" disabled={loading}>
+                  {loading ? 'Signing in...' : 'Sign in'}
+                </button>
+              </div>
 
-              <a
-                href="http://localhost:8081/oauth2/authorization/google"
-                className="auth-primary-btn google-btn"
-              >
-                Continue with Google
-              </a>
+              <div className="hub-auth-actions">
+                <a
+                  href="http://localhost:8081/oauth2/authorization/google"
+                  className="hub-btn"
+                >
+                  Continue with Google
+                </a>
+              </div>
             </form>
 
-            <p className="auth-footer">
+            <p className="hub-auth-note">
               Don't have an account? <Link to="/register">Create account</Link>
             </p>
           </div>
         </div>
-      </div>
-    </>
+      </main>
+    </div>
   )
 }

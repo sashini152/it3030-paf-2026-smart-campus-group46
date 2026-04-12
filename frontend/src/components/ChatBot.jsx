@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../auth/useAuth'
 import { useTicketChat } from '../hooks/useTicketChat'
 import * as ticketChatService from '../services/ticketChatService'
 import { getSessionRole, isAdminRole } from '../utils/session'

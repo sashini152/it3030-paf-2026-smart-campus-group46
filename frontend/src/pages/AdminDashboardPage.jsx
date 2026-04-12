@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../auth/useAuth'
 
 export default function AdminDashboardPage() {
   const { user, logout } = useAuth()
@@ -282,3 +282,4 @@ export default function AdminDashboardPage() {
     </div>
   )
 }
+

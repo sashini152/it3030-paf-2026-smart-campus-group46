@@ -141,17 +141,47 @@ export default function BookingsPage() {
       return
     }
 
+    // Prevent duplicate submissions
+    if (submitting) {
+      return
+    }
+
+    // Validate form data
+    if (!form.resourceId || !form.start || !form.end || !form.purpose) {
+      setError('Please fill in all required fields')
+      return
+    }
+
+    // Validate time logic
+    const startTime = new Date(fromDatetimeLocal(form.start))
+    const endTime = new Date(fromDatetimeLocal(form.end))
+    if (startTime >= endTime) {
+      setError('End time must be after start time')
+      return
+    }
+
+    if (startTime <= new Date()) {
+      setError('Start time must be in the future')
+      return
+    }
+
     setSubmitting(true)
     setError(null)
+    
+    // Debug: Log the booking data being sent
+    const bookingData = {
+      resourceId: form.resourceId,
+      requestedByUserId: userId.trim(),
+      startDateTime: fromDatetimeLocal(form.start),
+      endDateTime: fromDatetimeLocal(form.end),
+      purpose: form.purpose,
+      expectedAttendees: Number(form.expectedAttendees),
+    }
+    console.log('Sending booking data:', bookingData)
+    console.log('Current bookings for conflict check:', bookings.filter(b => b.resourceId === form.resourceId))
+    
     try {
-      await postJson('/api/bookings', {
-        resourceId: form.resourceId,
-        requestedByUserId: userId.trim(),
-        startDateTime: fromDatetimeLocal(form.start),
-        endDateTime: fromDatetimeLocal(form.end),
-        purpose: form.purpose,
-        expectedAttendees: Number(form.expectedAttendees),
-      })
+      await postJson('/api/bookings', bookingData)
       setForm((current) => ({
         ...current,
         purpose: '',
@@ -160,7 +190,18 @@ export default function BookingsPage() {
       }))
       await loadBookings()
     } catch (e) {
-      setError(e.message)
+      console.log('Booking error details:', e)
+      console.log('Error message:', e.message)
+      console.log('Error status:', e.status)
+      console.log('Error data:', e.data)
+      
+      if (e.status === 409) {
+        setError('Booking conflict: This time slot is already booked or conflicts with an existing reservation. Please choose a different time.')
+      } else if (e.message && e.message.includes('duplicate')) {
+        setError('Duplicate booking detected. Please wait a moment and try again.')
+      } else {
+        setError(e.message || 'Failed to create booking. Please try again.')
+      }
     } finally {
       setSubmitting(false)
     }
@@ -560,3 +601,4 @@ export default function BookingsPage() {
     </div>
   )
 }
+

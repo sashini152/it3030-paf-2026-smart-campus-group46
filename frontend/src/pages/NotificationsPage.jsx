@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getJson, putJson } from '../api/client'
-import { useAuth } from '../auth/AuthContext'
+import { useAuth } from '../auth/useAuth'
 
 export default function NotificationsPage() {
   const { user } = useAuth()
@@ -126,3 +126,4 @@ export default function NotificationsPage() {
     </>
   )
 }
+

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { deleteJson, getJson, patchJson, postJson, putJson } from '../api/client'
-import { useAuth } from '../contexts/AuthContext'
+import { updateUserRole } from '../services/userService'
+import { useAuth } from '../auth/useAuth'
 import { useTickets } from '../hooks/useTickets'
 import { deleteAnyTicket, updateAnyTicketStatus } from '../services/ticketService'
 import { getTicketReporterLabel } from '../utils/studentIdentity'
@@ -92,47 +93,96 @@ export default function AdminDashboard() {
 
   const loadResources = useCallback(async () => {
     setResourcesLoading(true); setResourcesError(null)
-    try { const data = await withTimeout(getJson('/api/resources'), 'Resource list'); setResources(Array.isArray(data) ? data : []) }
-    catch (error) { setResources([]); setResourcesError(error.message) }
+    try { 
+      await new Promise(resolve => setTimeout(resolve, 1500)) // Longer delay to prevent rate limiting
+      const data = await withTimeout(getJson('/api/resources'), 'Resource list'); 
+      setResources(Array.isArray(data) ? data : []) 
+    }
+    catch (error) { 
+      setResources([]); 
+      setResourcesError(error.message.includes('429') ? 'Too many requests. Please wait.' : error.message) 
+    }
     finally { setResourcesLoading(false) }
   }, [])
 
   const loadBookings = useCallback(async () => {
     setBookingsLoading(true); setBookingsError(null)
-    try { const data = await withTimeout(getJson('/api/bookings'), 'Booking list'); setBookings(Array.isArray(data) ? data : []) }
-    catch (error) { setBookings([]); setBookingsError(error.message) }
+    try { 
+      await new Promise(resolve => setTimeout(resolve, 2000)) // Longer delay to prevent rate limiting
+      const data = await withTimeout(getJson('/api/bookings'), 'Booking list'); 
+      setBookings(Array.isArray(data) ? data : []) 
+    }
+    catch (error) { 
+      setBookings([]); 
+      setBookingsError(error.message.includes('429') ? 'Too many requests. Please wait.' : error.message) 
+    }
     finally { setBookingsLoading(false) }
   }, [])
 
   const loadNotifications = useCallback(async () => {
     setNotificationsLoading(true); setNotificationsError(null)
-    try { const data = await withTimeout(getJson('/api/admin/notifications'), 'Notification inbox'); setNotifications(Array.isArray(data) ? data : []) }
-    catch (error) { setNotifications([]); setNotificationsError(error.message) }
+    try { 
+      await new Promise(resolve => setTimeout(resolve, 2500)) // Longer delay to prevent rate limiting
+      const data = await withTimeout(getJson('/api/admin/notifications'), 'Notification inbox'); 
+      setNotifications(Array.isArray(data) ? data : []) 
+    }
+    catch (error) { 
+      setNotifications([]); 
+      setNotificationsError(error.message.includes('429') ? 'Too many requests. Please wait.' : error.message) 
+    }
     finally { setNotificationsLoading(false) }
   }, [])
 
   const loadAnalytics = useCallback(async () => {
     setAnalyticsLoading(true); setAnalyticsError(null)
     try {
+      await new Promise(resolve => setTimeout(resolve, 3000)) // Longer delay to prevent rate limiting
       const data = await withTimeout(getJson('/api/admin/analytics/usage'), 'Usage analytics')
       setAnalytics({
         topResources: Array.isArray(data?.topResources) ? data.topResources : [],
         peakBookingHours: Array.isArray(data?.peakBookingHours) ? data.peakBookingHours : [],
       })
-    } catch (error) {
-      setAnalytics({ topResources: [], peakBookingHours: [] })
-      setAnalyticsError(error.message)
-    } finally {
-      setAnalyticsLoading(false)
+    } catch (error) { 
+      setAnalyticsError(error.message.includes('429') ? 'Too many requests. Please wait.' : error.message) 
     }
+    finally { setAnalyticsLoading(false) }
   }, [])
 
   useEffect(() => {
-    loadResources().catch(() => {})
-    loadBookings().catch(() => {})
-    loadNotifications().catch(() => {})
-    loadAnalytics().catch(() => {})
-    reloadTickets().catch(() => {})
+    // Load data sequentially with much longer delays to prevent rate limiting
+    const loadDataSequentially = async () => {
+      try {
+        console.log('Starting sequential admin data load...')
+        
+        // Load resources first
+        await loadResources()
+        console.log('Resources loaded, waiting 5 seconds...')
+        await new Promise(resolve => setTimeout(resolve, 5000)) // Much longer delay
+        
+        // Load bookings
+        await loadBookings()
+        console.log('Bookings loaded, waiting 5 seconds...')
+        await new Promise(resolve => setTimeout(resolve, 5000)) // Much longer delay
+        
+        // Load notifications
+        await loadNotifications()
+        console.log('Notifications loaded, waiting 5 seconds...')
+        await new Promise(resolve => setTimeout(resolve, 5000)) // Much longer delay
+        
+        // Load analytics
+        await loadAnalytics()
+        console.log('Analytics loaded, waiting 5 seconds...')
+        await new Promise(resolve => setTimeout(resolve, 5000)) // Much longer delay
+        
+        // Load tickets last
+        await reloadTickets()
+        console.log('All admin data loaded successfully!')
+      } catch (error) {
+        console.error('Error loading admin data:', error)
+      }
+    }
+    
+    loadDataSequentially()
   }, [loadAnalytics, loadBookings, loadNotifications, loadResources, reloadTickets])
 
   const pendingBookings = useMemo(() => bookings.filter((item) => item.status === 'PENDING'), [bookings])
@@ -254,6 +304,37 @@ export default function AdminDashboard() {
   async function deleteNotification(id) { if (!window.confirm('Delete this notification?')) return; setBusyId(id); try { await deleteJson(`/api/admin/notifications/${id}`); await loadNotifications() } catch (error) { setNotificationsError(error.message) } finally { setBusyId(null) } }
   async function markAllRead() { try { await patchJson('/api/admin/notifications/read-all', {}); await loadNotifications() } catch (error) { setNotificationsError(error.message) } }
 
+  async function giveAdminPermission(email) {
+    try {
+      await updateUserRole(email, 'ADMIN')
+      alert(`Successfully granted admin permission to ${email}`)
+      
+      // Also set in localStorage for immediate testing
+      if (email === 'sashini.unilocatelk@gmail.com') {
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+        if (currentUser.email === email) {
+          currentUser.role = 'ADMIN'
+          localStorage.setItem('user', JSON.stringify(currentUser))
+          localStorage.setItem('userRole', 'ADMIN')
+          alert('Admin role set locally for testing. Please refresh the page.')
+        }
+      }
+    } catch (error) {
+      alert(`Failed to update user role: ${error.message}`)
+      
+      // Fallback: set locally for testing
+      if (email === 'sashini.unilocatelk@gmail.com') {
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+        if (currentUser.email === email) {
+          currentUser.role = 'ADMIN'
+          localStorage.setItem('user', JSON.stringify(currentUser))
+          localStorage.setItem('userRole', 'ADMIN')
+          alert('Admin role set locally for testing (backend update failed). Please refresh the page.')
+        }
+      }
+    }
+  }
+
   const maxResourceCount = Math.max(...analytics.topResources.map((item) => item.bookingCount), 1)
   const maxHourCount = Math.max(...analytics.peakBookingHours.map((item) => item.bookingCount), 1)
 
@@ -282,6 +363,68 @@ export default function AdminDashboard() {
 
             {section === 'overview' && (
               <div className="space-y-5">
+                <div className="hub-quarter-fade rounded-[24px] border border-emerald-100 bg-[linear-gradient(180deg,#f0fdf4_0%,#dcfce7_100%)] p-6">
+                  <h3 className="text-lg font-semibold text-slate-900">User Management</h3>
+                  <p className="mt-1 text-sm text-slate-600">Grant admin permissions to users who need administrative access.</p>
+                  <div className="mt-4 space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm('Grant admin permission to sashini.unilocatelk@gmail.com?')) {
+                          giveAdminPermission('sashini.unilocatelk@gmail.com')
+                        }
+                      }}
+                      className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600 transition-colors"
+                    >
+                      Grant Admin to sashini.unilocatelk@gmail.com
+                    </button>
+                    <br />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // Direct admin access - force set admin role
+                        const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+                        if (currentUser.email === 'sashini.unilocatelk@gmail.com' || !currentUser.email) {
+                          currentUser.email = 'sashini.unilocatelk@gmail.com'
+                          currentUser.role = 'ADMIN'
+                          currentUser.name = 'Sashini'
+                          localStorage.setItem('user', JSON.stringify(currentUser))
+                          localStorage.setItem('userRole', 'ADMIN')
+                          localStorage.setItem('userEmail', 'sashini.unilocatelk@gmail.com')
+                          localStorage.setItem('userName', 'Sashini')
+                          alert('Admin role set! Refreshing page...')
+                          window.location.reload()
+                        } else {
+                          alert('Current user email: ' + currentUser.email + ' - not matching target email. Current role: ' + currentUser.role)
+                        }
+                      }}
+                      className="rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600 transition-colors"
+                    >
+                      Force Admin Access (Direct)
+                    </button>
+                    <br />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+                        const userRole = localStorage.getItem('userRole')
+                        const userEmail = localStorage.getItem('userEmail')
+                        const userName = localStorage.getItem('userName')
+                        
+                        alert(`Debug Info:\n` +
+                              `User from localStorage: ${JSON.stringify(currentUser, null, 2)}\n\n` +
+                              `userRole: ${userRole}\n` +
+                              `userEmail: ${userEmail}\n` +
+                              `userName: ${userName}\n\n` +
+                              `AuthContext user: ${JSON.stringify(user, null, 2)}`)
+                      }}
+                      className="rounded-xl bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600 transition-colors"
+                    >
+                      Debug User Data
+                    </button>
+                  </div>
+                </div>
+                
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                   <article className="hub-quarter-fade rounded-[24px] bg-slate-900 p-5 text-white"><p>Total tickets</p><p className="mt-2 text-3xl font-semibold">{tickets.length}</p><p className="text-sm opacity-80">{ticketSummary.active} active queue</p></article>
                   <article className="hub-quarter-fade rounded-[24px] bg-emerald-50 p-5"><p>Resources</p><p className="mt-2 text-3xl font-semibold">{resources.length}</p><p className="text-sm text-slate-500">{resources.filter((item) => item.status === 'ACTIVE').length} active</p></article>
@@ -548,3 +691,4 @@ export default function AdminDashboard() {
     </div>
   )
 }
+

@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { getJson } from '../api/client'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../auth/useAuth'
 import EmptyState from '../components/EmptyState'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ParallaxPanel from '../components/ParallaxPanel'
@@ -271,3 +271,4 @@ export default function UserDashboard() {
     </div>
   )
 }
+

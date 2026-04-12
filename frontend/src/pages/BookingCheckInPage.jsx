@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { getJson, patchJson } from '../api/client'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../auth/useAuth'
 
 function formatDateTime(value) {
   if (!value) return '-'
@@ -285,3 +285,4 @@ export default function BookingCheckInPage() {
     </div>
   )
 }
+

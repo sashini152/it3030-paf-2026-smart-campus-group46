@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { buildQuery, deleteRequest, getJson, postJson, putJson } from '../api/client'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../auth/useAuth'
 import { useLocation } from 'react-router-dom'
 import EmptyState from '../components/EmptyState'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -444,3 +444,4 @@ export default function AdminResourcesPage() {
     </div>
   )
 }
+

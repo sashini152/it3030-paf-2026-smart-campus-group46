@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useAuth } from '../contexts/AuthContext.jsx'
+import { useAuth } from '../auth/useAuth'
 import { useNavigate } from 'react-router-dom'
 
 export default function DirectLoginPage() {
@@ -85,3 +85,4 @@ export default function DirectLoginPage() {
     </div>
   )
 }
+

@@ -1,16 +1,11 @@
-import { createContext, useContext, useEffect, useState } from 'react'
-
-const AuthContext = createContext(null)
+import { useState } from 'react'
+import { AuthContext } from './AuthContext'
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-
-  useEffect(() => {
+  const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('authUser')
-    if (savedUser) {
-      setUser(JSON.parse(savedUser))
-    }
-  }, [])
+    return savedUser ? JSON.parse(savedUser) : null
+  })
 
   function login(userData) {
     setUser(userData)
@@ -27,14 +22,4 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   )
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-
-  if (!context) {
-    throw new Error('useAuth must be used inside AuthProvider')
-  }
-
-  return context
 }
