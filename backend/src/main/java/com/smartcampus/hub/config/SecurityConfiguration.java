@@ -30,7 +30,7 @@ public class SecurityConfiguration {
 						.requestMatchers("/api/auth/me").permitAll()
 						.anyRequest().authenticated())
 				.oauth2Login(oauth -> oauth
-						.defaultSuccessUrl("http://localhost:5173/oauth-success", true))
+						.defaultSuccessUrl("http://localhost:3000/oauth-success", true))
 				.logout(logout -> logout
 						.logoutUrl("/logout")
 						.logoutSuccessUrl("http://localhost:8081/login")

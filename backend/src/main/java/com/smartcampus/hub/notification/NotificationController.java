@@ -23,4 +23,9 @@ public class NotificationController {
     public void markAsRead(@PathVariable String id) {
         notificationService.markAsRead(id);
     }
+
+    @PutMapping("/{id}/read")
+    public void markAsReadPut(@PathVariable String id) {
+        notificationService.markAsRead(id);
+    }
 }
