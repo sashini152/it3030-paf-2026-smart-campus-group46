@@ -53,11 +53,6 @@ export default function LoginPage() {
           <Link to="/" className="hub-brand">
             <span className="hub-brand__text">Smart Campus Hub</span>
           </Link>
-
-          <nav className="hub-nav">
-            <Link to="/" className="hub-nav__link">Home</Link>
-            <Link to="/register" className="hub-nav__link">Register</Link>
-          </nav>
         </div>
       </header>
 

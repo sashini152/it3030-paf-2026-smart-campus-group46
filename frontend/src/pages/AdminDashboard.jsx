@@ -356,11 +356,7 @@ export default function AdminDashboard() {
         {menuOpen && <div className="fixed inset-0 z-40 bg-slate-900/35 xl:hidden" onClick={() => setMenuOpen(false)}><aside className="h-full w-72 bg-white px-6 py-8" onClick={(event) => event.stopPropagation()}>{sidebarView()}</aside></div>}
         <main className="flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
           <div className="mx-auto max-w-[1480px] rounded-[36px] border border-white/70 bg-white/70 p-4 shadow-[0_30px_80px_rgba(148,163,184,0.28)] md:p-6 lg:p-8">
-            <header className="mb-8 flex items-start justify-between gap-4">
-              <div className="flex items-start gap-3"><button type="button" onClick={() => setMenuOpen(true)} className="mt-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 xl:hidden">Menu</button><div><p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-600">Smart Campus Admin</p><h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">Operations dashboard</h1><p className="mt-2 max-w-2xl text-sm text-slate-500">Manage resources, bookings, tickets, notifications, and analytics from one page.</p></div></div>
-              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-right text-sm"><p className="font-semibold text-slate-900">{user?.name || 'Campus Admin'}</p><p className="text-slate-500">{user?.email || 'admin@smartcampus.local'}</p></div>
-            </header>
-
+            
             {section === 'overview' && (
               <div className="space-y-5">
                 <div className="hub-quarter-fade rounded-[24px] border border-emerald-100 bg-[linear-gradient(180deg,#f0fdf4_0%,#dcfce7_100%)] p-6">

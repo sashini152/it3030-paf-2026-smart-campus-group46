@@ -1,44 +1,44 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import sliitLogo from '../assets/sliit-logo.png'
-import { useAuth } from '../auth/useAuth'
-import { isAdminRole } from '../utils/session'
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import sliitLogo from "../assets/sliit-logo.png";
+import { useAuth } from "../auth/useAuth";
+import { isAdminRole } from "../utils/session";
 
 const signedInNavigationItems = [
-  { to: '/resources', label: 'Resources' },
-  { to: '/tickets', label: 'Tickets' },
-  { to: '/notifications', label: 'Notifications' },
-]
+  { to: "/resources", label: "Resources" },
+  { to: "/tickets", label: "Tickets" },
+  { to: "/notifications", label: "Notifications" },
+];
 
-const authenticatedNavigationItems = [
-  { to: '/profile', label: 'Profile' },
-]
+const authenticatedNavigationItems = [{ to: "/profile", label: "Profile" }];
 
 const guestNavigationItems = [
-  { to: '/login', label: 'Sign in' },
-  { to: '/signup', label: 'Sign up' },
-]
+  { to: "/login", label: "Sign in" },
+  { to: "/signup", label: "Sign up" },
+];
 
-const adminNavigationItems = [{ to: '/admin', label: 'Dashboard' }]
+const adminNavigationItems = [{ to: "/admin", label: "Dashboard" }];
 
 const linkClass = ({ isActive }) =>
-  `hub-nav__link${isActive ? ' hub-nav__link--active' : ''}`
+  `hub-nav__link${isActive ? " hub-nav__link--active" : ""}`;
 
 export default function Layout() {
-  const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
-  const isAdmin = isAdminRole(user?.role)
-  const bookingPageRoute = isAdmin ? '/admin-bookings' : user ? '/user-bookings' : '/bookings'
-  const bookingPageLabel = isAdmin ? 'Booking Approvals' : 'Bookings'
+  const isAdmin = isAdminRole(user?.role);
+  const bookingPageRoute = isAdmin
+    ? "/admin-bookings"
+    : user
+      ? "/user-bookings"
+      : "/bookings";
+  const bookingPageLabel = isAdmin ? "Booking Approvals" : "Bookings";
 
   function handleLogout() {
-    logout()
-    navigate('/login', { replace: true })
+    logout();
+    navigate("/login", { replace: true });
   }
 
-  if (location.pathname.startsWith('/admin')) {
-    return <Outlet />
-  }
+  // Remove admin route bypass to show consistent header for all pages
 
   return (
     <div className="hub-app">
@@ -79,7 +79,11 @@ export default function Layout() {
                 </NavLink>
               ))}
             {user && (
-              <button type="button" className="hub-nav__button" onClick={handleLogout}>
+              <button
+                type="button"
+                className="hub-nav__button"
+                onClick={handleLogout}
+              >
                 Logout
               </button>
             )}
@@ -90,5 +94,5 @@ export default function Layout() {
         <Outlet />
       </main>
     </div>
-  )
+  );
 }
