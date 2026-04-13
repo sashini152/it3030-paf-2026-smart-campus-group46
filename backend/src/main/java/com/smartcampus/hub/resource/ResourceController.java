@@ -35,6 +35,11 @@ public class ResourceController {
 		return resourceService.search(type, location, minCapacity, q);
 	}
 
+	@GetMapping("/all")
+	public List<com.smartcampus.hub.model.Resource> getAllResources() {
+		return resourceService.getAllResources();
+	}
+
 	@GetMapping("/{id}")
 	public com.smartcampus.hub.model.Resource get(@PathVariable String id) {
 		return resourceService.getById(id);

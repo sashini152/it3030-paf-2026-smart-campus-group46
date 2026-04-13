@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../auth/useAuth'
+import { useAuth } from '../hooks/useAuth'
 import { getJson } from '../api/client'
 import { subscribeToBookingUpdates } from '../mock/mockData'
 import EmptyState from '../components/EmptyState'

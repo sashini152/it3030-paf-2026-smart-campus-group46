@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import sliitLogo from "../assets/sliit-logo.png";
-import { useAuth } from "../auth/useAuth";
+import { useAuth } from "../hooks/useAuth";
 import { isAdminRole } from "../utils/session";
 
 const signedInNavigationItems = [

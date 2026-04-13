@@ -85,4 +85,8 @@ public class ResourceService {
 		}
 		resourceRepository.deleteById(id);
 	}
+
+	public List<Resource> getAllResources() {
+		return resourceRepository.findAll();
+	}
 }

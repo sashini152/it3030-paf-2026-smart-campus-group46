@@ -22,4 +22,9 @@ public class UserController {
     public AppUser getByEmail(@PathVariable String email) {
         return appUserService.findByEmail(URLDecoder.decode(email, StandardCharsets.UTF_8));
     }
+
+    @GetMapping("/{email}")
+    public AppUser getUserByEmail(@PathVariable String email) {
+        return appUserService.findByEmail(URLDecoder.decode(email, StandardCharsets.UTF_8));
+    }
 }

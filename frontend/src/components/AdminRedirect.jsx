@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../auth/useAuth'
+import { useAuth } from '../hooks/useAuth'
 
 export default function AdminRedirect() {
   const navigate = useNavigate()

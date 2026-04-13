@@ -4,7 +4,7 @@ import { deleteRequest, getJson, postJson, putJson } from '../api/client'
 import ParallaxPanel from '../components/ParallaxPanel'
 import Reveal from '../components/Reveal'
 import Tooltip from '../components/Tooltip'
-import { useAuth } from '../auth/useAuth'
+import { useAuth } from '../hooks/useAuth'
 
 const USER_STORAGE_KEY = 'smartcampusUserId'
 const STATUSES = ['', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']

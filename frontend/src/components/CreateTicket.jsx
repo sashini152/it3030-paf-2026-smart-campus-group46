@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import SurfaceCard from './SurfaceCard'
 import { createStandardTicket } from '../services/ticketService'
-import { useAuth } from '../auth/useAuth'
+import { useAuth } from '../hooks/useAuth'
 import { getStudentIdentity, persistStudentIdentity } from '../utils/studentIdentity'
 
 const categories = ['HARDWARE', 'SOFTWARE', 'NETWORK', 'OTHER']

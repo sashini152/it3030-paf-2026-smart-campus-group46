@@ -7,7 +7,7 @@ import Reveal from '../components/Reveal'
 import StatusBadge from '../components/StatusBadge'
 import SurfaceCard from '../components/SurfaceCard'
 import Tooltip from '../components/Tooltip'
-import { useAuth } from '../auth/useAuth'
+import { useAuth } from '../hooks/useAuth'
 import { useTickets } from '../hooks/useTickets'
 import {
   TICKET_STATUS_OPTIONS,

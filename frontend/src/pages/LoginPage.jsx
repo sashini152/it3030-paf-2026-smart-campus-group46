@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { postJson } from '../api/client'
-import { useAuth } from '../auth/useAuth'
+import { useAuth } from '../hooks/useAuth'
 
 export default function LoginPage() {
   const [form, setForm] = useState({

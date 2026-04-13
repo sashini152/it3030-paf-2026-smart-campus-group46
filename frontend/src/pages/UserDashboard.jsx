@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { getJson } from '../api/client'
-import { useAuth } from '../auth/useAuth'
+import { useAuth } from '../hooks/useAuth'
 import EmptyState from '../components/EmptyState'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ParallaxPanel from '../components/ParallaxPanel'

@@ -33,7 +33,7 @@ public class SecurityConfiguration {
 						.defaultSuccessUrl("http://localhost:5173/oauth-success", true))
 				.logout(logout -> logout
 						.logoutUrl("/logout")
-						.logoutSuccessUrl("http://localhost:5173/login")
+						.logoutSuccessUrl("http://localhost:8081/login")
 						.invalidateHttpSession(true)
 						.clearAuthentication(true)
 						.deleteCookies("JSESSIONID"));
@@ -46,6 +46,8 @@ public class SecurityConfiguration {
 		config.setAllowedOrigins(List.of(
 				"http://localhost:5173",
 				"http://127.0.0.1:5173",
+				"http://localhost:3000",
+				"http://127.0.0.1:3000",
 				"https://accounts.google.com",
 				"https://*.googleusercontent.com"));
 		config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));

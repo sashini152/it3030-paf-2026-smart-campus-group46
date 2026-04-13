@@ -1,16 +1,11 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useState, useEffect, useCallback } from 'react'
 import { clearSessionRole, setSessionRole } from '../utils/session'
 import { clearStudentIdentity, persistStudentIdentity } from '../utils/studentIdentity'
+import { ADMIN_EMAILS } from '../constants/auth'
 
 const AuthContext = createContext()
 
-export const useAuth = () => {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
-}
+export { AuthContext }
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
@@ -21,9 +16,8 @@ export const AuthProvider = ({ children }) => {
     if (!baseUser) return null
 
     // FORCE admin access for specific emails - IMMEDIATELY, no API calls needed
-    const adminEmails = ['it23220492@my.sliit.lk']
     
-    if (adminEmails.includes(baseUser.email)) {
+    if (ADMIN_EMAILS.includes(baseUser.email)) {
       const adminUser = {
         ...baseUser,
         role: 'ADMIN',
@@ -67,14 +61,13 @@ export const AuthProvider = ({ children }) => {
 
   const login = useCallback((userData, userToken) => {
     // Immediate admin access for specific emails - FORCE IT
-    const adminEmails = ['it23220492@my.sliit.lk']
     let nextUser = {
       ...userData,
       studentId: userData.studentId || '',
     }
     
     // FORCE admin role for specific emails regardless of what comes from backend
-    if (adminEmails.includes(userData.email)) {
+    if (ADMIN_EMAILS.includes(userData.email)) {
       nextUser.role = 'ADMIN'
       nextUser.name = userData.name || (userData.email === 'it23220492@my.sliit.lk' ? 'it23220492 GESHANI H D S' : 'Sashini')
       console.log('FORCED Admin access granted on login for:', userData.email)
@@ -124,16 +117,18 @@ export const AuthProvider = ({ children }) => {
       const storedUser = localStorage.getItem('user')
       const storedToken = localStorage.getItem('token')
       
+      console.log('checkAuth: storedUser:', storedUser, 'storedToken:', storedToken ? 'exists' : 'missing')
+      
       if (storedUser && storedToken) {
         const userData = JSON.parse(storedUser)
+        console.log('checkAuth: parsed userData:', userData)
         
         // Clear any existing session data to prevent cross-user confusion
         clearSessionRole()
         clearStudentIdentity()
         
         // Auto-grant admin access for specific emails during session restore - FORCE IT
-        const adminEmails = ['it23220492@my.sliit.lk']
-        if (adminEmails.includes(userData.email)) {
+        if (ADMIN_EMAILS.includes(userData.email)) {
           userData.role = 'ADMIN' // Force admin role regardless of current role
           userData.name = userData.name || (userData.email === 'it23220492@my.sliit.lk' ? 'it23220492 GESHANI H D S' : 'Sashini')
           localStorage.setItem('user', JSON.stringify(userData))
@@ -156,14 +151,18 @@ export const AuthProvider = ({ children }) => {
         
         setUser(userData)
         setToken(storedToken)
+        console.log('checkAuth: setUser and setToken called')
         
         // No more hydrateUser calls to prevent API errors
+      } else {
+        console.log('checkAuth: No stored user or token found')
       }
     } catch (error) {
       console.error('Error checking authentication:', error)
       logout()
     } finally {
       setLoading(false)
+      console.log('checkAuth: setLoading(false) called')
     }
   }, [logout])
 

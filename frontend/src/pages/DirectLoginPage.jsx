@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useAuth } from '../auth/useAuth'
+import { useAuth } from '../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 
 export default function DirectLoginPage() {

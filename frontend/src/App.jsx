@@ -20,7 +20,9 @@ import BookingCheckInPage from './pages/BookingCheckInPage'
 import OAuthSuccessPage from './pages/OAuthSuccessPage'
 import AdminAccessPage from './pages/AdminAccessPage'
 import AdminRedirect from './components/AdminRedirect'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { AuthProvider } from './contexts/AuthContext'
+import { useAuth } from './hooks/useAuth'
+import { ADMIN_EMAILS } from './constants/auth'
 
 function AuthLoadingScreen() {
   return (
@@ -34,9 +36,10 @@ function AuthLoadingScreen() {
 }
 
 function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth()
+  const { isAuthenticated, loading, user } = useAuth()
+  console.log('ProtectedRoute check:', { isAuthenticated, loading, userEmail: user?.email, userRole: user?.role })
   if (loading) return <AuthLoadingScreen />
-  return isAuthenticated ? children : <Navigate to="/signup" replace />
+  return isAuthenticated ? children : <Navigate to="/login" replace />
 }
 
 function AdminRoute({ children }) {
@@ -68,8 +71,7 @@ function AdminRoute({ children }) {
   }
   
   // Additional check for specific admin email
-  const adminEmails = ['it23220492@my.sliit.lk']
-  if (!adminEmails.includes(user?.email)) {
+  if (!ADMIN_EMAILS.includes(user?.email)) {
     console.log('Not authorized admin email, redirecting to user dashboard')
     return <Navigate to="/user-dashboard" replace />
   }
@@ -87,11 +89,10 @@ function DashboardRoute() {
 }
 
 function HomeRoute() {
-  const { isAuthenticated, hasRole, loading } = useAuth()
+  const { isAuthenticated, loading } = useAuth()
   if (loading) return <AuthLoadingScreen />
   if (!isAuthenticated) return <Navigate to="/login" replace />
-  if (hasRole('ADMIN')) return <Navigate to="/admin" replace />
-  return <Navigate to="/user-dashboard" replace />
+  return <HomePage />
 }
 
 function AppRoutes() {

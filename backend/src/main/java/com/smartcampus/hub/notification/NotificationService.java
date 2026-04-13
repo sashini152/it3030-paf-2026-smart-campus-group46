@@ -35,6 +35,10 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
+    public List<Notification> getAllNotifications() {
+        return notificationRepository.findAll();
+    }
+
     public void publish(NotificationType type, String title, String message, String targetUserId, String referenceType,
             String referenceId) {
         createNotification(targetUserId, message, type);

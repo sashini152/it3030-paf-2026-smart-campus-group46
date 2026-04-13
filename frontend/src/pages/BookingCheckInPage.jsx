@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { getJson, patchJson } from '../api/client'
-import { useAuth } from '../auth/useAuth'
+import { useAuth } from '../hooks/useAuth'
 
 function formatDateTime(value) {
   if (!value) return '-'

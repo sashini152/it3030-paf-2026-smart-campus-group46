@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom'
-import { useAuth } from '../auth/useAuth'
+import { useAuth } from '../hooks/useAuth'
 
 export default function DashboardPage() {
   const { loading, user } = useAuth()
