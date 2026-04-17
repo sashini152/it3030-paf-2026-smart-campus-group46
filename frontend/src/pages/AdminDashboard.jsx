@@ -190,5 +190,173 @@ return (
                             })}
                           </svg>
                         </div>
+<div className="grid gap-3 sm:grid-cols-7">
+                          {ticketRaisedTrend.points.map((point) => (
+                            <div
+                              key={point.key}
+                              className="rounded-2xl border border-slate-200 bg-white p-3 text-center shadow-sm"
+                            >
+                              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                {formatChartDay(point.date)}
+                              </p>
+                              <p className="mt-2 text-2xl font-semibold text-slate-900">{point.count}</p>
+                              <p className="mt-1 text-xs text-slate-500">{formatShortDate(point.date)}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </section>
+
+                  <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm xl:col-span-6">
+                    <h2 className="text-xl font-semibold text-slate-900">Ticket status stack</h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Stacked status view for the current raised-ticket queue.
+                    </p>
+
+                    {ticketsLoading ? (
+                      <p className="mt-4 text-sm text-slate-500">Loading tickets...</p>
+                    ) : (
+                      <div className="mt-5 space-y-5">
+                        {ticketStatusChart.counts.length === 0 ? (
+                          <p className="text-sm text-slate-500">No tickets yet.</p>
+                        ) : (
+                          <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                              <p className="text-sm font-medium text-slate-500">Total tracked tickets</p>
+                              <p className="text-2xl font-semibold text-slate-900">{ticketStatusChart.total}</p>
+                            </div>
+
+                            <div className="overflow-hidden rounded-full bg-white">
+                              <div className="flex h-5 w-full">
+                                {ticketStatusChart.counts.map((item) => (
+                                  <div
+                                    key={item.status}
+                                    className={cls(
+                                      TICKET_GRAPH_COLORS[item.status] || 'bg-slate-400',
+                                      item.count === 0 ? 'hidden' : ''
+                                    )}
+                                    style={{
+                                      width: ticketStatusChart.total
+                                        ? `${(item.count / ticketStatusChart.total) * 100}%`
+                                        : '0%',
+                                    }}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {ticketStatusChart.counts.map((item) => (
+                            <div key={item.status} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className={cls(
+                                      'h-3 w-3 rounded-full',
+                                      TICKET_GRAPH_COLORS[item.status] || 'bg-slate-400'
+                                    )}
+                                  />
+                                  <span className="text-sm font-medium text-slate-700">{label(item.status)}</span>
+                                </div>
+                                <span className="text-sm font-semibold text-slate-900">{item.count}</span>
+                              </div>
+                              <p className="mt-2 text-xs text-slate-500">
+                                {ticketStatusChart.total
+                                  ? `${Math.round((item.count / ticketStatusChart.total) * 100)}% of current queue`
+                                  : 'No tickets yet'}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </section>
+
+                  <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm xl:col-span-7">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.26em] text-emerald-600">
+                          Usage analytics
+                        </p>
+                        <h2 className="mt-2 text-2xl font-semibold text-slate-900">Resource rhythm</h2>
+                        <p className="mt-1 text-sm text-slate-500">
+                          Top resources and peak approved-booking hours.
+                        </p>
+                      </div>
+                    </div>
+
+                    {analyticsError && <p className="mt-3 text-sm text-rose-600">{analyticsError}</p>}
+
+                    {analyticsLoading ? (
+                      <p className="mt-4 text-sm text-slate-500">Loading analytics...</p>
+                    ) : (
+                      <div className="mt-5 space-y-6">
+                        <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+                          <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-600">
+                            Top resources
+                          </h3>
+
+                          <div className="mt-4 space-y-4">
+                            {analytics.topResources.length === 0 ? (
+                              <p className="text-sm text-slate-500">No approved bookings yet.</p>
+                            ) : (
+                              analytics.topResources.map((item) => (
+                                <div key={item.resourceId} className="rounded-[20px] bg-white p-4 shadow-sm">
+                                  <div className="mb-2 flex items-center justify-between text-sm">
+                                    <span className="font-semibold text-slate-700">{item.resourceName}</span>
+                                    <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                                      {item.bookingCount}
+                                    </span>
+                                  </div>
+                                  <div className="h-2.5 rounded-full bg-slate-100">
+                                    <div
+                                      className="h-2.5 rounded-full bg-emerald-500"
+                                      style={{ width: `${(item.bookingCount / maxResourceCount) * 100}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
+                          <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-600">
+                            Peak booking hours
+                          </h3>
+
+                          <div className="mt-4 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+                            {analytics.peakBookingHours.length === 0 ? (
+                              <p className="text-sm text-slate-500">No approved bookings yet.</p>
+                            ) : (
+                              <div className="flex min-h-[220px] items-end gap-4">
+                                {analytics.peakBookingHours.map((item) => (
+                                  <div key={item.hour} className="flex min-w-0 flex-1 flex-col items-center gap-3">
+                                    <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-sky-600 shadow-sm">
+                                      {item.bookingCount}
+                                    </span>
+                                    <div className="flex h-36 w-full items-end rounded-[20px] border border-slate-200 bg-white px-2 py-2">
+                                      <div
+                                        className="w-full rounded-[16px] bg-sky-500"
+                                        style={{
+                                          height: `${Math.max((item.bookingCount / maxHourCount) * 100, 12)}%`,
+                                        }}
+                                      />
+                                    </div>
+                                    <span className="text-center text-[11px] font-medium leading-4 text-slate-600">
+                                      {item.label}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </section>
 
 
