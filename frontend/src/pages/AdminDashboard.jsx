@@ -112,4 +112,83 @@ return (
                     <p className="mt-3 text-4xl font-semibold">{tickets.length}</p>
                     <p className="mt-2 text-sm text-slate-300">{ticketSummary.active} active queue</p>
                   </article>
+                     <article className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+                    <p className="text-sm font-medium text-slate-500">Resources</p>
+                    <p className="mt-3 text-4xl font-semibold text-slate-900">{resources.length}</p>
+                    <p className="mt-2 text-sm text-slate-500">
+                      {resources.filter((item) => item.status === 'ACTIVE').length} active
+                    </p>
+                  </article>
+
+                  <article className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+                    <p className="text-sm font-medium text-slate-500">Pending bookings</p>
+                    <p className="mt-3 text-4xl font-semibold text-slate-900">{pendingBookings.length}</p>
+                    <p className="mt-2 text-sm text-slate-500">Awaiting review</p>
+                  </article>
+
+                  <article className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+                    <p className="text-sm font-medium text-slate-500">Unread notifications</p>
+                    <p className="mt-3 text-4xl font-semibold text-slate-900">
+                      {notifications.filter((item) => !item.read).length}
+                    </p>
+                    <p className="mt-2 text-sm text-slate-500">Admin inbox</p>
+                  </article>
+                </div>
+
+                <div className="grid gap-6 xl:grid-cols-12">
+                  <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm xl:col-span-6">
+                    <h2 className="text-xl font-semibold text-slate-900">Tickets raised over time</h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Line chart for the last 7 days of ticket submissions.
+                    </p>
+
+                    {ticketsLoading ? (
+                      <p className="mt-4 text-sm text-slate-500">Loading tickets...</p>
+                    ) : (
+                      <div className="mt-5 space-y-5">
+                        <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+                          <div className="mb-4 flex items-end justify-between gap-4">
+                            <div>
+                              <p className="text-sm font-medium text-slate-500">Total raised this week</p>
+                              <p className="mt-1 text-3xl font-semibold text-slate-900">
+                                {ticketRaisedTrend.points.reduce((sum, point) => sum + point.count, 0)}
+                              </p>
+                            </div>
+                            <p className="text-sm text-slate-500">
+                              Peak day: {Math.max(...ticketRaisedTrend.points.map((point) => point.count), 0)}
+                            </p>
+                          </div>
+
+                          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-44 w-full overflow-visible">
+                            <line x1="0" y1="100" x2="100" y2="100" stroke="#cbd5e1" strokeWidth="1.2" />
+                            <line x1="0" y1="0" x2="0" y2="100" stroke="#cbd5e1" strokeWidth="1.2" />
+                            <path
+                              d={ticketRaisedTrend.path}
+                              fill="none"
+                              stroke="#0f172a"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            {ticketRaisedTrend.points.map((point, index) => {
+                              const x =
+                                ticketRaisedTrend.points.length === 1
+                                  ? 50
+                                  : (index / (ticketRaisedTrend.points.length - 1)) * 100
+                              const y = 100 - (point.count / ticketRaisedTrend.max) * 100
+                              return (
+                                <circle
+                                  key={point.key}
+                                  cx={x}
+                                  cy={y}
+                                  r="2.8"
+                                  fill="#10b981"
+                                  stroke="#ffffff"
+                                  strokeWidth="1.5"
+                                />
+                              )
+                            })}
+                          </svg>
+                        </div>
+
 
