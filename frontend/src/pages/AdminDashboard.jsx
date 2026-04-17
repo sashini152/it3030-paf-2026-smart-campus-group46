@@ -802,6 +802,98 @@ return (
                       </button>
                     </div>
                   </form>
+                   {notificationsError && <p className="mt-3 text-sm text-rose-600">{notificationsError}</p>}
+                </section>
+
+                <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                  <h2 className="text-xl font-semibold text-slate-900">Notification inbox</h2>
+
+                  {notificationsLoading ? (
+                    <div className="mt-4 flex items-center justify-center py-8">
+                      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-emerald-600"></div>
+                      <span className="ml-2 text-sm text-slate-500">Loading notifications...</span>
+                    </div>
+                  ) : notifications.length === 0 ? (
+                    <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 py-10 text-center">
+                      <p className="text-sm text-slate-500">No notifications found</p>
+                    </div>
+                  ) : (
+                    <div className="mt-4 space-y-3">
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="text-sm text-slate-500">{notifications.length} notifications</span>
+                        <button
+                          type="button"
+                          onClick={markAllRead}
+                          className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
+                        >
+                          Mark all as read
+                        </button>
+                      </div>
+
+                      <div className="overflow-hidden rounded-2xl border border-slate-200">
+                        <table className="min-w-full">
+                          <thead className="bg-slate-50 border-b border-slate-200">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Title</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Type</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Target</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Created</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">State</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {notifications.map((item) => (
+                              <tr key={item.id} className={cls('transition-colors hover:bg-slate-50', !item.read && 'bg-emerald-50/60')}>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-start">
+                                    {!item.read && (
+                                      <div className="mt-2 mr-3 h-2 w-2 flex-shrink-0 rounded-full bg-emerald-500"></div>
+                                    )}
+                                    <div className="flex-1">
+                                      <p className="text-sm font-medium text-slate-900">{item.title}</p>
+                                      <p className="mt-1 max-w-xs text-xs text-slate-500">{item.message}</p>
+                                    </div>
+                                  </div>
+                                </td>
+
+                                <td className="px-4 py-3">
+                                  <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+                                    {label(item.type)}
+                                  </span>
+                                </td>
+
+                                <td className="px-4 py-3 text-sm text-slate-600">{item.targetUserId || 'Broadcast'}</td>
+                                <td className="px-4 py-3 text-sm text-slate-600">{dt(item.createdAt)}</td>
+
+                                <td className="px-4 py-3">
+                                  <span
+                                    className={cls(
+                                      'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+                                      item.read ? 'bg-slate-100 text-slate-600' : 'bg-emerald-100 text-emerald-700'
+                                    )}
+                                  >
+                                    {item.read ? 'Read' : 'Unread'}
+                                  </span>
+                                </td>
+
+                                <td className="px-4 py-3">
+                                  <div className="flex space-x-2">
+                                    <button
+                                      type="button"
+                                      disabled={busyId === item.id}
+                                      onClick={() => toggleRead(item)}
+                                      className={cls(
+                                        'inline-flex items-center rounded-md border px-3 py-1 text-xs font-medium transition-colors',
+                                        item.read
+                                          ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                          : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50',
+                                        busyId === item.id && 'cursor-not-allowed opacity-50'
+                                      )}
+                                    >
+                                      {item.read ? 'Mark unread' : 'Mark read'}
+                                    </button>
+                            
 
 
 
