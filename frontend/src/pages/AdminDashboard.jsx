@@ -893,6 +893,35 @@ return (
                                     >
                                       {item.read ? 'Mark unread' : 'Mark read'}
                                     </button>
+                                       <button
+                                      type="button"
+                                      disabled={busyId === item.id}
+                                      onClick={() => deleteNotification(item.id)}
+                                      className={cls(
+                                        'inline-flex items-center rounded-md bg-rose-600 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-rose-700',
+                                        busyId === item.id && 'cursor-not-allowed opacity-50'
+                                      )}
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </section>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+)
                             
 
 
