@@ -3,5 +3,4 @@ export const ADMIN_EMAILS = [
   'it23219120@my.sliit.lk',
   'it23207936@my.sliit.lk',
   'it23239470@my.sliit.lk'
-  
-]
+].map(email => email.toLowerCase())
