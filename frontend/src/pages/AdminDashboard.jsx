@@ -358,5 +358,213 @@ return (
                       </div>
                     )}
                   </section>
+                  <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm xl:col-span-5">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.26em] text-rose-500">
+                        Ticket care
+                      </p>
+                      <h2 className="mt-2 text-2xl font-semibold text-slate-900">SLA summary</h2>
+                    </div>
+
+                    <div className="mt-5 grid gap-4 md:grid-cols-2">
+                      <article className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+                        <p className="text-sm font-medium text-slate-500">Average first response</p>
+                        <p className="mt-3 text-3xl font-semibold text-slate-900">
+                          {durationLabel(ticketSummary.avgFirstResponse)}
+                        </p>
+                        <p className="mt-2 text-xs uppercase tracking-[0.16em] text-rose-500">
+                          Support pickup speed
+                        </p>
+                      </article>
+
+                      <article className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+                        <p className="text-sm font-medium text-slate-500">Average resolution</p>
+                        <p className="mt-3 text-3xl font-semibold text-slate-900">
+                          {durationLabel(ticketSummary.avgResolution)}
+                        </p>
+                        <p className="mt-2 text-xs uppercase tracking-[0.16em] text-amber-500">
+                          End-to-end closure
+                        </p>
+                      </article>
+                    </div>
+
+                    <div className="mt-4 rounded-[24px] border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600">
+                      First response is captured when support first picks up a ticket or leaves an admin/support comment.
+                      Resolution time ends when a ticket moves to RESOLVED or CLOSED.
+                    </div>
+                  </section>
+                </div>
+              </div>
+            )}
+
+            {section === 'resources' && (
+              <div className="space-y-6">
+                <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                  <h2 className="text-xl font-semibold text-slate-900">
+                    {resourceEditId ? 'Edit resource' : 'Add resource'}
+                  </h2>
+
+                  <form className="mt-5 grid gap-3 md:grid-cols-2" onSubmit={saveResource}>
+                    <select
+                      value={resourceForm.type}
+                      onChange={(event) => setResourceForm((current) => ({ ...current, type: event.target.value }))}
+                      className="min-h-[50px] rounded-xl border border-slate-300 bg-white px-3 py-2"
+                    >
+                      {RESOURCE_TYPES.map((item) => (
+                        <option key={item} value={item}>
+                          {label(item)}
+                        </option>
+                      ))}
+                    </select>
+
+                    <input
+                      required
+                      placeholder="Name"
+                      value={resourceForm.name}
+                      onChange={(event) => setResourceForm((current) => ({ ...current, name: event.target.value }))}
+                      className="min-h-[50px] rounded-xl border border-slate-300 px-3 py-2"
+                    />
+
+                    <input
+                      type="number"
+                      min={0}
+                      required
+                      placeholder="Capacity"
+                      value={resourceForm.capacity}
+                      onChange={(event) => setResourceForm((current) => ({ ...current, capacity: event.target.value }))}
+                      className="min-h-[50px] rounded-xl border border-slate-300 px-3 py-2"
+                    />
+
+                    <input
+                      required
+                      placeholder="Location"
+                      value={resourceForm.location}
+                      onChange={(event) => setResourceForm((current) => ({ ...current, location: event.target.value }))}
+                      className="min-h-[50px] rounded-xl border border-slate-300 px-3 py-2"
+                    />
+
+                    <input
+                      placeholder="Availability window"
+                      value={resourceForm.availabilityWindows}
+                      onChange={(event) =>
+                        setResourceForm((current) => ({ ...current, availabilityWindows: event.target.value }))
+                      }
+                      className="min-h-[50px] rounded-xl border border-slate-300 px-3 py-2 md:col-span-2"
+                    />
+
+                    <select
+                      value={resourceForm.status}
+                      onChange={(event) => setResourceForm((current) => ({ ...current, status: event.target.value }))}
+                      className="min-h-[50px] rounded-xl border border-slate-300 bg-white px-3 py-2"
+                    >
+                      {RESOURCE_STATUSES.map((item) => (
+                        <option key={item} value={item}>
+                          {label(item)}
+                        </option>
+                      ))}
+                    </select>
+
+                    <div className="flex items-stretch gap-2 md:self-end">
+                      <button
+                        type="submit"
+                        className="min-h-[50px] rounded-xl bg-emerald-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600"
+                      >
+                        {resourceEditId ? 'Update' : 'Create'}
+                      </button>
+
+                      {resourceEditId && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setResourceEditId(null)
+                            setResourceForm(emptyResource)
+                          }}
+                          className="min-h-[50px] rounded-xl border border-slate-300 px-5 py-2 text-sm text-slate-700"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </div>
+                  </form>
+
+                  {resourcesError && <p className="mt-3 text-sm text-rose-600">{resourcesError}</p>}
+                </section>
+
+                <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                  <h2 className="text-xl font-semibold text-slate-900">Resource list</h2>
+
+                  {resourcesLoading ? (
+                    <p className="mt-4 text-sm text-slate-500">Loading...</p>
+                  ) : (
+                    <div className="mt-4 overflow-x-auto">
+                      <table className="min-w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-[0.14em] text-slate-500">
+                            <th className="py-3">Name</th>
+                            <th className="py-3">Type</th>
+                            <th className="py-3">Location</th>
+                            <th className="py-3">Status</th>
+                            <th className="py-3">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {resources.map((item) => (
+                            <tr key={item.id} className="border-b border-slate-100 last:border-b-0">
+                              <td className="py-4 font-semibold text-slate-900">{item.name}</td>
+                              <td className="text-slate-600">{label(item.type)}</td>
+                              <td className="text-slate-600">{item.location}</td>
+                              <td className="text-slate-600">{label(item.status)}</td>
+                              <td className="space-x-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setResourceEditId(item.id)
+                                    setResourceForm({
+                                      type: item.type,
+                                      name: item.name,
+                                      capacity: item.capacity,
+                                      location: item.location,
+                                      availabilityWindows: item.availabilityWindows || '',
+                                      status: item.status,
+                                    })
+                                  }}
+                                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => deleteResource(item.id)}
+                                  className="rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-medium text-white"
+                                >
+                                  Delete
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </section>
+              </div>
+            )}
+
+            {section === 'bookings' && (
+              <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="text-xl font-semibold text-slate-900">Booking management</h2>
+                  <select
+                    value={bookingFilter}
+                    onChange={(event) => setBookingFilter(event.target.value)}
+                    className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                  >
+                    {BOOKING_FILTERS.map((item) => (
+                      <option key={item} value={item}>
+                        {item === 'ALL' ? 'All' : label(item)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
 
