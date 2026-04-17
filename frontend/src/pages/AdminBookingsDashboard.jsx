@@ -1,14 +1,11 @@
 import { useMemo, useState, useEffect } from 'react'
 import { buildQuery, getJson, putJson } from '../api/client'
-import { useAuth } from '../hooks/useAuth'
-import { useLocation } from 'react-router-dom'
 import EmptyState from '../components/EmptyState'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ParallaxPanel from '../components/ParallaxPanel'
 import Reveal from '../components/Reveal'
 import SurfaceCard from '../components/SurfaceCard'
 import Tooltip from '../components/Tooltip'
-import AdminSidebar from '../components/AdminSidebar'
 
 const STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']
 
@@ -51,9 +48,7 @@ function isThisWeek(date) {
 }
 
 export default function AdminBookingsDashboard() {
-  const { user } = useAuth()
-  const location = useLocation()
-  const [items, setItems] = useState([])
+    const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filters, setFilters] = useState({
@@ -189,10 +184,7 @@ export default function AdminBookingsDashboard() {
   }, [])
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="hidden w-72 shrink-0 border-r border-white/70 bg-white/85 px-6 py-8 backdrop-blur xl:block">
-        <AdminSidebar currentPage={location.pathname} />
-      </aside>
+
 
       <main className="flex-1 overflow-y-auto">
         <div className="hub-page hub-ticket-flow space-y-8 rounded-[36px] bg-[linear-gradient(180deg,#181A2F_0%,#242E49_52%,#37415C_100%)] p-6 text-white sm:p-8">
@@ -406,7 +398,7 @@ export default function AdminBookingsDashboard() {
       </section>
         </div>
       </main>
-    </div>
+   
   )
 }
 
