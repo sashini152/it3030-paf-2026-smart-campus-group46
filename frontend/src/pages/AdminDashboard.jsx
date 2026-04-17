@@ -28,7 +28,8 @@ function sidebarView() {
           </button>
         ))}
       </nav>
-       <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50 p-5 text-sm leading-6 text-slate-600">
+
+      <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50 p-5 text-sm leading-6 text-slate-600">
         Review analytics, booking verification, support metrics, and notification delivery from one workspace.
       </div>
 
@@ -112,7 +113,8 @@ return (
                     <p className="mt-3 text-4xl font-semibold">{tickets.length}</p>
                     <p className="mt-2 text-sm text-slate-300">{ticketSummary.active} active queue</p>
                   </article>
-                     <article className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+
+                  <article className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
                     <p className="text-sm font-medium text-slate-500">Resources</p>
                     <p className="mt-3 text-4xl font-semibold text-slate-900">{resources.length}</p>
                     <p className="mt-2 text-sm text-slate-500">
@@ -190,7 +192,8 @@ return (
                             })}
                           </svg>
                         </div>
-<div className="grid gap-3 sm:grid-cols-7">
+
+                        <div className="grid gap-3 sm:grid-cols-7">
                           {ticketRaisedTrend.points.map((point) => (
                             <div
                               key={point.key}
@@ -358,6 +361,7 @@ return (
                       </div>
                     )}
                   </section>
+
                   <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm xl:col-span-5">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.26em] text-rose-500">
@@ -566,7 +570,8 @@ return (
                     ))}
                   </select>
                 </div>
-            {bookingsError && <p className="mb-3 text-sm text-rose-600">{bookingsError}</p>}
+
+                {bookingsError && <p className="mb-3 text-sm text-rose-600">{bookingsError}</p>}
 
                 {bookingsLoading ? (
                   <p className="text-sm text-slate-500">Loading...</p>
@@ -738,7 +743,8 @@ return (
                 )}
               </section>
             )}
-             {section === 'notifications' && (
+
+            {section === 'notifications' && (
               <div className="space-y-6">
                 <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
                   <div className="mb-4 flex items-center justify-between">
@@ -802,7 +808,8 @@ return (
                       </button>
                     </div>
                   </form>
-                   {notificationsError && <p className="mt-3 text-sm text-rose-600">{notificationsError}</p>}
+
+                  {notificationsError && <p className="mt-3 text-sm text-rose-600">{notificationsError}</p>}
                 </section>
 
                 <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
@@ -893,7 +900,8 @@ return (
                                     >
                                       {item.read ? 'Mark unread' : 'Mark read'}
                                     </button>
-                                       <button
+
+                                    <button
                                       type="button"
                                       disabled={busyId === item.id}
                                       onClick={() => deleteNotification(item.id)}
@@ -922,7 +930,3 @@ return (
     </div>
   </div>
 )
-                            
-
-
-
