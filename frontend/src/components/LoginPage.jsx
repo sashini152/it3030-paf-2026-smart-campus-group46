@@ -51,7 +51,7 @@ export default function LoginPage() {
       <header className="hub-header hub-header--auth">
         <div className="hub-header__inner">
           <Link to="/" className="hub-brand">
-            <div className="hub-brand__badge">🏫</div>
+          <div className="hub-brand__badge">SC</div>
             <span className="hub-brand__text">Smart Campus Hub</span>
           </Link>
 
