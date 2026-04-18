@@ -1,7 +1,23 @@
+/* ===============================
+   SMART CAMPUS HUB – AUTH PAGE CSS
+   FINAL CLEAN VERSION (NO DUPLICATES)
+================================== */
+
+/* ---------- PAGE ---------- */
+
+.hub-app--auth {
+  min-height: 100vh;
+  background: #f3f6fb;
+  color: #0f172a;
+}
+
+/* ---------- HEADER ---------- */
 
 .hub-header--auth {
   background: #1f2a44;
   padding: 18px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
 }
 
 .hub-header__inner {
@@ -11,6 +27,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
 }
 
 .hub-brand {
@@ -24,546 +41,63 @@
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  background: white;
+  background: #ffffff;
   color: #1f2a44;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
 }
 
 .hub-brand__text {
-  color: white;
-  font-size: 24px;
-  font-weight: 700;
-}
-
-.hub-header__nav {
-  display: flex;
-  gap: 12px;
-}
-
-.hub-header__pill {
-  padding: 10px 18px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.2);
-  color: white;
-  text-decoration: none;
-  font-weight: 600;
-  background: transparent;
-}
-
-.hub-header__pill--active {
-  background: rgba(255,255,255,0.12);
-}
-  
-/* ===== FINAL AUTH PAGE OVERRIDES ===== */
-
-.hub-app--auth {
-  min-height: 100vh;
-  background: #f3f6fb;
-  color: #0f172a;
-}
-
-.hub-app--auth .hub-header {
-  position: relative;
-  top: unset;
-  box-shadow: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: #1f2a44;
-}
-
-.hub-app--auth .hub-header__inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 18px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.hub-app--auth .hub-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  text-decoration: none;
-}
-
-.hub-app--auth .hub-brand__badge {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  background: #ffffff;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
-  overflow: hidden;
-}
-
-.hub-app--auth .hub-brand__text {
   color: #ffffff;
-  font-size: 1.5rem;
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 
-.hub-app--auth .hub-header__nav {
+.hub-header__nav {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
-.hub-app--auth .hub-header__pill {
+.hub-header__pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  padding: 10px 18px;
   min-height: 42px;
-  padding: 0 16px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   background: transparent;
   color: #ffffff;
+  text-decoration: none;
   font-size: 0.95rem;
   font-weight: 600;
-  text-decoration: none;
   transition: 0.2s ease;
 }
 
-.hub-app--auth .hub-header__pill:hover {
-  background: rgba(255, 255, 255, 0.1);
+.hub-header__pill:hover {
+  background: rgba(255, 255, 255, 0.10);
   text-decoration: none;
 }
 
-.hub-app--auth .hub-header__pill--active {
+.hub-header__pill--active {
   background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.22);
 }
 
-.hub-app--auth .hub-main,
+/* ---------- MAIN ---------- */
+
 .hub-main--auth {
   max-width: 1200px;
   margin: 0 auto;
   padding: 48px 24px 64px;
 }
 
-.hub-auth-grid {
-  display: grid;
-  grid-template-columns: 1.08fr 0.92fr;
-  gap: 40px;
-  align-items: center;
-  min-height: calc(100vh - 140px);
-}
-
-.hub-auth-showcase {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.hub-auth-showcase h1,
-.hub-app--auth .hub-auth-showcase h1 {
-  margin: 0;
-  color: #0f172a;
-  font-size: clamp(2.7rem, 5vw, 4.1rem);
-  line-height: 1.03;
-  letter-spacing: -0.04em;
-}
-
-.hub-app--auth .hub-auth-kicker {
-  margin: 0;
-  color: #10b981;
-  text-transform: uppercase;
-  letter-spacing: 0.28em;
-  font-size: 0.76rem;
-  font-weight: 800;
-}
-
-.hub-app--auth .hub-lead {
-  margin: 0;
-  max-width: 640px;
-  color: #64748b;
-  font-size: 1.06rem;
-  line-height: 1.85;
-}
-
-.hub-app--auth .hub-auth-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.hub-app--auth .hub-auth-pills span {
-  display: inline-flex;
-  align-items: center;
-  min-height: 40px;
-  padding: 0 18px;
-  border-radius: 999px;
-  border: 1px solid #d9e2ee;
-  background: #ffffff;
-  color: #0f172a;
-  font-size: 0.9rem;
-  font-weight: 700;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
-}
-
-.hub-app--auth .hub-auth-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  max-width: 640px;
-}
-
-.hub-app--auth .hub-auth-stats article {
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  border-radius: 22px;
-  padding: 18px 20px;
-  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.05);
-}
-
-.hub-app--auth .hub-auth-stats article p {
-  margin: 0;
-  color: #64748b;
-  font-size: 0.9rem;
-}
-
-.hub-app--auth .hub-auth-stats article strong {
-  display: block;
-  margin-top: 10px;
-  color: #0f172a;
-  font-size: 1.4rem;
-  font-weight: 700;
-}
-
-.hub-app--auth .hub-auth-card,
-.hub-app--auth .hub-auth-card--clean,
-.hub-app--auth .hub-auth-card--playful {
-  display: block;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  border-radius: 32px;
-  padding: 36px;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
-  overflow: hidden;
-}
-
-.hub-app--auth .hub-auth-hero {
-  display: none;
-}
-
-.hub-app--auth .hub-auth-panel {
-  position: relative;
-  display: grid;
-  gap: 1.25rem;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  padding: 0;
-  box-shadow: none;
-}
-
-.hub-app--auth .hub-auth-panel__orb {
-  position: absolute;
-  right: -8px;
-  bottom: -8px;
-  width: 120px;
-  height: 120px;
-  border-radius: 999px;
-  background: radial-gradient(circle at center, rgba(251, 146, 60, 0.18), transparent 68%);
-  pointer-events: none;
-}
-
-.hub-app--auth .hub-auth-heading h2,
-.hub-app--auth .hub-auth-panel h2 {
-  margin: 10px 0 0;
-  font-size: 2rem;
-  color: #0f172a;
-  letter-spacing: -0.03em;
-}
-
-.hub-app--auth .hub-auth-heading p {
-  margin: 12px 0 0;
-  color: #64748b;
-  line-height: 1.7;
-  font-size: 0.95rem;
-}
-
-.hub-app--auth .hub-auth-form,
-.hub-app--auth .hub-auth-panel form {
-  margin-top: 26px;
-}
-
-.hub-app--auth .hub-field {
-  display: block;
-  margin-bottom: 18px;
-}
-
-.hub-app--auth .hub-field span {
-  display: block;
-  margin-bottom: 10px;
-  color: #64748b;
-  font-size: 0.76rem;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.hub-app--auth .hub-field input,
-.hub-app--auth .hub-field select {
-  width: 100%;
-  height: 56px;
-  border: 1px solid #cbd5e1;
-  border-radius: 18px;
-  background: #f8fafc;
-  padding: 0 16px;
-  font-size: 0.95rem;
-  color: #0f172a;
-  outline: none;
-  transition: 0.2s ease;
-}
-
-.hub-app--auth .hub-field input::placeholder {
-  color: #94a3b8;
-}
-
-.hub-app--auth .hub-field input:focus,
-.hub-app--auth .hub-field select:focus {
-  border-color: #10b981;
-  background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12);
-}
-
-.hub-app--auth .hub-auth-actions {
-  margin-top: 14px;
-}
-
-.hub-app--auth .hub-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  min-height: 56px;
-  border-radius: 18px;
-  padding: 0 18px;
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #334155;
-  text-decoration: none;
-  font-size: 0.95rem;
-  font-weight: 700;
-  transition: 0.2s ease;
-}
-
-.hub-app--auth .hub-btn:hover {
-  background: #f8fafc;
-  border-color: #94a3b8;
-  text-decoration: none;
-}
-
-.hub-app--auth .hub-btn--full {
-  width: 100%;
-}
-
-.hub-app--auth .hub-btn--primary {
-  border: none;
-  background: #1f2a44;
-  color: #ffffff;
-}
-
-.hub-app--auth .hub-btn--primary:hover {
-  background: #172036;
-  color: #ffffff;
-}
-
-.hub-app--auth .hub-btn__icon {
-  flex-shrink: 0;
-}
-
-.hub-app--auth .hub-auth-divider {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin: 22px 0 8px;
-}
-
-.hub-app--auth .hub-auth-divider::before,
-.hub-app--auth .hub-auth-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: #e2e8f0;
-}
-
-.hub-app--auth .hub-auth-divider span {
-  color: #94a3b8;
-  font-size: 0.74rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-}
-
-.hub-app--auth .hub-alert--error {
-  margin: 8px 0 0;
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid #fecaca;
-  background: #fff1f2;
-  color: #dc2626;
-  font-size: 0.9rem;
-}
-
-.hub-app--auth .hub-auth-note {
-  margin: 24px 0 0;
-  text-align: center;
-  color: #64748b;
-  font-size: 0.95rem;
-}
-
-.hub-app--auth .hub-auth-note a {
-  color: #0f172a;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.hub-app--auth .hub-auth-note a:hover {
-  color: #10b981;
-}
-
-.hub-app--auth .hub-quarter-fade::after,
-.hub-app--auth .hub-auth-card::after,
-.hub-app--auth .hub-auth-panel::after {
-  display: none;
-}
-
-@media (max-width: 980px) {
-  .hub-auth-grid {
-    grid-template-columns: 1fr;
-    min-height: auto;
-  }
-
-  .hub-auth-showcase {
-    display: none;
-  }
-
-  .hub-app--auth .hub-auth-card {
-    max-width: 680px;
-    margin: 0 auto;
-  }
-}
-
-@media (max-width: 640px) {
-  .hub-app--auth .hub-header__inner {
-    padding: 16px;
-  }
-
-  .hub-main--auth {
-    padding: 24px 16px 40px;
-  }
-
-  .hub-app--auth .hub-auth-card {
-    padding: 24px;
-    border-radius: 24px;
-  }
-
-  .hub-app--auth .hub-brand__text {
-    font-size: 1.15rem;
-  }
-
-  .hub-app--auth .hub-header__nav {
-    gap: 8px;
-  }
-
-  .hub-app--auth .hub-header__pill {
-    padding: 8px 12px;
-    font-size: 0.85rem;
-  }
-
-  .hub-app--auth .hub-auth-stats {
-    grid-template-columns: 1fr;
-  }
-}
-.hub-app--auth {
-  min-height: 100vh;
-  background: #f1f5f9;
-  color: #0f172a;
-}
-
-.hub-header--auth {
-  background: #1f2a44;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: none;
-}
-
-.hub-header__inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 18px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.hub-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  text-decoration: none;
-}
-
-.hub-brand__badge {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  background: #ffffff;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
-  flex-shrink: 0;
-}
-
-.hub-brand__text {
-  color: #ffffff;
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.hub-header__nav {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.hub-header__pill {
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #ffffff;
-  text-decoration: none;
-  padding: 10px 16px;
-  border-radius: 14px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  background: transparent;
-  transition: 0.2s ease;
-}
-
-.hub-header__pill:hover {
-  background: rgba(255, 255, 255, 0.1);
-  text-decoration: none;
-}
-
-.hub-header__pill--active {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.hub-main--auth {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 48px 24px;
-}
+/* ---------- GRID ---------- */
 
 .hub-auth-grid {
   display: grid;
@@ -572,6 +106,8 @@
   align-items: center;
   min-height: calc(100vh - 150px);
 }
+
+/* ---------- LEFT SIDE SHOWCASE ---------- */
 
 .hub-auth-showcase {
   display: flex;
@@ -590,7 +126,7 @@
 
 .hub-auth-showcase h1 {
   margin: 0;
-  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-size: clamp(2.6rem, 5vw, 4rem);
   line-height: 1.05;
   letter-spacing: -0.04em;
   color: #0f172a;
@@ -600,9 +136,11 @@
   margin: 0;
   max-width: 640px;
   color: #64748b;
-  font-size: 1.08rem;
-  line-height: 1.9;
+  font-size: 1.05rem;
+  line-height: 1.8;
 }
+
+/* ---------- FEATURE PILLS ---------- */
 
 .hub-auth-pills {
   display: flex;
@@ -616,7 +154,7 @@
   min-height: 40px;
   padding: 0 18px;
   border-radius: 999px;
-  border: 1px solid #dbe3ee;
+  border: 1px solid #d9e2ee;
   background: #ffffff;
   color: #0f172a;
   font-size: 0.9rem;
@@ -624,16 +162,18 @@
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
 }
 
+/* ---------- STATS ---------- */
+
 .hub-auth-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 14px;
   max-width: 640px;
 }
 
 .hub-auth-stats article {
-  border: 1px solid #e2e8f0;
   background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 22px;
   padding: 18px 20px;
   box-shadow: 0 14px 30px rgba(15, 23, 42, 0.05);
@@ -653,31 +193,18 @@
   font-weight: 700;
 }
 
+/* ---------- AUTH CARD ---------- */
+
 .hub-auth-card {
-  display: block;
-  border: 1px solid #e2e8f0;
   background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 32px;
   padding: 36px;
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
-  overflow: visible;
-}
-
-.hub-auth-card--clean,
-.hub-auth-card--playful {
-  gap: 0;
 }
 
 .hub-auth-panel {
   position: relative;
-  display: grid;
-  gap: 1.25rem;
-  overflow: hidden;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  padding: 0;
-  box-shadow: none;
 }
 
 .hub-auth-panel__orb {
@@ -687,16 +214,20 @@
   width: 120px;
   height: 120px;
   border-radius: 999px;
-  background: radial-gradient(circle at center, rgba(251, 146, 60, 0.2), transparent 68%);
+  background: radial-gradient(
+    circle at center,
+    rgba(251, 146, 60, 0.18),
+    transparent 68%
+  );
   pointer-events: none;
 }
 
-.hub-auth-heading h2,
-.hub-auth-panel h2 {
+/* ---------- FORM HEADING ---------- */
+
+.hub-auth-heading h2 {
   margin: 10px 0 0;
   font-size: 2rem;
   color: #0f172a;
-  letter-spacing: -0.03em;
 }
 
 .hub-auth-heading p {
@@ -706,9 +237,10 @@
   font-size: 0.95rem;
 }
 
-.hub-auth-form,
-.hub-auth-panel form {
-  margin-top: 26px;
+/* ---------- FORM ---------- */
+
+.hub-auth-form {
+  margin-top: 28px;
 }
 
 .hub-field {
@@ -724,7 +256,6 @@
   font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  min-height: auto;
 }
 
 .hub-field input,
@@ -739,7 +270,6 @@
   color: #0f172a;
   outline: none;
   transition: 0.2s ease;
-  min-width: 0;
 }
 
 .hub-field input::placeholder {
@@ -753,6 +283,8 @@
   box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12);
 }
 
+/* ---------- BUTTONS ---------- */
+
 .hub-auth-actions {
   margin-top: 14px;
 }
@@ -761,10 +293,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  width: 100%;
   min-height: 56px;
-  border-radius: 18px;
   padding: 0 18px;
+  border-radius: 18px;
   border: 1px solid #cbd5e1;
   background: #ffffff;
   color: #334155;
@@ -777,11 +309,6 @@
 .hub-btn:hover {
   background: #f8fafc;
   border-color: #94a3b8;
-  text-decoration: none;
-}
-
-.hub-btn--full {
-  width: 100%;
 }
 
 .hub-btn--primary {
@@ -795,13 +322,11 @@
   color: #ffffff;
 }
 
-.hub-btn--google {
-  background: #ffffff;
-}
-
 .hub-btn__icon {
   flex-shrink: 0;
 }
+
+/* ---------- DIVIDER ---------- */
 
 .hub-auth-divider {
   display: flex;
@@ -812,7 +337,7 @@
 
 .hub-auth-divider::before,
 .hub-auth-divider::after {
-  content: '';
+  content: "";
   flex: 1;
   height: 1px;
   background: #e2e8f0;
@@ -826,8 +351,10 @@
   letter-spacing: 0.18em;
 }
 
+/* ---------- ALERT ---------- */
+
 .hub-alert--error {
-  margin: 8px 0 0;
+  margin-top: 10px;
   padding: 12px 14px;
   border-radius: 16px;
   border: 1px solid #fecaca;
@@ -836,8 +363,10 @@
   font-size: 0.9rem;
 }
 
+/* ---------- FOOTER ---------- */
+
 .hub-auth-note {
-  margin: 24px 0 0;
+  margin-top: 24px;
   text-align: center;
   color: #64748b;
   font-size: 0.95rem;
@@ -853,10 +382,11 @@
   color: #10b981;
 }
 
+/* ---------- RESPONSIVE ---------- */
+
 @media (max-width: 980px) {
   .hub-auth-grid {
     grid-template-columns: 1fr;
-    min-height: auto;
   }
 
   .hub-auth-showcase {
@@ -871,7 +401,7 @@
 
 @media (max-width: 640px) {
   .hub-header__inner {
-    padding: 16px;
+    padding: 0 16px;
   }
 
   .hub-main--auth {
@@ -884,7 +414,7 @@
   }
 
   .hub-brand__text {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
   }
 
   .hub-header__nav {
