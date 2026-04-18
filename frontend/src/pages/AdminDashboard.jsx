@@ -90,6 +90,10 @@ export default function AdminDashboard() {
   const [analyticsError, setAnalyticsError] = useState(null)
   const [busyId, setBusyId] = useState(null)
   const [ticketQuery, setTicketQuery] = useState('')
+  const [adminUsers, setAdminUsers] = useState([])
+  const [adminUsersLoading, setAdminUsersLoading] = useState(true)
+  const [adminUsersError, setAdminUsersError] = useState(null)
+  const [newAdminEmail, setNewAdminEmail] = useState('')
 
   const loadResources = useCallback(async () => {
     setResourcesLoading(true); setResourcesError(null)
@@ -104,6 +108,56 @@ export default function AdminDashboard() {
     catch (error) { setBookings([]); setBookingsError(error.message) }
     finally { setBookingsLoading(false) }
   }, [])
+
+  const loadAdminUsers = useCallback(async () => {
+    setAdminUsersLoading(true); setAdminUsersError(null)
+    try { 
+      const data = await withTimeout(getJson('/api/users'), 'Admin users list'); 
+      const admins = Array.isArray(data) ? data.filter(u => u.role === 'ADMIN' || u.role === 'SUPER_ADMIN') : []
+      setAdminUsers(admins) 
+    }
+    catch (error) { setAdminUsers([]); setAdminUsersError(error.message) }
+    finally { setAdminUsersLoading(false) }
+  }, [])
+
+  const handleAddAdmin = async () => {
+    if (!newAdminEmail.trim()) {
+      alert('Please enter a valid email address')
+      return
+    }
+
+    try {
+      const userResponse = await withTimeout(getJson(`/api/users/email/${newAdminEmail.trim()}`), 'User lookup')
+      if (!userResponse) {
+        alert('User with this email does not exist')
+        return
+      }
+
+      await withTimeout(putJson(`/api/users/${userResponse.id}/role`, { role: 'ADMIN' }), 'Grant admin access')
+      
+      alert(`Admin access granted to ${newAdminEmail}`)
+      setNewAdminEmail('')
+      await loadAdminUsers()
+    } catch (err) {
+      console.error('Failed to add admin:', err)
+      alert('Failed to grant admin access. Please try again.')
+    }
+  }
+
+  const handleRemoveAdmin = async (userId, userEmail) => {
+    if (!confirm(`Are you sure you want to remove admin access from ${userEmail}?`)) {
+      return
+    }
+
+    try {
+      await withTimeout(putJson(`/api/users/${userId}/role`, { role: 'USER' }), 'Remove admin access')
+      alert(`Admin access removed from ${userEmail}`)
+      await loadAdminUsers()
+    } catch (err) {
+      console.error('Failed to remove admin:', err)
+      alert('Failed to remove admin access. Please try again.')
+    }
+  }
 
   const loadNotifications = useCallback(async () => {
     setNotificationsLoading(true); setNotificationsError(null)
@@ -129,12 +183,22 @@ export default function AdminDashboard() {
   }, [])
 
   useEffect(() => {
-    loadResources().catch(() => {})
-    loadBookings().catch(() => {})
-    loadNotifications().catch(() => {})
-    loadAnalytics().catch(() => {})
-    reloadTickets().catch(() => {})
-  }, [loadAnalytics, loadBookings, loadNotifications, loadResources, reloadTickets])
+    if (section === 'overview') {
+      loadAnalytics()
+      loadBookings()
+      loadNotifications()
+      loadResources()
+      reloadTickets().catch(() => {})
+    } else if (section === 'resources') {
+      loadResources()
+    } else if (section === 'bookings') {
+      loadBookings()
+    } else if (section === 'tickets') {
+      reloadTickets().catch(() => {})
+    } else if (section === 'admin-management') {
+      loadAdminUsers()
+    }
+  }, [section, loadAnalytics, loadBookings, loadNotifications, loadResources, reloadTickets, loadAdminUsers])
 
   const pendingBookings = useMemo(() => bookings.filter((item) => item.status === 'PENDING'), [bookings])
   const visibleBookings = useMemo(() => bookingFilter === 'ALL' ? bookings : bookings.filter((item) => item.status === bookingFilter), [bookingFilter, bookings])
@@ -262,7 +326,7 @@ export default function AdminDashboard() {
     return (
       <div className="flex h-full flex-col">
         <div className="mb-8 flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500 text-sm font-bold text-white">SC</div><div><p className="text-lg font-semibold text-slate-900">Smart Campus</p><p className="text-xs uppercase tracking-[0.28em] text-slate-400">Admin Desk</p></div></div>
-        <nav className="space-y-1.5">{SECTIONS.map((item) => <button key={item} type="button" onClick={() => setSection(item)} className={cls('block w-full rounded-2xl px-4 py-3 text-left text-sm font-medium transition', section === item ? 'bg-emerald-50 text-emerald-700 shadow-sm' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900')}>{item[0].toUpperCase() + item.slice(1)}</button>)}</nav>
+        <nav className="space-y-1.5">{SECTIONS.map((item) => <button key={item} type="button" onClick={() => { console.log('Setting section to:', item); setSection(item) }} className={cls('block w-full rounded-2xl px-4 py-3 text-left text-sm font-medium transition', section === item ? 'bg-emerald-50 text-emerald-700 shadow-sm' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900')}>{item[0].toUpperCase() + item.slice(1)}</button>)}</nav>
         <button type="button" onClick={() => { logout(); navigate('/login', { replace: true }) }} className="mt-6 rounded-2xl bg-rose-500 px-4 py-3 text-sm font-semibold text-white hover:bg-rose-600">Logout</button>
         <div className="mt-auto rounded-[28px] border border-slate-200 bg-slate-50 p-5 text-sm leading-6 text-slate-600">Review analytics, booking verification, support timers, and notification delivery from one workspace.</div>
       </div>
@@ -278,7 +342,20 @@ export default function AdminDashboard() {
           <div className="mx-auto max-w-[1480px] rounded-[36px] border border-white/70 bg-white/70 p-4 shadow-[0_30px_80px_rgba(148,163,184,0.28)] md:p-6 lg:p-8">
             <header className="mb-8 flex items-start justify-between gap-4">
               <div className="flex items-start gap-3"><button type="button" onClick={() => setMenuOpen(true)} className="mt-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 xl:hidden">Menu</button><div><p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-600">Smart Campus Admin</p><h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">Operations dashboard</h1><p className="mt-2 max-w-2xl text-sm text-slate-500">Manage resources, bookings, tickets, notifications, and analytics from one page.</p></div></div>
-              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-right text-sm"><p className="font-semibold text-slate-900">{user?.name || 'Campus Admin'}</p><p className="text-slate-500">{user?.email || 'admin@smartcampus.local'}</p></div>
+              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-right text-sm">
+                <p className="font-semibold text-slate-900">{user?.name || 'Campus Admin'}</p>
+                <p className="text-slate-500">{user?.email || 'admin@smartcampus.local'}</p>
+                {/* Super Admin Link - Only show for super admin email */}
+                {((user?.email === 'sashini.unilocatelk@gmail.com') || 
+                  (localStorage.getItem('userEmail') === 'sashini.unilocatelk@gmail.com')) && (
+                  <button
+                    onClick={() => navigate('/super-admin')}
+                    className="mt-2 px-3 py-1 bg-purple-600 text-white text-xs rounded-md hover:bg-purple-700 transition-colors"
+                  >
+                    🎯 Super Admin Dashboard
+                  </button>
+                )}
+              </div>
             </header>
 
             {section === 'overview' && (
@@ -644,6 +721,78 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   )}
+                </section>
+              </div>
+            )}
+
+            {section === 'admin-management' && user?.role === 'SUPER_ADMIN' && (
+              <div className="space-y-5">
+                <section className="hub-quarter-fade rounded-[24px] border border-slate-200 bg-white p-5">
+                  <h2 className="text-xl font-semibold mb-4">Super Admin Management</h2>
+                  
+                  {/* Add New Admin */}
+                  <div className="mb-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                    <h3 className="font-medium text-purple-900 mb-3">Grant Admin Access</h3>
+                    <div className="flex gap-2">
+                      <input
+                        type="email"
+                        value={newAdminEmail}
+                        onChange={(e) => setNewAdminEmail(e.target.value)}
+                        placeholder="Enter user email"
+                        className="flex-1 px-3 py-2 border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                      <button
+                        onClick={handleAddAdmin}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                      >
+                        Add Admin
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Current Admins */}
+                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h3 className="font-medium text-gray-900 mb-3">
+                      Current Admin Users ({adminUsers.length})
+                    </h3>
+                    {adminUsersLoading ? (
+                      <p className="text-gray-500 text-sm">Loading admin users...</p>
+                    ) : adminUsersError ? (
+                      <p className="text-red-500 text-sm">Error: {adminUsersError}</p>
+                    ) : adminUsers.length === 0 ? (
+                      <p className="text-gray-500 text-sm">No admin users found</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {adminUsers.map((adminUser) => (
+                          <div key={adminUser.id} className="flex items-center justify-between p-3 bg-white rounded-md border border-gray-200">
+                            <div>
+                              <div className="font-medium text-gray-900">
+                                {adminUser.name || adminUser.email}
+                              </div>
+                              <div className="text-sm text-gray-500">{adminUser.email}</div>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className={`text-xs px-2 py-1 rounded-full ${
+                                  adminUser.role === 'SUPER_ADMIN' 
+                                    ? 'bg-purple-100 text-purple-800' 
+                                    : 'bg-blue-100 text-blue-800'
+                                }`}>
+                                  {adminUser.role}
+                                </span>
+                              </div>
+                            </div>
+                            {adminUser.role !== 'SUPER_ADMIN' && (
+                              <button
+                                onClick={() => handleRemoveAdmin(adminUser.id, adminUser.email)}
+                                className="px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 transition-colors text-sm"
+                              >
+                                Remove Admin
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </section>
               </div>
             )}

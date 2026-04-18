@@ -21,13 +21,13 @@ public class AuthService {
             role = AppRole.ADMIN;
         }
 
-        AppUser user = new AppUser(
-                request.getName(),
-                request.getEmail(),
-                request.getPassword(),
-                role);
+        User user = new User();
+        user.setName(request.getName());
+        user.setEmail(request.getEmail());
+        user.setPassword(request.getPassword());
+        user.setRole(User.UserRole.valueOf(role.name()));
 
-        AppUser saved = authRepository.save(user);
+        User saved = authRepository.save(user);
 
         return new AuthResponse(
                 saved.getId(),
@@ -37,7 +37,7 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        AppUser user = authRepository.findByEmail(request.getEmail())
+        User user = authRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (user.getPassword() == null || !user.getPassword().equals(request.getPassword())) {

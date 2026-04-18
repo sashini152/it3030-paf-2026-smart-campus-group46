@@ -22,12 +22,20 @@ api.interceptors.response.use(
         : error.code === 'ERR_NETWORK'
         ? 'Cannot reach the backend server at localhost:8081. Start the Spring backend and try again.'
         : status === 401
-        ? 'Your session has expired. Sign in again and retry.'
+        ? 'Your session has expired. Redirecting to login...'
         : status === 403
         ? 'You do not have permission to perform this action.'
         : status === 502
         ? 'The support service is temporarily unavailable. Please try again in a moment.'
         : error.response?.data?.message || error.message
+    
+    // Handle 401 unauthorized with proper redirect, not fetch
+    if (status === 401) {
+      // Use browser redirect instead of fetch for OAuth
+      window.location.href = 'http://localhost:8081/oauth2/authorization/google'
+      return new Promise(() => {}) // Prevent further processing
+    }
+    
     return Promise.reject(new Error(message))
   }
 )

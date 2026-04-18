@@ -16,7 +16,9 @@ const guestNavigationItems = [
   { to: "/signup", label: "Sign up" },
 ];
 
-const adminNavigationItems = [{ to: "/admin", label: "Dashboard" }];
+const adminNavigationItems = [
+  { to: "/admin", label: "Dashboard" }
+];
 
 const linkClass = ({ isActive }) =>
   `hub-nav__link${isActive ? " hub-nav__link--active" : ""}`;
@@ -78,6 +80,11 @@ export default function Layout() {
                   {item.label}
                 </NavLink>
               ))}
+            {user?.role === 'SUPER_ADMIN' && (
+              <NavLink key="/super-admin" to="/super-admin" className={linkClass}>
+                Super Admin
+              </NavLink>
+            )}
             {user && (
               <button
                 type="button"

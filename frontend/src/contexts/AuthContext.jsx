@@ -1,7 +1,7 @@
 import { createContext, useState, useEffect, useCallback } from 'react'
 import { clearSessionRole, setSessionRole } from '../utils/session'
 import { clearStudentIdentity, persistStudentIdentity } from '../utils/studentIdentity'
-import { ADMIN_EMAILS } from '../constants/auth'
+import { ADMIN_EMAILS, SUPER_ADMIN_EMAILS } from '../constants/auth'
 
 const AuthContext = createContext()
 
@@ -17,11 +17,37 @@ export const AuthProvider = ({ children }) => {
     return ADMIN_EMAILS.map(e => e.toLowerCase()).includes(email.toLowerCase())
   }, [])
 
+  const isSuperAdminEmail = useCallback((email) => {
+    if (!email) return false
+    return SUPER_ADMIN_EMAILS.map(e => e.toLowerCase()).includes(email.toLowerCase())
+  }, [])
+
   const hydrateUser = useCallback(async (baseUser) => {
     if (!baseUser) return null
 
     const email = baseUser.email?.toLowerCase?.() || ''
+    const superAdmin = isSuperAdminEmail(email)
     const admin = isAdminEmail(email)
+
+    if (superAdmin) {
+      const superAdminUser = {
+        ...baseUser,
+        email,
+        role: 'SUPER_ADMIN',
+        studentId: baseUser.studentId || '',
+        name: baseUser.name || 'Super Admin'
+      }
+
+      setUser(superAdminUser)
+      localStorage.setItem('user', JSON.stringify(superAdminUser))
+      localStorage.setItem('userRole', 'SUPER_ADMIN')
+      localStorage.setItem('userEmail', superAdminUser.email)
+      localStorage.setItem('userName', superAdminUser.name)
+      setSessionRole('SUPER_ADMIN')
+
+      console.log('FORCED Super Admin access granted for:', superAdminUser.email)
+      return superAdminUser
+    }
 
     if (admin) {
       const adminUser = {
@@ -67,7 +93,7 @@ export const AuthProvider = ({ children }) => {
     })
 
     return regularUser
-  }, [isAdminEmail])
+  }, [isAdminEmail, isSuperAdminEmail])
 
   const login = useCallback((userData, userToken) => {
     const email = userData.email?.toLowerCase?.() || ''
@@ -78,7 +104,12 @@ export const AuthProvider = ({ children }) => {
       studentId: userData.studentId || '',
     }
 
-    if (isAdminEmail(email)) {
+    if (isSuperAdminEmail(email)) {
+      nextUser.role = 'SUPER_ADMIN'
+      nextUser.name = userData.name || 'Super Admin'
+      localStorage.setItem('adminRedirect', 'true')
+      console.log('FORCED Super Admin access granted on login for:', email)
+    } else if (isAdminEmail(email)) {
       nextUser.role = 'ADMIN'
       nextUser.name = userData.name || 'Admin User'
       localStorage.setItem('adminRedirect', 'true')
@@ -101,14 +132,14 @@ export const AuthProvider = ({ children }) => {
 
     console.log('Login complete - Role:', nextUser.role, 'Email:', nextUser.email)
 
-    if (nextUser.role !== 'ADMIN') {
+    if (nextUser.role !== 'ADMIN' && nextUser.role !== 'SUPER_ADMIN') {
       persistStudentIdentity({
         studentId: nextUser.studentId,
         name: nextUser.name,
         email: nextUser.email,
       })
     }
-  }, [isAdminEmail])
+  }, [isAdminEmail, isSuperAdminEmail])
 
   const logout = useCallback(() => {
     setUser(null)
@@ -144,7 +175,19 @@ export const AuthProvider = ({ children }) => {
         clearSessionRole()
         clearStudentIdentity()
 
-        if (isAdminEmail(email)) {
+        if (isSuperAdminEmail(email)) {
+          userData.email = email
+          userData.role = 'SUPER_ADMIN'
+          userData.name = userData.name || 'Super Admin'
+
+          localStorage.setItem('user', JSON.stringify(userData))
+          localStorage.setItem('userRole', 'SUPER_ADMIN')
+          localStorage.setItem('userEmail', userData.email)
+          localStorage.setItem('userName', userData.name)
+          setSessionRole('SUPER_ADMIN')
+
+          console.log('Super Admin access restored for:', userData.email)
+        } else if (isAdminEmail(email)) {
           userData.email = email
           userData.role = 'ADMIN'
           userData.name = userData.name || 'Admin User'
@@ -183,7 +226,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false)
       console.log('checkAuth: setLoading(false) called')
     }
-  }, [isAdminEmail, logout])
+  }, [isAdminEmail, isSuperAdminEmail, logout])
 
   useEffect(() => {
     checkAuth()

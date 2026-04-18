@@ -4,3 +4,7 @@ export const ADMIN_EMAILS = [
   'it23207936@my.sliit.lk',
   'it23239470@my.sliit.lk'
 ].map(email => email.toLowerCase())
+
+export const SUPER_ADMIN_EMAILS = [
+  'sashini.unilocatelk@gmail.com'
+].map(email => email.toLowerCase())

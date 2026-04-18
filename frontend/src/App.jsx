@@ -11,6 +11,7 @@ import TicketsPage from './pages/TicketsPage'
 import TicketList from './pages/TicketList'
 import TicketDetails from './pages/TicketDetails'
 import AdminDashboard from './pages/AdminDashboard'
+import SuperAdminDashboard from './pages/SuperAdminDashboard'
 import UserDashboard from './pages/UserDashboard'
 import UserProfilePage from './pages/UserProfilePage'
 import NotificationsPage from './pages/NotificationsPage'
@@ -22,7 +23,7 @@ import AdminAccessPage from './pages/AdminAccessPage'
 import AdminRedirect from './components/AdminRedirect'
 import { AuthProvider } from './contexts/AuthContext'
 import { useAuth } from './hooks/useAuth'
-import { ADMIN_EMAILS } from './constants/auth'
+import { ADMIN_EMAILS, SUPER_ADMIN_EMAILS } from './constants/auth'
 
 function AuthLoadingScreen() {
   return (
@@ -51,6 +52,7 @@ function AdminRoute({ children }) {
     isAuthenticated, 
     userRole: user?.role, 
     hasAdminRole: hasRole('ADMIN'),
+    hasSuperAdminRole: hasRole('SUPER_ADMIN'),
     userEmail: user?.email,
     localStorageRole: localStorage.getItem('userRole')
   })
@@ -63,20 +65,58 @@ function AdminRoute({ children }) {
   
   // Multiple layers of admin role checking
   const isAdmin = hasRole('ADMIN') && user?.role === 'ADMIN' && localStorage.getItem('userRole') === 'ADMIN'
+  const isSuperAdmin = hasRole('SUPER_ADMIN') && user?.role === 'SUPER_ADMIN' && localStorage.getItem('userRole') === 'SUPER_ADMIN'
   
-  if (!isAdmin) {
+  if (!isAdmin && !isSuperAdmin) {
     console.log('Not admin user, redirecting to user dashboard')
     // Redirect regular users to user dashboard instead of login
     return <Navigate to="/user-dashboard" replace />
   }
   
   // Additional check for specific admin email
-  if (!ADMIN_EMAILS.includes(user?.email)) {
+  if (!ADMIN_EMAILS.includes(user?.email) && !SUPER_ADMIN_EMAILS.includes(user?.email)) {
     console.log('Not authorized admin email, redirecting to user dashboard')
     return <Navigate to="/user-dashboard" replace />
   }
   
   console.log('Admin access granted for:', user?.email)
+  return children
+}
+
+function SuperAdminRoute({ children }) {
+  const { isAuthenticated, hasRole, loading, user } = useAuth()
+  if (loading) return <AuthLoadingScreen />
+  
+  // Debug logging to check user role
+  console.log('SuperAdminRoute check:', { 
+    isAuthenticated, 
+    userRole: user?.role, 
+    hasSuperAdminRole: hasRole('SUPER_ADMIN'),
+    userEmail: user?.email,
+    localStorageRole: localStorage.getItem('userRole')
+  })
+  
+  // Strict super admin check
+  if (!isAuthenticated) {
+    console.log('Not authenticated, redirecting to login')
+    return <Navigate to="/login" replace />
+  }
+  
+  // Check if user is super admin
+  const isSuperAdmin = hasRole('SUPER_ADMIN') && user?.role === 'SUPER_ADMIN' && localStorage.getItem('userRole') === 'SUPER_ADMIN'
+  
+  if (!isSuperAdmin) {
+    console.log('Not super admin user, redirecting to admin dashboard')
+    return <Navigate to="/admin" replace />
+  }
+  
+  // Additional check for specific super admin email
+  if (!SUPER_ADMIN_EMAILS.includes(user?.email)) {
+    console.log('Not authorized super admin email, redirecting to admin dashboard')
+    return <Navigate to="/admin" replace />
+  }
+  
+  console.log('Super admin access granted for:', user?.email)
   return children
 }
 
@@ -222,6 +262,14 @@ function AppRoutes() {
         />
         <Route path="login" element={<LoginPage />} />
         <Route path="signup" element={<SignupPage />} />
+        <Route
+          path="super-admin"
+          element={
+            <SuperAdminRoute>
+              <SuperAdminDashboard />
+            </SuperAdminRoute>
+          }
+        />
         <Route path="dashboard" element={<DashboardRoute />} />
       </Route>
       {/* OAuth callback routes outside main layout */}
