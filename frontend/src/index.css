@@ -1,5 +1,63 @@
 
-/* ===== FINAL AUTH PAGE OVERRIDES ===== */
+/* ===== AUTH HEADER FINAL FIX ===== */
+
+.hub-app--auth .hub-header__nav {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+}
+
+.hub-app--auth .hub-header__pill,
+.hub-app--auth .hub-header__pill:link,
+.hub-app--auth .hub-header__pill:visited {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 42px !important;
+  padding: 0 16px !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  background: transparent !important;
+  color: #ffffff !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  text-decoration: none !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  transition: 0.2s ease !important;
+}
+
+.hub-app--auth .hub-header__pill:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  text-decoration: none !important;
+}
+
+.hub-app--auth .hub-header__pill--active {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+}
+
+.hub-app--auth .hub-header__pill--active:hover {
+  background: rgba(255, 255, 255, 0.16) !important;
+}
+
+@media (max-width: 640px) {
+  .hub-app--auth .hub-header__nav {
+    gap: 8px !important;
+  }
+
+  .hub-app--auth .hub-header__pill,
+  .hub-app--auth .hub-header__pill:link,
+  .hub-app--auth .hub-header__pill:visited {
+    min-height: 38px !important;
+    padding: 0 12px !important;
+    font-size: 0.85rem !important;
+  }
+}/* ===== FINAL AUTH PAGE OVERRIDES ===== */
 
 .hub-app--auth {
   min-height: 100vh;
