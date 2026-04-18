@@ -1,5 +1,104 @@
 
-/* ===== AUTH HEADER FINAL FIX ===== */
+/* ===== LOGIN HEADER FINAL UNIQUE FIX ===== */
+
+.auth-topbar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  flex-wrap: nowrap !important;
+}
+
+.auth-brand {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  text-decoration: none !important;
+}
+
+.auth-brand__badge {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 12px !important;
+  display: grid !important;
+  place-items: center !important;
+  background: #ffffff !important;
+  color: #1f2a44 !important;
+  font-size: 0.95rem !important;
+  font-weight: 800 !important;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12) !important;
+  flex-shrink: 0 !important;
+}
+
+.auth-brand__text {
+  color: #ffffff !important;
+  font-size: 1.45rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.auth-topbar__nav {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+  margin-left: auto !important;
+}
+
+.auth-topbar__pill,
+.auth-topbar__pill:link,
+.auth-topbar__pill:visited {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 42px !important;
+  padding: 0 16px !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  background: transparent !important;
+  color: #ffffff !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  text-decoration: none !important;
+  box-shadow: none !important;
+  white-space: nowrap !important;
+  transition: 0.2s ease !important;
+}
+
+.auth-topbar__pill:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  text-decoration: none !important;
+}
+
+.auth-topbar__pill--active {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.24) !important;
+  color: #ffffff !important;
+}
+
+@media (max-width: 640px) {
+  .auth-topbar {
+    gap: 10px !important;
+  }
+
+  .auth-brand__text {
+    font-size: 1.05rem !important;
+  }
+
+  .auth-topbar__nav {
+    gap: 8px !important;
+  }
+
+  .auth-topbar__pill,
+  .auth-topbar__pill:link,
+  .auth-topbar__pill:visited {
+    min-height: 38px !important;
+    padding: 0 12px !important;
+    font-size: 0.84rem !important;
+  }
+}/* ===== AUTH HEADER FINAL FIX ===== */
 
 .hub-app--auth .hub-header__nav {
   display: inline-flex !important;
