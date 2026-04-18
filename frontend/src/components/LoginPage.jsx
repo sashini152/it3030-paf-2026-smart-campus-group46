@@ -46,7 +46,7 @@ export default function LoginPage() {
     }
   }
 
-return (
+  return (
   <div className="hub-app hub-app--auth">
     <header className="hub-header hub-header--auth">
       <div className="hub-header__inner">
@@ -69,12 +69,6 @@ return (
         </div>
       </div>
     </header>
-
-    <main className="hub-main hub-main--auth">
-      {/* Your full login section stays here */}
-    </main>
-  </div>
-)
 
       <main className="hub-main hub-main--auth">
         <section className="hub-auth-grid">
