@@ -61,7 +61,8 @@ export default function RegisterPage() {
 
           <div className="nav-links">
             <Link to="/">Home</Link>
-            <Link to="/login">Sign in</Link>
+<Link to="/login">Sign in</Link>
+<Link to="/register">Sign up</Link>
           </div>
         </div>
       </div>
