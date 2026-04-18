@@ -54,19 +54,15 @@ export default function LoginPage() {
           <div className="hub-brand__badge">SC</div>
           <span className="hub-brand__text">Smart Campus Hub</span>
         </Link>
+<div className="hub-header__nav">
+  <span className="hub-header__pill hub-header__pill--active">
+    Sign in
+  </span>
 
-        <div className="hub-header__nav">
-          <button
-            type="button"
-            className="hub-header__pill hub-header__pill--active"
-          >
-            Sign in
-          </button>
-
-          <Link to="/register" className="hub-header__pill">
-            Sign up
-          </Link>
-        </div>
+  <Link to="/register" className="hub-header__pill">
+    Sign up
+  </Link>
+</div>
       </div>
     </header>
 
