@@ -46,25 +46,35 @@ export default function LoginPage() {
     }
   }
 
-  return (
-    <div className="hub-app hub-app--auth">
-      <header className="hub-header hub-header--auth">
-        <div className="hub-header__inner">
-          <Link to="/" className="hub-brand">
+return (
+  <div className="hub-app hub-app--auth">
+    <header className="hub-header hub-header--auth">
+      <div className="hub-header__inner">
+        <Link to="/" className="hub-brand">
           <div className="hub-brand__badge">SC</div>
-            <span className="hub-brand__text">Smart Campus Hub</span>
-          </Link>
+          <span className="hub-brand__text">Smart Campus Hub</span>
+        </Link>
 
-          <div className="hub-header__nav">
-            <button type="button" className="hub-header__pill hub-header__pill--active">
-              Sign in
-            </button>
-            <Link to="/register" className="hub-header__pill">
-              Sign up
-            </Link>
-          </div>
+        <div className="hub-header__nav">
+          <button
+            type="button"
+            className="hub-header__pill hub-header__pill--active"
+          >
+            Sign in
+          </button>
+
+          <Link to="/register" className="hub-header__pill">
+            Sign up
+          </Link>
         </div>
-      </header>
+      </div>
+    </header>
+
+    <main className="hub-main hub-main--auth">
+      {/* Your full login section stays here */}
+    </main>
+  </div>
+)
 
       <main className="hub-main hub-main--auth">
         <section className="hub-auth-grid">
