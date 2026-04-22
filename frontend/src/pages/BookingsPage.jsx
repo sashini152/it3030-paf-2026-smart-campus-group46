@@ -4,7 +4,6 @@ import { buildQuery, deleteRequest, getJson, postJson, putJson } from '../api/cl
 
 import ParallaxPanel from '../components/ParallaxPanel'
 
-import { useAuth } from '../hooks/useAuth'
 
 import Reveal from '../components/Reveal'
 

@@ -160,10 +160,12 @@ code {
 
 .hub-main {
   flex: 1;
-  max-width: var(--hub-max);
   width: 100%;
-  margin: 0 auto;
-  padding: 2rem 1.25rem 3rem;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .hub-footer {
@@ -272,7 +274,7 @@ code {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.hub-auth-panel:hover {
+.hub-auth-panel:hover { 
   transform: translateY(-4px);
   box-shadow: 
     0 40px 80px rgba(0, 0, 0, 0.15),
@@ -1196,7 +1198,9 @@ code {
 }
 
 .hub-app--home .hub-main {
-  padding-top: 2.5rem;
+  padding: 2.5rem 1.25rem;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .hub-app--home .hub-footer {
@@ -1246,13 +1250,16 @@ code {
 }
 
 .hub-app--resources .hub-main {
-  padding-top: 2.5rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100%;
 }
 
 .hub-app--bookings {
-  background:
-    radial-gradient(circle at top left, rgba(180, 24, 45, 0.16) 0%, transparent 22%),
-    linear-gradient(180deg, #242e49 0%, #37415c 38%, #181a2f 100%);
+  background: #0f1117;
 }
 
 .hub-app--bookings .hub-header {
@@ -1292,13 +1299,39 @@ code {
 }
 
 .hub-app--bookings .hub-main {
-  padding-top: 2.5rem;
+  padding: 1.5rem 1rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  height: 100vh;
+  width: 100%;
+  overflow-y: auto;
 }
 
 .hub-app--tickets,
-.hub-app--notifications,
-.hub-app--profile {
+.hub-app--notifications {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.hub-app--tickets {
+  background: #0f1117;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.hub-app--notifications {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.hub-app--profile {
+  background: #0f1117;
   min-height: 100vh;
   position: relative;
   overflow: hidden;
@@ -1306,9 +1339,19 @@ code {
 
 .hub-app--auth {
   background: linear-gradient(135deg, #eef2ff 0%, #fdf2f8 100%);
-  min-height: 100vh;
-  position: relative;
+  height: 100vh;
+  width: 100vw;
+  position: fixed;
+  top: 0;
+  left: 0;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hub-app--auth .hub-header {
+  display: none;
 }
 
 .hub-app--user-bookings {
@@ -1369,17 +1412,21 @@ code {
 
 .hub-app--tickets .hub-main,
 .hub-app--notifications .hub-main,
-.hub-app--profile .hub-main,
-.hub-app--auth .hub-main {
-  padding-top: 2.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: calc(100vh - 80px);
+.hub-app--profile .hub-main {
+  padding: 2.5rem 1.25rem;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .hub-app--tickets .hub-main {
-  max-width: 1320px;
+  max-width: none;
+  margin: 0;
+}
+
+.hub-app--profile .hub-main {
+  padding: 2.5rem 1.25rem;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .hub-app--user-bookings .hub-main {
@@ -1392,7 +1439,7 @@ code {
 }
 
 .hub-page--resources {
-  color: #ffffff;
+  color: #1f2937;
 }
 
 .hub-page--bookings {
@@ -1449,13 +1496,13 @@ code {
 }
 
 .hub-page--resources h1 {
-  color: #ffffff;
+  color: #1f2937;
   font-size: clamp(2.2rem, 5vw, 3.75rem);
 }
 
 .hub-page--resources .hub-lead {
   max-width: 58rem;
-  color: #ffffff;
+  color: #4b5563;
   opacity: 0.9;
   line-height: 1.75;
 }
@@ -1476,6 +1523,12 @@ code {
   line-height: 1;
   vertical-align: baseline;
   white-space: nowrap;
+}
+
+.hub-page--resources .hub-inline-status-pill {
+  border: 1px solid #fda481;
+  background: #fda481;
+  color: #ffffff;
 }
 
 .hub-page--bookings h1,
@@ -1724,7 +1777,7 @@ code {
 .hub-tag--booking-approved {
   border: 1px solid #fda481;
   background: #fda481;
-  color: #181a2f;
+  color: #ffffff;
 }
 
 .hub-tag--booking-rejected {
@@ -2095,8 +2148,8 @@ code {
   min-width: 88px;
   padding: 0.3rem 0.75rem;
   border-radius: 999px;
-  border: 1px solid #1f2740;
-  background: linear-gradient(180deg, #2c3554 0%, #181a2f 100%);
+  border: 1px solid #fda481;
+  background: #fda481;
   color: #ffffff;
   font-size: 0.76rem;
   font-weight: 700;
