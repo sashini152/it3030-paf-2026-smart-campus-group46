@@ -245,6 +245,14 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+        <Route
+  path="super-admin-users"
+  element={
+    <AdminRoute>
+      <SuperAdminUserManagementPage />
+    </AdminRoute>
+  }
+/>
 
         <Route path="login" element={<LoginPage />} />
         <Route path="signup" element={<SignupPage />} />
@@ -256,6 +264,7 @@ function AppRoutes() {
     </Routes>
   )
 }
+
 
 export default function App() {
   return (
