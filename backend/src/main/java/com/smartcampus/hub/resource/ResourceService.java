@@ -1,6 +1,6 @@
 package com.smartcampus.hub.resource;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,6 +10,8 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import com.smartcampus.hub.common.NotFoundException;
+import com.smartcampus.hub.model.Resource;
+import com.smartcampus.hub.repository.ResourceRepository;
 
 @Service
 public class ResourceService {
@@ -53,13 +55,12 @@ public class ResourceService {
 	}
 
 	public Resource create(CreateResourceRequest req) {
-		Instant now = Instant.now();
+		LocalDateTime now = LocalDateTime.now();
 		Resource r = new Resource();
 		r.setType(req.getType());
-		r.setName(req.getName().trim());
+		r.setDescription(req.getDescription());
 		r.setCapacity(req.getCapacity());
 		r.setLocation(req.getLocation().trim());
-		r.setAvailabilityWindows(req.getAvailabilityWindows() == null ? null : req.getAvailabilityWindows().trim());
 		r.setStatus(req.getStatus());
 		r.setCreatedAt(now);
 		r.setUpdatedAt(now);
@@ -69,12 +70,12 @@ public class ResourceService {
 	public Resource update(String id, UpdateResourceRequest req) {
 		Resource r = getById(id);
 		r.setType(req.getType());
-		r.setName(req.getName().trim());
+		r.setDescription(req.getDescription());
 		r.setCapacity(req.getCapacity());
 		r.setLocation(req.getLocation().trim());
-		r.setAvailabilityWindows(req.getAvailabilityWindows() == null ? null : req.getAvailabilityWindows().trim());
 		r.setStatus(req.getStatus());
-		r.setUpdatedAt(Instant.now());
+		LocalDateTime now = LocalDateTime.now();
+		r.setUpdatedAt(now);
 		return resourceRepository.save(r);
 	}
 
@@ -83,5 +84,9 @@ public class ResourceService {
 			throw new NotFoundException("Resource not found");
 		}
 		resourceRepository.deleteById(id);
+	}
+
+	public List<Resource> getAllResources() {
+		return resourceRepository.findAll();
 	}
 }

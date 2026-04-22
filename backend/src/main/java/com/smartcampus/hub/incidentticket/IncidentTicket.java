@@ -25,5 +25,17 @@ public class IncidentTicket {
 
     private String createdBy;
 
+    private String assignedTechnician;
+
+    private String resolutionNotes;
+
+    private String rejectionReason;
+
     private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
+
+    private LocalDateTime firstResponseAt;
+
+    private LocalDateTime resolvedAt;
 }

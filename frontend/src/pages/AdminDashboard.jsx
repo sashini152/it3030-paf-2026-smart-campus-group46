@@ -1,413 +1,951 @@
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { deleteJson, getJson, patchJson, postJson, putJson } from '../api/client'
+import { useAuth } from '../hooks/useAuth'
 import { useTickets } from '../hooks/useTickets'
+import { updateAnyTicketStatus } from '../services/ticketService'
+import { normalizeTicketWorkflowStatus } from '../utils/ticketPresentation'
+import AdminSidebar from '../components/AdminSidebar'
+import BookingCharts from '../components/BookingCharts'
 
-const navItems = [
-  { label: 'Overview', to: '/admin', active: true },
-  { label: 'Resources', to: '/resources' },
-  { label: 'Bookings', to: '/bookings' },
-  { label: 'Tickets', to: '/tickets' },
-  { label: 'Notifications', to: '/notifications' },
-  { label: 'Sign In', to: '/login' },
-]
-
-const statusChip = {
-  OPEN: 'bg-amber-100 text-amber-800',
-  IN_PROGRESS: 'bg-sky-100 text-sky-800',
-  RESOLVED: 'bg-emerald-100 text-emerald-800',
-  CLOSED: 'bg-slate-200 text-slate-700',
-  WAITING_FOR_CLIENT: 'bg-violet-100 text-violet-800',
-  WAITING_FOR_SUPPORT: 'bg-orange-100 text-orange-800',
+const RESOURCE_TYPES = ['LECTURE_HALL', 'LAB', 'MEETING_ROOM', 'EQUIPMENT']
+const RESOURCE_STATUSES = ['ACTIVE', 'OUT_OF_SERVICE']
+const BOOKING_FILTERS = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']
+const TICKET_STATUSES = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED']
+const NOTIFICATION_TYPES = ['BOOKING', 'TICKET', 'COMMENT', 'SYSTEM']
+const emptyResource = {
+  type: 'LECTURE_HALL',
+  name: '',
+  capacity: 0,
+  location: '',
+  availabilityWindows: '',
+  status: 'ACTIVE',
 }
-
-const moduleTiles = [
-  ['Incident Queue', 'Live data from the ticket API.', 'Live', 'bg-emerald-100 text-emerald-700'],
-  ['Bookings', 'Approval metrics can drop in here next.', 'Pending API', 'bg-sky-100 text-sky-700'],
-  ['Resources', 'Usage and availability fit this same tile.', 'Planned', 'bg-amber-100 text-amber-700'],
-  ['Notifications', 'Unread and delivery health can surface here.', 'Planned', 'bg-violet-100 text-violet-700'],
-]
+const emptyNotice = { title: '', message: '', type: 'SYSTEM', targetUserId: '' }
+const ADMIN_REQUEST_TIMEOUT_MS = 4000
+const TICKET_GRAPH_COLORS = {
+  OPEN: 'bg-sky-500',
+  IN_PROGRESS: 'bg-indigo-500',
+  RESOLVED: 'bg-emerald-500',
+  CLOSED: 'bg-slate-500',
+  REJECTED: 'bg-rose-500',
+}
 
 function cls(...values) {
   return values.filter(Boolean).join(' ')
 }
 
-function statusName(value) {
-  return (value || 'OPEN').toUpperCase()
-}
-
 function label(value) {
-  return statusName(value).replaceAll('_', ' ')
+  return (value || '').replaceAll('_', ' ')
 }
 
-function dateText(value) {
+function withTimeout(request, labelText) {
+  let timeoutId
+  return Promise.race([
+    request,
+    new Promise((_, reject) => {
+      timeoutId = setTimeout(
+        () =>
+          reject(
+            new Error(
+              `${labelText} request timed out. Reload the page and make sure the backend is still running.`
+            )
+          ),
+        ADMIN_REQUEST_TIMEOUT_MS
+      )
+    }),
+  ]).finally(() => clearTimeout(timeoutId))
+}
+
+function dt(value) {
   if (!value) return '-'
   const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '-'
-  return date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString()
 }
 
 function minutesBetween(start, end) {
   if (!start || !end) return null
-  const a = new Date(start).getTime()
-  const b = new Date(end).getTime()
-  if (Number.isNaN(a) || Number.isNaN(b)) return null
-  return Math.max(0, Math.round((b - a) / 60000))
+  const startTime = new Date(start).getTime()
+  const endTime = new Date(end).getTime()
+  if (Number.isNaN(startTime) || Number.isNaN(endTime)) return null
+  return Math.max(0, Math.round((endTime - startTime) / 60000))
 }
 
-function durationText(minutes) {
+function durationLabel(minutes) {
   if (minutes === null) return 'Pending'
   if (minutes < 60) return `${minutes} min`
   const hours = Math.floor(minutes / 60)
-  const rest = minutes % 60
-  return rest ? `${hours}h ${rest}m` : `${hours}h`
+  const remainder = minutes % 60
+  return remainder ? `${hours}h ${remainder}m` : `${hours}h`
 }
 
-function ageText(value) {
-  if (!value) return '-'
-  const diff = Math.max(0, Date.now() - new Date(value).getTime())
-  const minutes = Math.round(diff / 60000)
-  if (minutes < 60) return `${minutes}m ago`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-  return `${Math.floor(hours / 24)}d ago`
+function formatChartDay(value) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '-'
+  return date.toLocaleDateString(undefined, { weekday: 'short' })
 }
 
-function buildTrend(tickets) {
-  const now = new Date()
-  const months = Array.from({ length: 6 }, (_, index) => {
-    const date = new Date(now.getFullYear(), now.getMonth() - 5 + index, 1)
-    return {
-      key: `${date.getFullYear()}-${date.getMonth()}`,
-      label: date.toLocaleDateString(undefined, { month: 'short' }),
-      opened: 0,
-      resolved: 0,
-    }
-  })
-  const lookup = Object.fromEntries(months.map((item) => [item.key, item]))
-
-  tickets.forEach((ticket) => {
-    if (ticket.createdAt) {
-      const date = new Date(ticket.createdAt)
-      const key = `${date.getFullYear()}-${date.getMonth()}`
-      if (lookup[key]) lookup[key].opened += 1
-    }
-    if (ticket.resolvedAt) {
-      const date = new Date(ticket.resolvedAt)
-      const key = `${date.getFullYear()}-${date.getMonth()}`
-      if (lookup[key]) lookup[key].resolved += 1
-    }
-  })
-
-  return months
+function formatShortDate(value) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '-'
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
-function linePoints(values, width = 480, height = 230, pad = 24) {
-  const max = Math.max(...values, 1)
-  return values
-    .map((value, index) => {
-      const x = pad + ((width - pad * 2) * index) / Math.max(values.length - 1, 1)
-      const y = height - pad - (value / max) * (height - pad * 2)
-      return `${x},${y}`
-    })
-    .join(' ')
-}
-
-function Sidebar() {
-  return (
-    <div className="flex h-full flex-col">
-      <div className="mb-8 flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500 text-sm font-bold text-white shadow-lg shadow-emerald-500/20">
-          SC
-        </div>
-        <div>
-          <p className="text-lg font-semibold text-slate-900">Smart Campus</p>
-          <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Admin Desk</p>
-        </div>
-      </div>
-
-      <nav className="space-y-1.5">
-        {navItems.map((item) => (
-          <Link
-            key={item.label}
-            to={item.to}
-            className={cls(
-              'block rounded-2xl px-4 py-3 text-sm font-medium transition',
-              item.active ? 'bg-emerald-50 text-emerald-700 shadow-sm' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
-            )}
-          >
-            {item.label}
-          </Link>
-        ))}
-      </nav>
-
-      <div className="mt-auto rounded-[28px] border border-slate-200 bg-slate-50 p-5 text-sm leading-6 text-slate-600">
-        Ticket operations are live. The other campus modules are scaffolded so the dashboard can grow without another redesign.
-      </div>
-    </div>
-  )
+function isToday(date) {
+  const today = new Date()
+  const checkDate = new Date(date)
+  return checkDate.toDateString() === today.toDateString()
 }
 
 export default function AdminDashboard() {
-  const { tickets, loading, error } = useTickets()
-  const [search, setSearch] = useState('')
+  const { user } = useAuth()
+  const {
+    tickets,
+    loading: ticketsLoading,
+    error: ticketsError,
+    reload: reloadTickets,
+  } = useTickets()
+
   const [menuOpen, setMenuOpen] = useState(false)
 
-  const summary = useMemo(() => {
-    const counts = { OPEN: 0, IN_PROGRESS: 0, RESOLVED: 0, CLOSED: 0, WAITING_FOR_CLIENT: 0, WAITING_FOR_SUPPORT: 0 }
-    let responseTotal = 0
-    let responseCount = 0
+  const [resources, setResources] = useState([])
+  const [resourcesLoading, setResourcesLoading] = useState(true)
+  const [resourcesError, setResourcesError] = useState(null)
+  const [resourceForm, setResourceForm] = useState(emptyResource)
+  const [resourceEditId, setResourceEditId] = useState(null)
+
+  const [bookings, setBookings] = useState([])
+  const [bookingsLoading, setBookingsLoading] = useState(true)
+  const [bookingsError, setBookingsError] = useState(null)
+  const [bookingFilter, setBookingFilter] = useState('ALL')
+  const [bookingViewMode, setBookingViewMode] = useState('table')
+
+  const [notifications, setNotifications] = useState([])
+  const [notificationsLoading, setNotificationsLoading] = useState(true)
+  const [notificationsError, setNotificationsError] = useState(null)
+  const [notificationForm, setNotificationForm] = useState(emptyNotice)
+
+  const [analytics, setAnalytics] = useState({
+    topResources: [],
+    peakBookingHours: [],
+  })
+  const [analyticsLoading, setAnalyticsLoading] = useState(true)
+  const [analyticsError, setAnalyticsError] = useState(null)
+
+  const [busyId, setBusyId] = useState(null)
+  const [ticketQuery, setTicketQuery] = useState('')
+
+  const loadResources = useCallback(async () => {
+    setResourcesLoading(true)
+    setResourcesError(null)
+    try {
+      const data = await withTimeout(getJson('/api/resources'), 'Resource list')
+      setResources(Array.isArray(data) ? data : [])
+    } catch (error) {
+      setResources([])
+      setResourcesError(error.message)
+    } finally {
+      setResourcesLoading(false)
+    }
+  }, [])
+
+  const loadBookings = useCallback(async () => {
+    setBookingsLoading(true)
+    setBookingsError(null)
+    try {
+      const data = await withTimeout(getJson('/api/bookings'), 'Booking list')
+      setBookings(Array.isArray(data) ? data : [])
+    } catch (error) {
+      setBookings([])
+      setBookingsError(error.message)
+    } finally {
+      setBookingsLoading(false)
+    }
+  }, [])
+
+  const loadNotifications = useCallback(async () => {
+    setNotificationsLoading(true)
+    setNotificationsError(null)
+    try {
+      const data = await withTimeout(
+        getJson('/api/admin/notifications'),
+        'Notification inbox'
+      )
+      setNotifications(Array.isArray(data) ? data : [])
+    } catch (error) {
+      setNotifications([])
+      setNotificationsError(error.message)
+    } finally {
+      setNotificationsLoading(false)
+    }
+  }, [])
+
+  const loadAnalytics = useCallback(async () => {
+    setAnalyticsLoading(true)
+    setAnalyticsError(null)
+    try {
+      const data = await withTimeout(
+        getJson('/api/admin/analytics/usage'),
+        'Usage analytics'
+      )
+      setAnalytics({
+        topResources: Array.isArray(data?.topResources) ? data.topResources : [],
+        peakBookingHours: Array.isArray(data?.peakBookingHours)
+          ? data.peakBookingHours
+          : [],
+      })
+    } catch (error) {
+      setAnalytics({ topResources: [], peakBookingHours: [] })
+      setAnalyticsError(error.message)
+    } finally {
+      setAnalyticsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadResources().catch(() => {})
+    loadBookings().catch(() => {})
+    loadNotifications().catch(() => {})
+    loadAnalytics().catch(() => {})
+    reloadTickets().catch(() => {})
+  }, [loadAnalytics, loadBookings, loadNotifications, loadResources, reloadTickets])
+
+  const pendingBookings = useMemo(
+    () => bookings.filter((item) => item.status === 'PENDING'),
+    [bookings]
+  )
+
+  const visibleBookings = useMemo(
+    () =>
+      bookingFilter === 'ALL'
+        ? bookings
+        : bookings.filter((item) => item.status === bookingFilter),
+    [bookingFilter, bookings]
+  )
+
+  const visibleTickets = useMemo(() => {
+    const query = ticketQuery.trim().toLowerCase()
+    if (!query) return tickets
+    return tickets.filter((item) =>
+      [item.title, item.description, item.createdBy, item.status]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(query)
+    )
+  }, [ticketQuery, tickets])
+
+  const ticketSummary = useMemo(() => {
+    let active = 0
+    let firstResponseTotal = 0
+    let firstResponseCount = 0
+    let resolutionTotal = 0
+    let resolutionCount = 0
 
     tickets.forEach((ticket) => {
-      const status = statusName(ticket.status)
-      counts[status] = (counts[status] || 0) + 1
-      const response = minutesBetween(ticket.createdAt, ticket.firstResponseAt)
-      if (response !== null) {
-        responseTotal += response
-        responseCount += 1
+      if (
+        ['OPEN', 'IN_PROGRESS'].includes(
+          normalizeTicketWorkflowStatus(ticket.status)
+        )
+      ) {
+        active += 1
+      }
+
+      const firstResponseMinutes = minutesBetween(
+        ticket.createdAt,
+        ticket.firstResponseAt
+      )
+      if (firstResponseMinutes !== null) {
+        firstResponseTotal += firstResponseMinutes
+        firstResponseCount += 1
+      }
+
+      const resolutionMinutes = minutesBetween(
+        ticket.createdAt,
+        ticket.resolvedAt
+      )
+      if (resolutionMinutes !== null) {
+        resolutionTotal += resolutionMinutes
+        resolutionCount += 1
       }
     })
 
-    const active = counts.OPEN + counts.IN_PROGRESS + counts.WAITING_FOR_CLIENT + counts.WAITING_FOR_SUPPORT
-
     return {
-      counts,
-      cards: [
-        ['Total Tickets', tickets.length, `${active} need action`, 'bg-slate-900 text-white'],
-        ['Open Queue', active, `${counts.IN_PROGRESS} in progress`, 'bg-emerald-50 text-slate-900'],
-        ['Resolved', counts.RESOLVED + counts.CLOSED, `${counts.CLOSED} closed`, 'bg-sky-50 text-slate-900'],
-        ['Avg Response', durationText(responseCount ? Math.round(responseTotal / responseCount) : null), 'First reply speed', 'bg-amber-50 text-slate-900'],
-      ],
-      trend: buildTrend(tickets),
+      active,
+      avgFirstResponse: firstResponseCount
+        ? Math.round(firstResponseTotal / firstResponseCount)
+        : null,
+      avgResolution: resolutionCount
+        ? Math.round(resolutionTotal / resolutionCount)
+        : null,
     }
   }, [tickets])
 
-  const visibleTickets = useMemo(() => {
-    const query = search.trim().toLowerCase()
-    const sorted = [...tickets].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
-    const filtered = !query
-      ? sorted
-      : sorted.filter((ticket) =>
-          [ticket.title, ticket.description, ticket.createdBy, label(ticket.status)]
-            .filter(Boolean)
-            .join(' ')
-            .toLowerCase()
-            .includes(query)
-        )
-    return filtered.slice(0, 8)
-  }, [search, tickets])
+  const ticketStatusChart = useMemo(() => {
+    const counts = TICKET_STATUSES.map((status) => ({
+      status,
+      count: tickets.filter(
+        (item) =>
+          normalizeTicketWorkflowStatus(item.status || 'OPEN') === status
+      ).length,
+    })).filter((item) => item.count > 0)
 
-  const openedLine = linePoints(summary.trend.map((item) => item.opened))
-  const resolvedLine = linePoints(summary.trend.map((item) => item.resolved))
+    const total = counts.reduce((sum, item) => sum + item.count, 0)
+    return { counts, total }
+  }, [tickets])
+
+  const ticketRaisedTrend = useMemo(() => {
+    const days = 7
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const points = Array.from({ length: days }, (_, index) => {
+      const day = new Date(today)
+      day.setDate(today.getDate() - (days - index - 1))
+      const key = day.toISOString().slice(0, 10)
+      return { key, date: day, count: 0 }
+    })
+
+    const pointMap = new Map(points.map((point) => [point.key, point]))
+
+    tickets.forEach((ticket) => {
+      const createdAt = new Date(ticket.createdAt || ticket.updatedAt || 0)
+      if (Number.isNaN(createdAt.getTime())) return
+
+      const key = new Date(
+        createdAt.getFullYear(),
+        createdAt.getMonth(),
+        createdAt.getDate()
+      )
+        .toISOString()
+        .slice(0, 10)
+
+      const point = pointMap.get(key)
+      if (point) point.count += 1
+    })
+
+    const max = Math.max(...points.map((point) => point.count), 1)
+
+    const path = points
+      .map((point, index) => {
+        const x =
+          points.length === 1 ? 50 : (index / (points.length - 1)) * 100
+        const y = 100 - (point.count / max) * 100
+        return `${index === 0 ? 'M' : 'L'} ${x} ${y}`
+      })
+      .join(' ')
+
+    return { points, max, path }
+  }, [tickets])
+
+  async function saveResource(event) {
+    event.preventDefault()
+    setResourcesError(null)
+
+    try {
+      const payload = {
+        type: resourceForm.type,
+        name: resourceForm.name.trim(),
+        capacity: Number(resourceForm.capacity),
+        location: resourceForm.location.trim(),
+        availabilityWindows: resourceForm.availabilityWindows.trim() || null,
+        status: resourceForm.status,
+      }
+
+      if (resourceEditId) {
+        await putJson(`/api/resources/${resourceEditId}`, payload)
+      } else {
+        await postJson('/api/resources', payload)
+      }
+
+      setResourceEditId(null)
+      setResourceForm(emptyResource)
+      await loadResources()
+      await loadAnalytics()
+    } catch (error) {
+      setResourcesError(error.message)
+    }
+  }
+
+  async function deleteResource(id) {
+    if (!window.confirm('Delete this resource?')) return
+    try {
+      await deleteJson(`/api/resources/${id}`)
+      await loadResources()
+      await loadAnalytics()
+    } catch (error) {
+      setResourcesError(error.message)
+    }
+  }
+
+  async function runBookingAction(id, action, body = {}) {
+    setBusyId(id)
+    setBookingsError(null)
+    try {
+      await putJson(`/api/bookings/${id}/${action}`, body)
+      await loadBookings()
+      await loadNotifications()
+      await loadAnalytics()
+    } catch (error) {
+      setBookingsError(error.message)
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function deleteBooking(id) {
+    if (!window.confirm('Delete this booking?')) return
+    setBusyId(id)
+    try {
+      await deleteJson(`/api/bookings/${id}`)
+      await loadBookings()
+      await loadAnalytics()
+    } catch (error) {
+      setBookingsError(error.message)
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function updateTicketStatus(ticket, status) {
+    setBusyId(ticket.id)
+    try {
+      await updateAnyTicketStatus(ticket, status)
+      await reloadTickets()
+      await loadNotifications()
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function createNotification(event) {
+    event.preventDefault()
+    try {
+      await postJson('/api/admin/notifications', {
+        title: notificationForm.title.trim(),
+        message: notificationForm.message.trim(),
+        type: notificationForm.type,
+        targetUserId: notificationForm.targetUserId.trim() || null,
+      })
+      setNotificationForm(emptyNotice)
+      await loadNotifications()
+    } catch (error) {
+      setNotificationsError(error.message)
+    }
+  }
+
+  async function toggleRead(notification) {
+    setBusyId(notification.id)
+    try {
+      await patchJson(`/api/admin/notifications/${notification.id}/read`, {
+        read: !notification.read,
+      })
+      await loadNotifications()
+    } catch (error) {
+      setNotificationsError(error.message)
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function markAllRead() {
+    try {
+      await patchJson('/api/admin/notifications/read-all', {})
+      await loadNotifications()
+    } catch (error) {
+      setNotificationsError(error.message)
+    }
+  }
+
+  const maxResourceCount = Math.max(
+    ...analytics.topResources.map((item) => item.bookingCount),
+    1
+  )
+
+  const maxHourCount = Math.max(
+    ...analytics.peakBookingHours.map((item) => item.bookingCount),
+    1
+  )
 
   return (
     <div className="min-h-screen bg-[#edf3f0] text-slate-900">
-      <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-24 top-16 h-80 w-80 rounded-full bg-emerald-200/45 blur-3xl" />
-        <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-sky-100/60 blur-3xl" />
-      </div>
-
       <div className="flex min-h-screen">
-        <aside className="hidden w-72 shrink-0 border-r border-white/70 bg-white/85 px-6 py-8 backdrop-blur xl:block">
-          <Sidebar />
+        <aside className="hidden w-72 shrink-0 border-r border-white/70 bg-white/85 px-6 py-8 xl:block">
+          <AdminSidebar currentPage="/admin" />
         </aside>
 
         {menuOpen && (
-          <div className="fixed inset-0 z-40 bg-slate-900/35 xl:hidden" onClick={() => setMenuOpen(false)}>
-            <aside className="h-full w-72 bg-white px-6 py-8" onClick={(event) => event.stopPropagation()}>
-              <Sidebar />
+          <div
+            className="fixed inset-0 z-40 bg-slate-900/35 xl:hidden"
+            onClick={() => setMenuOpen(false)}
+          >
+            <aside
+              className="h-full w-72 bg-white px-6 py-8"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <AdminSidebar currentPage="/admin" />
             </aside>
           </div>
         )}
 
-        <main className="flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
-          <div className="mx-auto max-w-[1480px] rounded-[36px] border border-white/70 bg-white/70 p-4 shadow-[0_30px_80px_rgba(148,163,184,0.28)] backdrop-blur md:p-6 lg:p-8">
-            <header className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <main className="flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 overflow-x-hidden">
+          <div className="w-full rounded-[36px] border border-white/70 bg-white/70 p-4 shadow-[0_30px_80px_rgba(148,163,184,0.28)] md:p-6 lg:p-8">
+            <header className="mb-8 flex items-start justify-between gap-4">
               <div className="flex items-start gap-3">
-                <button type="button" onClick={() => setMenuOpen(true)} className="mt-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm xl:hidden">
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen(true)}
+                  className="mt-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 xl:hidden"
+                >
                   Menu
                 </button>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-600">Smart Campus Admin</p>
-                  <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">Operations dashboard</h1>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
-                    This follows the analytics-panel shape from your reference, but the content is mapped to your website:
-                    incident tickets live now, with room for resources, bookings, and notification health next.
+                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-600">
+                    Smart Campus Admin
+                  </p>
+                  <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+                    Operations dashboard
+                  </h1>
+                  <p className="mt-2 max-w-2xl text-sm text-slate-500">
+                    Manage resources, bookings, tickets, notifications, and analytics from one page.
                   </p>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search ticket, reporter, or status"
-                  className="min-w-[260px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm outline-none placeholder:text-slate-400"
-                />
-                <Link to="/tickets" className="rounded-2xl bg-emerald-500 px-5 py-3 text-center text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 hover:bg-emerald-600 hover:no-underline">
-                  Review Ticket Inbox
-                </Link>
-                <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-slate-900">Campus Admin</p>
-                    <p className="text-xs text-slate-500">Operations lead</p>
-                  </div>
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-sm font-semibold text-white">SC</div>
-                </div>
+              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-right text-sm">
+                <p className="font-semibold text-slate-900">
+                  {user?.name || 'Campus Admin'}
+                </p>
+                <p className="text-slate-500">
+                  {user?.email || 'admin@smartcampus.local'}
+                </p>
               </div>
             </header>
 
-            <section className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
-              {summary.cards.map(([title, value, note, tone]) => (
-                <article key={title} className={cls('rounded-[28px] p-5 shadow-[0_24px_60px_rgba(15,23,42,0.07)]', tone)}>
-                  <p className="text-sm font-medium opacity-75">{title}</p>
-                  <p className="mt-4 text-3xl font-semibold tracking-tight">{value}</p>
-                  <p className="mt-2 text-sm opacity-70">{note}</p>
+            <div className="space-y-5">
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <article className="hub-quarter-fade rounded-[24px] bg-slate-900 p-5 text-white">
+                  <p>Total tickets</p>
+                  <p className="mt-2 text-3xl font-semibold">{tickets.length}</p>
+                  <p className="text-sm opacity-80">
+                    {ticketSummary.active} active queue
+                  </p>
                 </article>
-              ))}
-            </section>
 
-            <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.7fr)]">
-              <article className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Ticket trend</p>
-                <h2 className="mt-2 text-2xl font-semibold text-slate-900">Opened vs resolved</h2>
-                <p className="mt-1 text-sm text-slate-500">Monthly movement for the last six months.</p>
-                <div className="mt-6 overflow-hidden rounded-[28px] bg-slate-50 p-4">
-                  <div className="mb-4 flex gap-5 text-sm text-slate-500">
-                    <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />Opened</span>
-                    <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-sky-500" />Resolved</span>
-                  </div>
-                  <svg viewBox="0 0 480 230" className="h-72 w-full">
-                    {[0, 1, 2, 3, 4].map((index) => (
-                      <line key={index} x1="24" x2="456" y1={24 + index * 45} y2={24 + index * 45} stroke="#dbe4ee" strokeDasharray="6 8" />
-                    ))}
-                    <polyline points={openedLine} fill="none" stroke="#10b981" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-                    <polyline points={resolvedLine} fill="none" stroke="#0ea5e9" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-                    {summary.trend.map((item, index) => (
-                      <text key={item.label} x={24 + (432 * index) / 5} y="222" textAnchor="middle" fill="#94a3b8" fontSize="11">
-                        {item.label}
-                      </text>
-                    ))}
-                  </svg>
-                </div>
-              </article>
+                <article className="hub-quarter-fade rounded-[24px] bg-emerald-50 p-5">
+                  <p>Resources</p>
+                  <p className="mt-2 text-3xl font-semibold">{resources.length}</p>
+                  <p className="text-sm text-slate-500">
+                    {resources.filter((item) => item.status === 'ACTIVE').length} active
+                  </p>
+                </article>
 
-              <article className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Queue summary</p>
-                <h2 className="mt-2 text-2xl font-semibold text-slate-900">Ticket lifecycle</h2>
-                <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                  {[
-                    ['Open', summary.counts.OPEN, 'text-amber-700 bg-amber-100'],
-                    ['In Progress', summary.counts.IN_PROGRESS, 'text-sky-700 bg-sky-100'],
-                    ['Waiting', summary.counts.WAITING_FOR_CLIENT + summary.counts.WAITING_FOR_SUPPORT, 'text-violet-700 bg-violet-100'],
-                    ['Closed', summary.counts.CLOSED, 'text-slate-700 bg-slate-200'],
-                  ].map(([name, value, tone]) => (
-                    <div key={name} className="rounded-[24px] bg-slate-50 p-4">
-                      <span className={cls('inline-flex rounded-full px-3 py-1 text-xs font-semibold', tone)}>{name}</span>
-                      <p className="mt-4 text-3xl font-semibold text-slate-900">{value}</p>
+                <article className="hub-quarter-fade rounded-[24px] bg-sky-50 p-5">
+                  <p>Pending bookings</p>
+                  <p className="mt-2 text-3xl font-semibold">
+                    {pendingBookings.length}
+                  </p>
+                  <p className="text-sm text-slate-500">Awaiting review</p>
+                </article>
+
+                <article className="hub-quarter-fade rounded-[24px] bg-amber-50 p-5">
+                  <p>Unread notifications</p>
+                  <p className="mt-2 text-3xl font-semibold">
+                    {notifications.filter((item) => !item.read).length}
+                  </p>
+                  <p className="text-sm text-slate-500">Admin inbox</p>
+                </article>
+              </div>
+
+              <div className="grid gap-5 lg:grid-cols-2">
+                <section className="hub-quarter-fade rounded-[24px] border border-slate-200 bg-white p-5">
+                  <h2 className="text-xl font-semibold">Tickets raised over time</h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Line chart for the last 7 days of ticket submissions.
+                  </p>
+
+                  {ticketsLoading ? (
+                    <p className="mt-3 text-sm text-slate-500">
+                      Loading tickets...
+                    </p>
+                  ) : (
+                    <div className="mt-4 space-y-4">
+                      <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+                        <div className="mb-4 flex items-end justify-between gap-4">
+                          <div>
+                            <p className="text-sm font-medium text-slate-500">
+                              Total raised this week
+                            </p>
+                            <p className="mt-1 text-3xl font-semibold text-slate-900">
+                              {ticketRaisedTrend.points.reduce(
+                                (sum, point) => sum + point.count,
+                                0
+                              )}
+                            </p>
+                          </div>
+                          <p className="text-sm text-slate-500">
+                            Peak day:{' '}
+                            {Math.max(
+                              ...ticketRaisedTrend.points.map((point) => point.count),
+                              0
+                            )}
+                          </p>
+                        </div>
+
+                        <svg
+                          viewBox="0 0 100 100"
+                          preserveAspectRatio="none"
+                          className="h-44 w-full overflow-visible"
+                        >
+                          <line
+                            x1="0"
+                            y1="100"
+                            x2="100"
+                            y2="100"
+                            stroke="#cbd5e1"
+                            strokeWidth="1.2"
+                          />
+                          <line
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="100"
+                            stroke="#cbd5e1"
+                            strokeWidth="1.2"
+                          />
+                          <path
+                            d={ticketRaisedTrend.path}
+                            fill="none"
+                            stroke="#2563eb"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          {ticketRaisedTrend.points.map((point, index) => {
+                            const x =
+                              ticketRaisedTrend.points.length === 1
+                                ? 50
+                                : (index / (ticketRaisedTrend.points.length - 1)) *
+                                  100
+                            const y =
+                              100 - (point.count / ticketRaisedTrend.max) * 100
+
+                            return (
+                              <circle
+                                key={point.key}
+                                cx={x}
+                                cy={y}
+                                r="2.6"
+                                fill="#2563eb"
+                                stroke="#ffffff"
+                                strokeWidth="1.4"
+                              />
+                            )
+                          })}
+                        </svg>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-7">
+                        {ticketRaisedTrend.points.map((point) => (
+                          <div
+                            key={point.key}
+                            className="rounded-2xl border border-slate-200 bg-white p-3 text-center"
+                          >
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                              {formatChartDay(point.date)}
+                            </p>
+                            <p className="mt-2 text-2xl font-semibold text-slate-900">
+                              {point.count}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              {formatShortDate(point.date)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  ))}
-                </div>
-                <div className="mt-6 rounded-[24px] bg-slate-900 p-5 text-sm leading-6 text-slate-300">
-                  Ticket SLA and queue health belong at the top because tickets are your only live admin dataset today. The other modules can attach to this same shell later.
-                </div>
-              </article>
-            </section>
+                  )}
+                </section>
 
-            <section className="mt-6">
-              <div className="mb-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Platform sections</p>
-                <h2 className="mt-2 text-2xl font-semibold text-slate-900">Campus modules</h2>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
-                {moduleTiles.map(([title, text, badge, tone]) => (
-                  <article key={title} className="rounded-[28px] border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-lg font-semibold text-slate-900">{title}</p>
-                      <span className={cls('rounded-full px-3 py-1 text-xs font-semibold', tone)}>{badge}</span>
-                    </div>
-                    <p className="mt-3 text-sm leading-6 text-slate-600">{text}</p>
-                  </article>
-                ))}
-              </div>
-            </section>
+                <section className="hub-quarter-fade rounded-[24px] border border-slate-200 bg-white p-5">
+                  <h2 className="text-xl font-semibold">Ticket status stack</h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Stacked status view for the current raised-ticket queue.
+                  </p>
 
-            <section className="mt-6 rounded-[30px] border border-slate-200 bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
-              <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Live queue</p>
-                  <h2 className="mt-2 text-2xl font-semibold text-slate-900">Recent incident tickets</h2>
-                </div>
-                <div className="text-sm text-slate-500">{loading ? 'Loading ticket feed...' : `${visibleTickets.length} visible ticket rows`}</div>
-              </div>
+                  {ticketsLoading ? (
+                    <p className="mt-3 text-sm text-slate-500">
+                      Loading tickets...
+                    </p>
+                  ) : (
+                    <div className="mt-4 space-y-4">
+                      {ticketStatusChart.counts.length === 0 ? (
+                        <p className="text-sm text-slate-500">No tickets yet.</p>
+                      ) : (
+                        <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+                          <div className="mb-3 flex items-center justify-between gap-3">
+                            <p className="text-sm font-medium text-slate-500">
+                              Total tracked tickets
+                            </p>
+                            <p className="text-2xl font-semibold text-slate-900">
+                              {ticketStatusChart.total}
+                            </p>
+                          </div>
 
-              {error ? (
-                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  Ticket data could not be loaded. Check the incident-ticket service.
-                </div>
-              ) : loading ? (
-                <div className="rounded-[24px] bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">Loading current ticket activity...</div>
-              ) : visibleTickets.length === 0 ? (
-                <div className="rounded-[24px] bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
-                  No tickets match the current search.
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full border-separate border-spacing-y-3 text-left">
-                    <thead>
-                      <tr className="text-xs uppercase tracking-[0.22em] text-slate-400">
-                        <th className="px-4 py-2 font-semibold">Incident</th>
-                        <th className="px-4 py-2 font-semibold">Reporter</th>
-                        <th className="px-4 py-2 font-semibold">Status</th>
-                        <th className="px-4 py-2 font-semibold">Created</th>
-                        <th className="px-4 py-2 font-semibold">Response SLA</th>
-                        <th className="px-4 py-2 font-semibold">Age</th>
-                        <th className="px-4 py-2 font-semibold">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {visibleTickets.map((ticket) => {
-                        const response = minutesBetween(ticket.createdAt, ticket.firstResponseAt)
-                        const status = statusName(ticket.status)
+                          <div className="overflow-hidden rounded-full bg-white">
+                            <div className="flex h-5 w-full">
+                              {ticketStatusChart.counts.map((item) => (
+                                <div
+                                  key={item.status}
+                                  className={cls(
+                                    TICKET_GRAPH_COLORS[item.status] || 'bg-slate-400',
+                                    item.count === 0 ? 'hidden' : ''
+                                  )}
+                                  style={{
+                                    width: ticketStatusChart.total
+                                      ? `${(item.count / ticketStatusChart.total) * 100}%`
+                                      : '0%',
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
-                        return (
-                          <tr key={ticket.id} className="bg-slate-50 text-sm text-slate-600 shadow-sm">
-                            <td className="rounded-l-[22px] px-4 py-4">
-                              <div className="font-semibold text-slate-900">
-                                <Link to={`/ticket-details/${ticket.id}`} className="hover:no-underline">{ticket.title || 'Untitled incident'}</Link>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {ticketStatusChart.counts.map((item) => (
+                          <div
+                            key={item.status}
+                            className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={cls(
+                                    'h-3 w-3 rounded-full',
+                                    TICKET_GRAPH_COLORS[item.status] || 'bg-slate-400'
+                                  )}
+                                />
+                                <span className="text-sm font-medium text-slate-700">
+                                  {label(item.status)}
+                                </span>
                               </div>
-                              <p className="mt-1 max-w-md text-xs leading-5 text-slate-500">{ticket.description?.slice(0, 90) || 'No description provided.'}</p>
-                            </td>
-                            <td className="px-4 py-4">
-                              <p className="font-medium text-slate-900">{ticket.createdBy || 'Anonymous'}</p>
-                              <p className="text-xs text-slate-500">{ticket.id ? `ID ${ticket.id.slice(0, 8)}` : 'Pending ID'}</p>
-                            </td>
-                            <td className="px-4 py-4">
-                              <span className={cls('inline-flex rounded-full px-3 py-1 text-xs font-semibold', statusChip[status] || 'bg-slate-200 text-slate-700')}>
-                                {label(status)}
+                              <span className="text-sm font-semibold text-slate-900">
+                                {item.count}
                               </span>
-                            </td>
-                            <td className="px-4 py-4 text-slate-900">{dateText(ticket.createdAt)}</td>
-                            <td className="px-4 py-4">
-                              <p className="font-medium text-slate-900">{durationText(response)}</p>
-                              <p className="text-xs text-slate-500">{ticket.firstResponseAt ? `Started ${dateText(ticket.firstResponseAt)}` : 'Awaiting response'}</p>
-                            </td>
-                            <td className="px-4 py-4">
-                              <p className="font-medium text-slate-900">{ageText(ticket.createdAt)}</p>
-                              <p className="text-xs text-slate-500">{ticket.resolvedAt ? `Resolved ${dateText(ticket.resolvedAt)}` : 'Still active'}</p>
-                            </td>
-                            <td className="rounded-r-[22px] px-4 py-4">
-                              <Link to={`/ticket-details/${ticket.id}`} className="inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:border-emerald-200 hover:text-emerald-700 hover:no-underline">
-                                View
-                              </Link>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </section>
+                            </div>
+
+                            <p className="mt-2 text-xs text-slate-500">
+                              {ticketStatusChart.total
+                                ? `${Math.round(
+                                    (item.count / ticketStatusChart.total) * 100
+                                  )}% of current queue`
+                                : 'No tickets yet'}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </section>
+
+                <section className="hub-quarter-fade rounded-[30px] border border-sky-100 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-6 shadow-[0_20px_45px_rgba(148,163,184,0.14)]">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.26em] text-sky-500">
+                        Usage analytics
+                      </p>
+                      <h2 className="mt-2 text-2xl font-semibold text-slate-900">
+                        Resource rhythm
+                      </h2>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Top resources and peak approved-booking hours.
+                      </p>
+                    </div>
+                    <div className="hidden h-14 w-14 rounded-[20px] bg-[radial-gradient(circle_at_30%_30%,#7dd3fc,transparent_58%),linear-gradient(135deg,#eff6ff,#dbeafe)] sm:block" />
+                  </div>
+
+                  {analyticsError && (
+                    <p className="mt-3 text-sm text-rose-600">{analyticsError}</p>
+                  )}
+
+                  {analyticsLoading ? (
+                    <p className="mt-3 text-sm text-slate-500">
+                      Loading analytics...
+                    </p>
+                  ) : (
+                    <div className="mt-4 space-y-5">
+                      <div className="rounded-[26px] border border-emerald-100 bg-[linear-gradient(180deg,#ffffff_0%,#f0fdf4_100%)] p-4">
+                        <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-600">
+                          Top resources
+                        </h3>
+                        <div className="mt-3 space-y-4">
+                          {analytics.topResources.length === 0 ? (
+                            <p className="text-sm text-slate-500">
+                              No approved bookings yet.
+                            </p>
+                          ) : (
+                            analytics.topResources.map((item) => (
+                              <div
+                                key={item.resourceId}
+                                className="rounded-[20px] bg-white/90 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
+                              >
+                                <div className="mb-2 flex items-center justify-between text-sm">
+                                  <span className="font-semibold text-slate-700">
+                                    {item.resourceName}
+                                  </span>
+                                  <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                                    {item.bookingCount}
+                                  </span>
+                                </div>
+                                <div className="h-2.5 rounded-full bg-emerald-50">
+                                  <div
+                                    className="h-2.5 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500"
+                                    style={{
+                                      width: `${(item.bookingCount / maxResourceCount) * 100}%`,
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-600">
+                          Peak booking hours
+                        </h3>
+                        <div className="mt-3">
+                          {analytics.peakBookingHours.length === 0 ? (
+                            <p className="text-sm text-slate-500">
+                              No approved bookings yet.
+                            </p>
+                          ) : (
+                            <div className="rounded-[26px] border border-sky-100 bg-[linear-gradient(180deg,#f8fbff_0%,#eff6ff_100%)] p-5">
+                              <div className="flex min-h-[220px] items-end gap-4">
+                                {analytics.peakBookingHours.map((item) => (
+                                  <div
+                                    key={item.hour}
+                                    className="flex min-w-0 flex-1 flex-col items-center gap-3"
+                                  >
+                                    <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-sky-600 shadow-sm">
+                                      {item.bookingCount}
+                                    </span>
+                                    <div className="flex h-36 w-full items-end rounded-[24px] border border-white/70 bg-white/90 px-2 py-2 shadow-[inset_0_10px_18px_rgba(191,219,254,0.3)]">
+                                      <div
+                                        className="w-full rounded-[18px] bg-gradient-to-t from-sky-500 via-cyan-400 to-sky-300 shadow-[0_10px_20px_rgba(14,165,233,0.28)]"
+                                        style={{
+                                          height: `${Math.max(
+                                            (item.bookingCount / maxHourCount) * 100,
+                                            12
+                                          )}%`,
+                                        }}
+                                      />
+                                    </div>
+                                    <span className="text-center text-[11px] font-medium leading-4 text-slate-600">
+                                      {item.label}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </section>
+
+                <section className="hub-quarter-fade rounded-[30px] border border-blue-100 bg-[linear-gradient(180deg,#ffffff_0%,#f0f9ff_100%)] p-6 shadow-[0_20px_45px_rgba(59,130,246,0.08)]">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.26em] text-blue-500">
+                        Booking analytics
+                      </p>
+                      <h2 className="mt-2 text-2xl font-semibold text-slate-900">
+                        Comprehensive charts
+                      </h2>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Visual insights into booking patterns, resource utilization, and trends.
+                      </p>
+                    </div>
+                    <div className="hidden h-14 w-14 rounded-[20px] bg-[radial-gradient(circle_at_30%_30%,#93c5fd,transparent_58%),linear-gradient(135deg,#eff6ff,#dbeafe)] sm:block" />
+                  </div>
+
+                  <div className="mt-4">
+                    {bookingsLoading ? (
+                      <p className="text-sm text-slate-500">Loading booking data...</p>
+                    ) : bookingsError ? (
+                      <p className="text-sm text-rose-600">{bookingsError}</p>
+                    ) : (
+                      <div className="rounded-[24px] border border-blue-100 bg-white p-4">
+                        <BookingCharts bookings={bookings} resources={resources} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-4 flex gap-2">
+                    <button
+                      onClick={() => window.open('/admin-bookings', '_blank')}
+                      className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+                    >
+                      View detailed charts
+                    </button>
+                    <button
+                      onClick={() => setBookingViewMode(bookingViewMode === 'table' ? 'charts' : 'table')}
+                      className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      {bookingViewMode === 'table' ? 'Show charts' : 'Show table'}
+                    </button>
+                  </div>
+                </section>
+
+                <section className="hub-quarter-fade rounded-[30px] border border-rose-100 bg-[linear-gradient(180deg,#ffffff_0%,#fff7fb_100%)] p-6 shadow-[0_20px_45px_rgba(244,114,182,0.08)]">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.26em] text-rose-500">
+                        Ticket care
+                      </p>
+                      <h2 className="mt-2 text-2xl font-semibold text-slate-900">
+                        SLA summary
+                      </h2>
+                    </div>
+                    <div className="hidden h-14 w-14 rounded-[20px] bg-[radial-gradient(circle_at_30%_30%,#f9a8d4,transparent_58%),linear-gradient(135deg,#fff1f2,#ffe4e6)] sm:block" />
+                  </div>
+
+                  <div className="mt-4 grid gap-4 md:grid-cols-2">
+                    <article className="rounded-[24px] border border-rose-100 bg-[linear-gradient(180deg,#ffffff_0%,#fff1f2_100%)] p-5 shadow-[0_12px_24px_rgba(251,113,133,0.08)]">
+                      <p className="text-sm font-medium text-slate-500">
+                        Average first response
+                      </p>
+                      <p className="mt-3 text-3xl font-semibold text-slate-900">
+                        {durationLabel(ticketSummary.avgFirstResponse)}
+                      </p>
+                      <p className="mt-2 text-xs uppercase tracking-[0.16em] text-rose-500">
+                        Support pickup speed
+                      </p>
+                    </article>
+
+                    <article className="rounded-[24px] border border-amber-100 bg-[linear-gradient(180deg,#ffffff_0%,#fffbeb_100%)] p-5 shadow-[0_12px_24px_rgba(251,191,36,0.08)]">
+                      <p className="text-sm font-medium text-slate-500">
+                        Average resolution
+                      </p>
+                      <p className="mt-3 text-3xl font-semibold text-slate-900">
+                        {durationLabel(ticketSummary.avgResolution)}
+                      </p>
+                      <p className="mt-2 text-xs uppercase tracking-[0.16em] text-amber-500">
+                        End-to-end closure
+                      </p>
+                    </article>
+                  </div>
+
+                  <div className="mt-4 rounded-[24px] border border-slate-200 bg-white/80 p-4 text-sm leading-7 text-slate-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+                    First response is captured when support first picks up a ticket or leaves an admin/support comment. Resolution time ends when a ticket moves to RESOLVED or CLOSED.
+                  </div>
+                </section>
+              </div>
+            </div>
           </div>
         </main>
       </div>

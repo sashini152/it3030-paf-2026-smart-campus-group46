@@ -3,6 +3,7 @@ package com.smartcampus.hub.incidentticket.dto;
 import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDateTime;
 
 @Data
 public class CommentDto {
@@ -18,4 +19,8 @@ public class CommentDto {
 
     @NotBlank(message = "Created by is required")
     private String createdBy;
+
+    private String createdByName;
+
+    private LocalDateTime createdAt;
 }

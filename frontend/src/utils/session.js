@@ -9,6 +9,15 @@ export function setSessionRole(role) {
   window.dispatchEvent(new Event('smart-campus-session-change'))
 }
 
+export function clearSessionRole() {
+  localStorage.removeItem(ROLE_KEY)
+  window.dispatchEvent(new Event('smart-campus-session-change'))
+}
+
 export function isAdminRole(role = getSessionRole()) {
-  return role === 'ADMIN'
+  return role === 'ADMIN' || role === 'SUPER_ADMIN'
+}
+
+export function isSuperAdminRole(role = getSessionRole()) {
+  return role === 'SUPER_ADMIN'
 }

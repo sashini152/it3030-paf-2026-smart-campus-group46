@@ -27,7 +27,7 @@ public class ResourceController {
 	}
 
 	@GetMapping
-	public List<Resource> list(
+	public List<com.smartcampus.hub.model.Resource> list(
 			@RequestParam(required = false) ResourceType type,
 			@RequestParam(required = false) String location,
 			@RequestParam(required = false) Integer minCapacity,
@@ -35,20 +35,26 @@ public class ResourceController {
 		return resourceService.search(type, location, minCapacity, q);
 	}
 
+	@GetMapping("/all")
+	public List<com.smartcampus.hub.model.Resource> getAllResources() {
+		return resourceService.getAllResources();
+	}
+
 	@GetMapping("/{id}")
-	public Resource get(@PathVariable String id) {
+	public com.smartcampus.hub.model.Resource get(@PathVariable String id) {
 		return resourceService.getById(id);
 	}
 
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
-	public Resource create(@Valid @RequestBody CreateResourceRequest body) {
-		return resourceService.create(body);
+	public com.smartcampus.hub.model.Resource create(@Valid @RequestBody CreateResourceRequest req) {
+		return resourceService.create(req);
 	}
 
 	@PutMapping("/{id}")
-	public Resource update(@PathVariable String id, @Valid @RequestBody UpdateResourceRequest body) {
-		return resourceService.update(id, body);
+	public com.smartcampus.hub.model.Resource update(@PathVariable String id,
+			@Valid @RequestBody UpdateResourceRequest req) {
+		return resourceService.update(id, req);
 	}
 
 	@DeleteMapping("/{id}")

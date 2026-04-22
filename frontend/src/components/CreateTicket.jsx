@@ -1,5 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import SurfaceCard from './SurfaceCard'
 import { createStandardTicket } from '../services/ticketService'
+import { useAuth } from '../hooks/useAuth'
+import { getStudentIdentity, persistStudentIdentity } from '../utils/studentIdentity'
 
 const categories = ['HARDWARE', 'SOFTWARE', 'NETWORK', 'OTHER']
 const priorities = ['LOW', 'MEDIUM', 'HIGH']
@@ -12,8 +15,18 @@ function lettersAndSpacesOnly(value) {
   return /^[A-Za-z ]+$/.test(value)
 }
 
+const inputClass =
+  'mt-2 w-full rounded-2xl border border-[#d9e2ec] bg-[#fbfdff] px-4 py-3 text-sm text-[#0f172a] outline-none transition placeholder:text-[#94a3b8] focus:border-[#327f7d] focus:ring-4 focus:ring-[rgba(50,127,125,0.14)]'
+
+function FieldError({ children }) {
+  return <p className="mt-2 text-sm text-[#8a3f32]">{children}</p>
+}
+
 export default function CreateTicket({ onCreated }) {
+  const { user } = useAuth()
+  const identity = getStudentIdentity(user)
   const [createdBy, setCreatedBy] = useState(localStorage.getItem('ticket.userName') || '')
+  const [studentId] = useState(identity.studentId || '')
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState('HARDWARE')
   const [description, setDescription] = useState('')
@@ -22,6 +35,7 @@ export default function CreateTicket({ onCreated }) {
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [serverMessage, setServerMessage] = useState('')
+  const fileInputRef = useRef(null)
 
   const attachmentNames = useMemo(() => attachments.map((file) => file.name), [attachments])
 
@@ -69,9 +83,15 @@ export default function CreateTicket({ onCreated }) {
     try {
       const normalizedName = sanitizeWhitespace(createdBy)
       localStorage.setItem('ticket.userName', normalizedName)
+      persistStudentIdentity({
+        studentId: studentId || user?.studentId || user?.email || normalizedName,
+        name: normalizedName,
+        email: user?.email || '',
+      })
 
       const created = await createStandardTicket({
-        createdBy: normalizedName,
+        createdBy: studentId || user?.studentId || user?.email || normalizedName,
+        createdByName: normalizedName,
         title: sanitizeWhitespace(title),
         category,
         description: sanitizeWhitespace(description),
@@ -85,6 +105,9 @@ export default function CreateTicket({ onCreated }) {
       setPriority('MEDIUM')
       setAttachments([])
       setErrors({})
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
       setServerMessage(`Ticket created successfully with ID ${created.id}.`)
       if (onCreated) onCreated(created)
     } catch (error) {
@@ -95,15 +118,25 @@ export default function CreateTicket({ onCreated }) {
   }
 
   function handleAttachments(event) {
-    setAttachments(Array.from(event.target.files || []).slice(0, 3))
+    const selectedFiles = Array.from(event.target.files || [])
+    if (selectedFiles.length > 3) {
+      setAttachments([])
+      setErrors((current) => ({
+        ...current,
+        attachments: 'You can upload a maximum of 3 images only.',
+      }))
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+      return
+    }
+
+    setAttachments(selectedFiles)
     setErrors((current) => ({ ...current, attachments: undefined }))
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-5 rounded-[30px] border border-[#d8e0ea] bg-[linear-gradient(180deg,#ffffff_0%,#f3f7fb_100%)] p-6 shadow-[0_20px_48px_rgba(15,23,42,0.08)]"
-    >
+    <SurfaceCard as="form" onSubmit={handleSubmit} className="space-y-5">
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#327f7d]">Create Ticket</p>
         <h2 className="mt-2 text-2xl font-semibold text-[#0f172a]">Quick support submission</h2>
@@ -125,9 +158,9 @@ export default function CreateTicket({ onCreated }) {
           value={createdBy}
           onChange={(event) => setCreatedBy(event.target.value)}
           placeholder="Your name"
-          className="mt-2 w-full rounded-2xl border border-[#d9e2ec] bg-[#fbfdff] px-4 py-3 text-sm text-[#0f172a] outline-none transition placeholder:text-[#94a3b8] focus:border-[#327f7d] focus:ring-4 focus:ring-[rgba(50,127,125,0.14)]"
+          className={inputClass}
         />
-        {errors.createdBy && <p className="mt-2 text-sm text-[#8a3f32]">{errors.createdBy}</p>}
+        {errors.createdBy && <FieldError>{errors.createdBy}</FieldError>}
       </label>
 
       <label className="block">
@@ -137,9 +170,9 @@ export default function CreateTicket({ onCreated }) {
           value={title}
           onChange={(event) => setTitle(event.target.value)}
           placeholder="Projector not turning on"
-          className="mt-2 w-full rounded-2xl border border-[#d9e2ec] bg-[#fbfdff] px-4 py-3 text-sm text-[#0f172a] outline-none transition placeholder:text-[#94a3b8] focus:border-[#327f7d] focus:ring-4 focus:ring-[rgba(50,127,125,0.14)]"
+          className={inputClass}
         />
-        {errors.title && <p className="mt-2 text-sm text-[#8a3f32]">{errors.title}</p>}
+        {errors.title && <FieldError>{errors.title}</FieldError>}
       </label>
 
       <div className="grid gap-5 md:grid-cols-2">
@@ -148,7 +181,7 @@ export default function CreateTicket({ onCreated }) {
           <select
             value={category}
             onChange={(event) => setCategory(event.target.value)}
-            className="mt-2 w-full rounded-2xl border border-[#d9e2ec] bg-[#fbfdff] px-4 py-3 text-sm text-[#0f172a] outline-none transition focus:border-[#327f7d] focus:ring-4 focus:ring-[rgba(50,127,125,0.14)]"
+            className={inputClass}
           >
             {categories.map((option) => (
               <option key={option} value={option}>
@@ -156,7 +189,7 @@ export default function CreateTicket({ onCreated }) {
               </option>
             ))}
           </select>
-          {errors.category && <p className="mt-2 text-sm text-[#8a3f32]">{errors.category}</p>}
+          {errors.category && <FieldError>{errors.category}</FieldError>}
         </label>
 
         <label className="block">
@@ -164,7 +197,7 @@ export default function CreateTicket({ onCreated }) {
           <select
             value={priority}
             onChange={(event) => setPriority(event.target.value)}
-            className="mt-2 w-full rounded-2xl border border-[#d9e2ec] bg-[#fbfdff] px-4 py-3 text-sm text-[#0f172a] outline-none transition focus:border-[#327f7d] focus:ring-4 focus:ring-[rgba(50,127,125,0.14)]"
+            className={inputClass}
           >
             {priorities.map((option) => (
               <option key={option} value={option}>
@@ -172,7 +205,7 @@ export default function CreateTicket({ onCreated }) {
               </option>
             ))}
           </select>
-          {errors.priority && <p className="mt-2 text-sm text-[#8a3f32]">{errors.priority}</p>}
+          {errors.priority && <FieldError>{errors.priority}</FieldError>}
         </label>
       </div>
 
@@ -184,23 +217,24 @@ export default function CreateTicket({ onCreated }) {
           rows={5}
           maxLength={300}
           placeholder="Describe the issue, when it started, and how it affects the student or staff member."
-          className="mt-2 w-full rounded-2xl border border-[#d9e2ec] bg-[#fbfdff] px-4 py-3 text-sm text-[#0f172a] outline-none transition placeholder:text-[#94a3b8] focus:border-[#327f7d] focus:ring-4 focus:ring-[rgba(50,127,125,0.14)]"
+          className={inputClass}
         />
         <div className="mt-2 flex items-center justify-between text-xs text-[#64748b]">
           <span>Minimum 20 characters.</span>
           <span>{description.length}/300</span>
         </div>
-        {errors.description && <p className="mt-2 text-sm text-[#8a3f32]">{errors.description}</p>}
+        {errors.description && <FieldError>{errors.description}</FieldError>}
       </label>
 
       <label className="block">
         <span className="text-sm font-medium text-[#1e293b]">Attachments</span>
         <input
+          ref={fileInputRef}
           type="file"
           multiple
           accept="image/*"
           onChange={handleAttachments}
-          className="mt-2 block w-full rounded-2xl border border-[#d9e2ec] bg-[#fbfdff] px-4 py-3 text-sm text-[#475569]"
+          className={`${inputClass} text-[#475569]`}
         />
         <p className="mt-2 text-xs leading-5 text-[#64748b]">
           Image selection is validated here, but the backend upload endpoint is not exposed yet, so files are not sent with the ticket create request.
@@ -214,7 +248,7 @@ export default function CreateTicket({ onCreated }) {
             ))}
           </div>
         )}
-        {errors.attachments && <p className="mt-2 text-sm text-[#8a3f32]">{errors.attachments}</p>}
+        {errors.attachments && <FieldError>{errors.attachments}</FieldError>}
       </label>
 
       <button
@@ -224,6 +258,6 @@ export default function CreateTicket({ onCreated }) {
       >
         {submitting ? 'Creating ticket...' : 'Create Ticket'}
       </button>
-    </form>
+    </SurfaceCard>
   )
 }

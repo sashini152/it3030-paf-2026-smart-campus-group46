@@ -10,12 +10,31 @@ export function useComments(ticketId) {
     if (!ticketId) return
 
     setLoading(true)
+    setError(null)
     commentService
-      .fetchComments(ticketId)
+      .fetchAnyComments(ticketId)
       .then((data) => setComments(data))
       .catch((err) => setError(err))
       .finally(() => setLoading(false))
   }, [ticketId])
 
-  return { comments, loading, error, setComments, reload: () => ticketId && commentService.fetchComments(ticketId).then(setComments) }
+  return {
+    comments,
+    loading,
+    error,
+    setComments,
+    reload: () =>
+      ticketId &&
+      commentService
+        .fetchAnyComments(ticketId)
+        .then((data) => {
+          setComments(data)
+          setError(null)
+          return data
+        })
+        .catch((err) => {
+          setError(err)
+          throw err
+        }),
+  }
 }

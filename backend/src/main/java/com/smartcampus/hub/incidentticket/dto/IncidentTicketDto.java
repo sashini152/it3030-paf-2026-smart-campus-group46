@@ -3,6 +3,7 @@ package com.smartcampus.hub.incidentticket.dto;
 import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDateTime;
 
 @Data
 public class IncidentTicketDto {
@@ -22,4 +23,18 @@ public class IncidentTicketDto {
 
     @NotBlank(message = "Created by is required")
     private String createdBy;
+
+    private String assignedTechnician;
+
+    private String resolutionNotes;
+
+    private String rejectionReason;
+
+    private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
+
+    private LocalDateTime firstResponseAt;
+
+    private LocalDateTime resolvedAt;
 }
