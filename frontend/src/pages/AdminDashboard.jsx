@@ -2,10 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { deleteJson, getJson, patchJson, postJson, putJson } from '../api/client'
 import { useAuth } from '../hooks/useAuth'
 import { useTickets } from '../hooks/useTickets'
-import { deleteAnyTicket, updateAnyTicketStatus } from '../services/ticketService'
-import { getTicketReporterLabel } from '../utils/studentIdentity'
+import { updateAnyTicketStatus } from '../services/ticketService'
 import { normalizeTicketWorkflowStatus } from '../utils/ticketPresentation'
 import AdminSidebar from '../components/AdminSidebar'
+import BookingCharts from '../components/BookingCharts'
 
 const RESOURCE_TYPES = ['LECTURE_HALL', 'LAB', 'MEETING_ROOM', 'EQUIPMENT']
 const RESOURCE_STATUSES = ['ACTIVE', 'OUT_OF_SERVICE']
@@ -417,17 +417,6 @@ export default function AdminDashboard() {
     }
   }
 
-  async function deleteTicket(ticket) {
-    if (!window.confirm('Delete this ticket?')) return
-    setBusyId(ticket.id)
-    try {
-      await deleteAnyTicket(ticket)
-      await reloadTickets()
-    } finally {
-      setBusyId(null)
-    }
-  }
-
   async function createNotification(event) {
     event.preventDefault()
     try {
@@ -450,19 +439,6 @@ export default function AdminDashboard() {
       await patchJson(`/api/admin/notifications/${notification.id}/read`, {
         read: !notification.read,
       })
-      await loadNotifications()
-    } catch (error) {
-      setNotificationsError(error.message)
-    } finally {
-      setBusyId(null)
-    }
-  }
-
-  async function deleteNotification(id) {
-    if (!window.confirm('Delete this notification?')) return
-    setBusyId(id)
-    try {
-      await deleteJson(`/api/admin/notifications/${id}`)
       await loadNotifications()
     } catch (error) {
       setNotificationsError(error.message)
@@ -511,8 +487,8 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        <main className="flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
-          <div className="mx-auto max-w-[1480px] rounded-[36px] border border-white/70 bg-white/70 p-4 shadow-[0_30px_80px_rgba(148,163,184,0.28)] md:p-6 lg:p-8">
+        <main className="flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 overflow-x-hidden">
+          <div className="w-full rounded-[36px] border border-white/70 bg-white/70 p-4 shadow-[0_30px_80px_rgba(148,163,184,0.28)] md:p-6 lg:p-8">
             <header className="mb-8 flex items-start justify-between gap-4">
               <div className="flex items-start gap-3">
                 <button
@@ -879,6 +855,50 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   )}
+                </section>
+
+                <section className="hub-quarter-fade rounded-[30px] border border-blue-100 bg-[linear-gradient(180deg,#ffffff_0%,#f0f9ff_100%)] p-6 shadow-[0_20px_45px_rgba(59,130,246,0.08)]">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.26em] text-blue-500">
+                        Booking analytics
+                      </p>
+                      <h2 className="mt-2 text-2xl font-semibold text-slate-900">
+                        Comprehensive charts
+                      </h2>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Visual insights into booking patterns, resource utilization, and trends.
+                      </p>
+                    </div>
+                    <div className="hidden h-14 w-14 rounded-[20px] bg-[radial-gradient(circle_at_30%_30%,#93c5fd,transparent_58%),linear-gradient(135deg,#eff6ff,#dbeafe)] sm:block" />
+                  </div>
+
+                  <div className="mt-4">
+                    {bookingsLoading ? (
+                      <p className="text-sm text-slate-500">Loading booking data...</p>
+                    ) : bookingsError ? (
+                      <p className="text-sm text-rose-600">{bookingsError}</p>
+                    ) : (
+                      <div className="rounded-[24px] border border-blue-100 bg-white p-4">
+                        <BookingCharts bookings={bookings} resources={resources} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-4 flex gap-2">
+                    <button
+                      onClick={() => window.open('/admin-bookings', '_blank')}
+                      className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+                    >
+                      View detailed charts
+                    </button>
+                    <button
+                      onClick={() => setBookingViewMode(bookingViewMode === 'table' ? 'charts' : 'table')}
+                      className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      {bookingViewMode === 'table' ? 'Show charts' : 'Show table'}
+                    </button>
+                  </div>
                 </section>
 
                 <section className="hub-quarter-fade rounded-[30px] border border-rose-100 bg-[linear-gradient(180deg,#ffffff_0%,#fff7fb_100%)] p-6 shadow-[0_20px_45px_rgba(244,114,182,0.08)]">
