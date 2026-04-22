@@ -4,7 +4,7 @@ import { buildQuery, deleteRequest, getJson, postJson, putJson } from '../api/cl
 
 import ParallaxPanel from '../components/ParallaxPanel'
 
-import { useAuth } from '../hooks/useAuth'
+import BookingCharts from '../components/BookingCharts'
 
 import Reveal from '../components/Reveal'
 
@@ -149,6 +149,8 @@ export default function BookingsPage() {
   const [activeInsight, setActiveInsight] = useState(0)
 
   const [pauseInsights, setPauseInsights] = useState(false)
+
+  const [viewMode, setViewMode] = useState('table') // 'table' or 'charts'
 
   const [form, setForm] = useState({
 
@@ -812,129 +814,178 @@ export default function BookingsPage() {
 
               <section className="hub-panel hub-bookings-panel">
 
-                <h2 className="hub-panel__title">Booking history</h2>
-
-                <div className="hub-booking-filter-chips" role="toolbar" aria-label="Quick booking status filters">
-
-                  {STATUSES.map((status) => {
-
-                    const active = listFilter.status === status
-
-                    return (
-
-                      <button
-
-                        key={status || 'ALL'}
-
-                        type="button"
-
-                        onClick={() => setListFilter((current) => ({ ...current, status }))}
-
-                        className={`hub-booking-filter-chip ${active ? 'hub-booking-filter-chip--active' : ''}`}
-
-                      >
-
-                        {formatStatusLabel(status)}
-
-                      </button>
-
-                    )
-
-                  })}
-
+                <div className="flex justify-between items-center mb-6" style={{border: '2px solid #FDA481', padding: '12px', borderRadius: '8px', backgroundColor: '#242e49'}}>
+                  <h2 className="hub-panel__title">Booking Analytics</h2>
+                  <div className="flex gap-2" style={{border: '1px solid #37415c', padding: '8px', borderRadius: '6px', backgroundColor: '#181a2f'}}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                      console.log('Switching to table view');
+                      setViewMode('table');
+                    }}
+                      style={{
+                        backgroundColor: viewMode === 'table' ? '#FDA481' : '#37415c',
+                        color: '#ffffff',
+                        border: '1px solid #FDA481',
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        marginRight: '8px'
+                      }}
+                    >
+                      Table View
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                      console.log('Switching to graph view');
+                      setViewMode('charts');
+                    }}
+                      style={{
+                        backgroundColor: viewMode === 'charts' ? '#FDA481' : '#37415c',
+                        color: '#ffffff',
+                        border: '1px solid #FDA481',
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      Graph View
+                    </button>
+                  </div>
                 </div>
 
+                {viewMode === 'table' && (
+
+                  <>
+
+                    <div className="hub-booking-filter-chips" role="toolbar" aria-label="Quick booking status filters">
+
+                      {STATUSES.map((status) => {
+
+                        const active = listFilter.status === status
+
+                        return (
+
+                          <button
+
+                            key={status || 'ALL'}
+
+                            type="button"
+
+                            onClick={() => setListFilter((current) => ({ ...current, status }))}
+
+                            className={`hub-booking-filter-chip ${active ? 'hub-booking-filter-chip--active' : ''}`}
+
+                          >
+
+                            {formatStatusLabel(status)}
+
+                          </button>
+
+                        )
+
+                      })}
+
+                    </div>
 
 
-                <div className="hub-form-grid hub-form-grid--filters">
 
-                  <label className="hub-field">
+                    <div className="hub-form-grid hub-form-grid--filters">
 
-                    <span className="inline-flex items-center gap-2">
+                      <label className="hub-field">
 
-                      <span>Status</span>
+                        <span className="inline-flex items-center gap-2">
 
-                      <Tooltip text="Refine the table to one workflow stage." tone="ticket">
+                          <span>Status</span>
 
-                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#B4182D] bg-white text-[11px] font-semibold text-[#B4182D]">
+                          <Tooltip text="Refine the table to one workflow stage." tone="ticket">
 
-                          i
+                            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#B4182D] bg-white text-[11px] font-semibold text-[#B4182D]">
+
+                              i
+
+                            </span>
+
+                          </Tooltip>
 
                         </span>
 
-                      </Tooltip>
+                        <select
 
-                    </span>
+                          value={listFilter.status}
 
-                    <select
+                          onChange={(e) =>
 
-                      value={listFilter.status}
+                            setListFilter((current) => ({ ...current, status: e.target.value }))
 
-                      onChange={(e) =>
+                          }
 
-                        setListFilter((current) => ({ ...current, status: e.target.value }))
+                        >
 
-                      }
+                          {STATUSES.map((status) => (
 
-                    >
+                            <option key={status || 'ALL'} value={status}>
 
-                      {STATUSES.map((status) => (
+                              {formatStatusLabel(status)}
 
-                        <option key={status || 'ALL'} value={status}>
+                            </option>
 
-                          {formatStatusLabel(status)}
+                          ))}
 
-                        </option>
+                        </select>
 
-                      ))}
-
-                    </select>
-
-                  </label>
+                      </label>
 
 
 
-                  <label className="hub-field hub-field--checkbox">
+                      <label className="hub-field hub-field--checkbox">
 
-                    <input
+                        <input
 
-                      type="checkbox"
+                          type="checkbox"
 
-                      checked={listFilter.mineOnly}
+                          checked={listFilter.mineOnly}
 
-                      onChange={(e) =>
+                          onChange={(e) =>
 
-                        setListFilter((current) => ({ ...current, mineOnly: e.target.checked }))
+                            setListFilter((current) => ({ ...current, mineOnly: e.target.checked }))
 
-                      }
+                          }
 
-                    />
+                        />
 
-                    <span>Only my bookings</span>
+                        <span>Only my bookings</span>
 
-                  </label>
+                      </label>
 
 
 
-                  <div className="hub-field hub-field--actions">
+                      <div className="hub-field hub-field--actions">
 
-                    <button
+                        <button
 
-                      type="button"
+                          type="button"
 
-                      className="hub-btn hub-btn--primary hub-btn--bookings hub-button-pop"
+                          className="hub-btn hub-btn--primary hub-btn--bookings hub-button-pop"
 
-                      onClick={() => loadBookings()}
+                          onClick={() => loadBookings()}
 
-                    >
+                        >
 
-                      Refresh
+                          Refresh
 
-                    </button>
+                        </button>
 
-                  </div>
+                      </div>
 
-                </div>
+                    </div>
+
+                  </>
+
+                )}
 
 
 
@@ -948,115 +999,201 @@ export default function BookingsPage() {
 
                 ) : (
 
-                  <div className="hub-table-wrap hub-table-wrap--bookings">
+                  <>
 
-                    <table className="hub-table hub-table--bookings">
+                    {viewMode === 'table' ? (
 
-                      <thead>
+                      <div className="hub-table-wrap hub-table-wrap--bookings">
 
-                        <tr>
+                        <table className="hub-table hub-table--bookings">
 
-                          <th>Resource</th>
+                          <thead>
 
-                          <th>When</th>
+                            <tr>
 
-                          <th>User</th>
+                              <th>Resource</th>
 
-                          <th>Attendees</th>
+                              <th>When</th>
 
-                          <th>Status</th>
+                              <th>User</th>
 
-                          <th>Notes</th>
+                              <th>Attendees</th>
 
-                          <th>Actions</th>
+                              <th>Status</th>
 
-                        </tr>
+                              <th>Notes</th>
 
-                      </thead>
+                              <th>Actions</th>
 
-                      <tbody>
+                            </tr>
 
-                        {bookings.map((booking, index) => (
+                          </thead>
 
-                          <tr
+                          <tbody>
 
-                            key={booking.id}
+                            {bookings.map((booking, index) => (
 
-                            className="hub-ticket-list-row"
+                              <tr
 
-                            style={{ animationDelay: `${index * 50}ms` }}
+                                key={booking.id}
 
-                          >
+                                className="hub-ticket-list-row"
 
-                            <td>{resourceNameById.get(booking.resourceId) || booking.resourceId}</td>
-
-                            <td className="hub-table__nowrap">
-
-                              {toDatetimeLocal(booking.startDateTime)} - {toDatetimeLocal(booking.endDateTime)}
-
-                            </td>
-
-                            <td>{booking.requestedByUserId}</td>
-
-                            <td>{booking.expectedAttendees}</td>
-
-                            <td>
-
-                              <span className={`hub-tag hub-tag--booking-${booking.status?.toLowerCase()}`}>
-
-                                {booking.status}
-
-                              </span>
-
-                            </td>
-
-                            <td className="hub-table__clip">{booking.adminReason || booking.purpose}</td>
-
-                            <td className="hub-table__actions">
-
-                              {(booking.status === 'APPROVED' || booking.status === 'PENDING') && (
-
-                                <button
-
-                                  type="button"
-
-                                  className="hub-btn hub-btn--small hub-btn--bookings-secondary hub-button-pop"
-
-                                  onClick={() => cancelBooking(booking.id)}
-
-                                >
-
-                                  Cancel
-
-                                </button>
-
-                              )}
-
-                              <button
-
-                                type="button"
-
-                                className="hub-btn hub-btn--small hub-btn--bookings-danger hub-button-pop"
-
-                                onClick={() => removeBooking(booking.id)}
+                                style={{ animationDelay: `${index * 50}ms` }}
 
                               >
 
-                                Delete
+                                <td>{resourceNameById.get(booking.resourceId) || booking.resourceId}</td>
 
-                              </button>
+                                <td className="hub-table__nowrap">
 
-                            </td>
+                                  {toDatetimeLocal(booking.startDateTime)} - {toDatetimeLocal(booking.endDateTime)}
 
-                          </tr>
+                                </td>
 
-                        ))}
+                                <td>{booking.requestedByUserId}</td>
 
-                      </tbody>
+                                <td>{booking.expectedAttendees}</td>
 
-                    </table>
+                                <td>
 
-                  </div>
+                                  <span className={`hub-tag hub-tag--booking-${booking.status?.toLowerCase()}`}>
+
+                                    {booking.status}
+
+                                  </span>
+
+                                </td>
+
+                                <td className="hub-table__clip">{booking.adminReason || booking.purpose}</td>
+
+                                <td className="hub-table__actions">
+
+                                  {(booking.status === 'APPROVED' || booking.status === 'PENDING') && (
+
+                                    <button
+
+                                      type="button"
+
+                                      className="hub-btn hub-btn--small hub-btn--bookings-secondary hub-button-pop"
+
+                                      onClick={() => cancelBooking(booking.id)}
+
+                                    >
+
+                                      Cancel
+
+                                    </button>
+
+                                  )}
+
+                                  <button
+
+                                    type="button"
+
+                                    className="hub-btn hub-btn--small hub-btn--bookings-danger hub-button-pop"
+
+                                    onClick={() => removeBooking(booking.id)}
+
+                                  >
+
+                                    Delete
+
+                                  </button>
+
+                                </td>
+
+                              </tr>
+
+                            ))}
+
+                          </tbody>
+
+                        </table>
+
+                      </div>
+
+                    ) : (
+
+                      <div className="mt-6">
+
+                        <BookingCharts bookings={bookings} resources={resources} />
+
+                        {/* Action buttons for chart view */}
+                        <div className="mt-6 p-4 bg-[#242e49] rounded-lg">
+                          <h3 className="text-white font-semibold mb-4">Quick Actions</h3>
+                          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                            <button
+                              type="button"
+                              className="hub-btn hub-btn--small hub-btn--bookings-secondary hub-button-pop"
+                              onClick={() => loadBookings()}
+                            >
+                              Refresh Data
+                            </button>
+                            <button
+                              type="button"
+                              className="hub-btn hub-btn--small hub-btn--bookings-secondary hub-button-pop"
+                              onClick={() => setListFilter({ status: '', mineOnly: false })}
+                            >
+                              View All Bookings
+                            </button>
+                            <button
+                              type="button"
+                              className="hub-btn hub-btn--small hub-btn--bookings-secondary hub-button-pop"
+                              onClick={() => setListFilter({ status: 'PENDING', mineOnly: false })}
+                            >
+                              Pending Only
+                            </button>
+                            <button
+                              type="button"
+                              className="hub-btn hub-btn--small hub-btn--bookings-secondary hub-button-pop"
+                              onClick={() => setListFilter({ status: 'APPROVED', mineOnly: false })}
+                            >
+                              Approved Only
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Summary table for chart view */}
+                        <div className="mt-6">
+                          <h3 className="text-white font-semibold mb-4">Recent Bookings Summary</h3>
+                          <div className="hub-table-wrap hub-table-wrap--bookings">
+                            <table className="hub-table hub-table--bookings">
+                              <thead>
+                                <tr>
+                                  <th>Resource</th>
+                                  <th>User</th>
+                                  <th>Status</th>
+                                  <th>Time</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {bookings.slice(0, 10).map((booking, index) => (
+                                  <tr
+                                    key={booking.id}
+                                    className="hub-ticket-list-row"
+                                    style={{ animationDelay: `${index * 30}ms` }}
+                                  >
+                                    <td>{resourceNameById.get(booking.resourceId) || booking.resourceId}</td>
+                                    <td>{booking.requestedByUserId}</td>
+                                    <td>
+                                      <span className={`hub-tag hub-tag--booking-${booking.status?.toLowerCase()}`}>
+                                        {booking.status}
+                                      </span>
+                                    </td>
+                                    <td className="hub-table__nowrap">
+                                      {new Date(booking.startDateTime).toLocaleDateString()}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                  </>
 
                 )}
 
