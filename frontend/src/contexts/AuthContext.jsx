@@ -1,7 +1,7 @@
 import { createContext, useState, useEffect, useCallback } from 'react'
 import { clearSessionRole, setSessionRole } from '../utils/session'
 import { clearStudentIdentity, persistStudentIdentity } from '../utils/studentIdentity'
-import { ADMIN_EMAILS } from '../constants/auth'
+import { ADMIN_EMAILS, SUPER_ADMIN_EMAILS } from '../constants/auth'
 
 const AuthContext = createContext()
 
@@ -14,101 +14,120 @@ export const AuthProvider = ({ children }) => {
 
   const isAdminEmail = useCallback((email) => {
     if (!email) return false
-    return ADMIN_EMAILS.map(e => e.toLowerCase()).includes(email.toLowerCase())
+    return ADMIN_EMAILS.map((e) => e.toLowerCase()).includes(email.toLowerCase())
   }, [])
 
-  const hydrateUser = useCallback(async (baseUser) => {
-    if (!baseUser) return null
+  const isSuperAdminEmail = useCallback((email) => {
+    if (!email) return false
+    return SUPER_ADMIN_EMAILS.map((e) => e.toLowerCase()).includes(email.toLowerCase())
+  }, [])
 
-    const email = baseUser.email?.toLowerCase?.() || ''
-    const admin = isAdminEmail(email)
+  const resolveUserRole = useCallback(
+    (email, fallbackRole) => {
+      if (!email) return fallbackRole || 'USER'
 
-    if (admin) {
-      const adminUser = {
+      if (isSuperAdminEmail(email)) return 'SUPER_ADMIN'
+      if (isAdminEmail(email)) return 'ADMIN'
+
+      return fallbackRole || 'USER'
+    },
+    [isAdminEmail, isSuperAdminEmail]
+  )
+
+  const hydrateUser = useCallback(
+    async (baseUser) => {
+      if (!baseUser) return null
+
+      const email = baseUser.email?.toLowerCase?.() || ''
+      const resolvedRole = resolveUserRole(email, baseUser.role)
+
+      const nextUser = {
         ...baseUser,
         email,
-        role: 'ADMIN',
+        role: resolvedRole,
         studentId: baseUser.studentId || '',
-        name: baseUser.name || 'Admin User'
+        name:
+          baseUser.name ||
+          (resolvedRole === 'SUPER_ADMIN'
+            ? 'Super Admin'
+            : resolvedRole === 'ADMIN'
+            ? 'Admin User'
+            : 'User'),
       }
 
-      setUser(adminUser)
-      localStorage.setItem('user', JSON.stringify(adminUser))
-      localStorage.setItem('userRole', 'ADMIN')
-      localStorage.setItem('userEmail', adminUser.email)
-      localStorage.setItem('userName', adminUser.name)
-      setSessionRole('ADMIN')
+      setUser(nextUser)
+      localStorage.setItem('user', JSON.stringify(nextUser))
+      localStorage.setItem('userRole', nextUser.role)
+      localStorage.setItem('userEmail', nextUser.email)
+      localStorage.setItem('userName', nextUser.name)
+      setSessionRole(nextUser.role)
 
-      console.log('FORCED Admin access granted for:', adminUser.email)
-      return adminUser
-    }
+      if (nextUser.role === 'ADMIN' || nextUser.role === 'SUPER_ADMIN') {
+        localStorage.setItem('adminRedirect', 'true')
+        console.log(`${nextUser.role} access granted for:`, nextUser.email)
+      } else {
+        console.log('User role set for:', nextUser.email)
 
-    const regularUser = {
-      ...baseUser,
-      email,
-      role: 'USER',
-      studentId: baseUser.studentId || '',
-      name: baseUser.name || 'User'
-    }
+        persistStudentIdentity({
+          studentId: nextUser.studentId,
+          name: nextUser.name,
+          email: nextUser.email,
+        })
+      }
 
-    setUser(regularUser)
-    localStorage.setItem('user', JSON.stringify(regularUser))
-    localStorage.setItem('userRole', 'USER')
-    localStorage.setItem('userEmail', regularUser.email)
-    localStorage.setItem('userName', regularUser.name)
-    setSessionRole('USER')
+      return nextUser
+    },
+    [resolveUserRole]
+  )
 
-    console.log('FORCED User role set for:', regularUser.email)
+  const login = useCallback(
+    (userData, userToken) => {
+      const email = userData.email?.toLowerCase?.() || ''
+      const resolvedRole = resolveUserRole(email, userData.role)
 
-    persistStudentIdentity({
-      studentId: regularUser.studentId,
-      name: regularUser.name,
-      email: regularUser.email,
-    })
+      const nextUser = {
+        ...userData,
+        email,
+        role: resolvedRole,
+        studentId: userData.studentId || '',
+        name:
+          userData.name ||
+          (resolvedRole === 'SUPER_ADMIN'
+            ? 'Super Admin'
+            : resolvedRole === 'ADMIN'
+            ? 'Admin User'
+            : 'User'),
+      }
 
-    return regularUser
-  }, [isAdminEmail])
+      if (resolvedRole === 'ADMIN' || resolvedRole === 'SUPER_ADMIN') {
+        localStorage.setItem('adminRedirect', 'true')
+        console.log(`${resolvedRole} access granted on login for:`, email)
+      } else {
+        console.log('User role set to USER for:', email)
+      }
 
-  const login = useCallback((userData, userToken) => {
-    const email = userData.email?.toLowerCase?.() || ''
+      setUser(nextUser)
+      setToken(userToken)
 
-    let nextUser = {
-      ...userData,
-      email,
-      studentId: userData.studentId || '',
-    }
+      localStorage.setItem('user', JSON.stringify(nextUser))
+      localStorage.setItem('token', userToken)
+      localStorage.setItem('userRole', nextUser.role)
+      localStorage.setItem('userEmail', nextUser.email)
+      localStorage.setItem('userName', nextUser.name)
+      setSessionRole(nextUser.role)
 
-    if (isAdminEmail(email)) {
-      nextUser.role = 'ADMIN'
-      nextUser.name = userData.name || 'Admin User'
-      localStorage.setItem('adminRedirect', 'true')
-      console.log('FORCED Admin access granted on login for:', email)
-    } else {
-      nextUser.role = 'USER'
-      nextUser.name = userData.name || 'User'
-      console.log('User role set to USER for:', email)
-    }
+      console.log('Login complete - Role:', nextUser.role, 'Email:', nextUser.email)
 
-    setUser(nextUser)
-    setToken(userToken)
-
-    localStorage.setItem('user', JSON.stringify(nextUser))
-    localStorage.setItem('token', userToken)
-    localStorage.setItem('userRole', nextUser.role)
-    localStorage.setItem('userEmail', nextUser.email)
-    localStorage.setItem('userName', nextUser.name)
-    setSessionRole(nextUser.role)
-
-    console.log('Login complete - Role:', nextUser.role, 'Email:', nextUser.email)
-
-    if (nextUser.role !== 'ADMIN') {
-      persistStudentIdentity({
-        studentId: nextUser.studentId,
-        name: nextUser.name,
-        email: nextUser.email,
-      })
-    }
-  }, [isAdminEmail])
+      if (nextUser.role !== 'ADMIN' && nextUser.role !== 'SUPER_ADMIN') {
+        persistStudentIdentity({
+          studentId: nextUser.studentId,
+          name: nextUser.name,
+          email: nextUser.email,
+        })
+      }
+    },
+    [resolveUserRole]
+  )
 
   const logout = useCallback(() => {
     setUser(null)
@@ -140,34 +159,39 @@ export const AuthProvider = ({ children }) => {
       if (storedUser && storedToken) {
         const userData = JSON.parse(storedUser)
         const email = userData.email?.toLowerCase?.() || ''
+        const resolvedRole = resolveUserRole(email, userData.role)
 
         clearSessionRole()
         clearStudentIdentity()
 
-        if (isAdminEmail(email)) {
-          userData.email = email
-          userData.role = 'ADMIN'
-          userData.name = userData.name || 'Admin User'
+        userData.email = email
+        userData.role = resolvedRole
+        userData.studentId = userData.studentId || ''
+        userData.name =
+          userData.name ||
+          (resolvedRole === 'SUPER_ADMIN'
+            ? 'Super Admin'
+            : resolvedRole === 'ADMIN'
+            ? 'Admin User'
+            : 'User')
 
-          localStorage.setItem('user', JSON.stringify(userData))
-          localStorage.setItem('userRole', 'ADMIN')
-          localStorage.setItem('userEmail', userData.email)
-          localStorage.setItem('userName', userData.name)
-          setSessionRole('ADMIN')
+        localStorage.setItem('user', JSON.stringify(userData))
+        localStorage.setItem('userRole', userData.role)
+        localStorage.setItem('userEmail', userData.email)
+        localStorage.setItem('userName', userData.name)
+        setSessionRole(userData.role)
 
-          console.log('Admin access restored for:', userData.email)
+        if (userData.role === 'ADMIN' || userData.role === 'SUPER_ADMIN') {
+          localStorage.setItem('adminRedirect', 'true')
+          console.log(`${userData.role} access restored for:`, userData.email)
         } else {
-          userData.email = email
-          userData.role = 'USER'
-          userData.name = userData.name || 'User'
-
-          localStorage.setItem('user', JSON.stringify(userData))
-          localStorage.setItem('userRole', 'USER')
-          localStorage.setItem('userEmail', userData.email)
-          localStorage.setItem('userName', userData.name)
-          setSessionRole('USER')
-
           console.log('User role restored for:', userData.email)
+
+          persistStudentIdentity({
+            studentId: userData.studentId,
+            name: userData.name,
+            email: userData.email,
+          })
         }
 
         setUser(userData)
@@ -183,7 +207,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false)
       console.log('checkAuth: setLoading(false) called')
     }
-  }, [isAdminEmail, logout])
+  }, [resolveUserRole, logout])
 
   useEffect(() => {
     checkAuth()
@@ -195,13 +219,10 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     logout,
+    hydrateUser,
     isAuthenticated: !!user,
-    hasRole: (role) => user?.role === role
+    hasRole: (role) => user?.role === role,
   }
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

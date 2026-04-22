@@ -20,7 +20,12 @@ export default function DashboardPage() {
   }
 
   // Check if current user needs admin access
-  if (user?.email === 'sashini.unilocatelk@gmail.com' && user.role !== 'ADMIN') {
+ if (
+  (user?.email === 'sashini.unilocatelk@gmail.com' ||
+   user?.email === 'it23220492@my.sliit.lk' ||
+   user?.email === 'chamodyadewmini08@gmail.com') &&
+  user.role !== 'ADMIN'
+) {
     return (
       <div className="hub-page hub-page--narrow">
         <div className="text-center">

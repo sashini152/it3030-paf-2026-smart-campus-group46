@@ -11,31 +11,33 @@ public class AuthService {
         this.authRepository = authRepository;
     }
 
-    public AuthResponse register(RegisterRequest request) {
-        if (authRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email already exists");
-        }
-
-        AppRole role = AppRole.USER;
-        if ("ADMIN".equalsIgnoreCase(request.getRole())) {
-            role = AppRole.ADMIN;
-        }
-
-        AppUser user = new AppUser(
-                request.getName(),
-                request.getEmail(),
-                request.getPassword(),
-                role);
-
-        AppUser saved = authRepository.save(user);
-
-        return new AuthResponse(
-                saved.getId(),
-                saved.getName(),
-                saved.getEmail(),
-                saved.getRole().name());
+   public AuthResponse register(RegisterRequest request) {
+    if (authRepository.existsByEmail(request.getEmail())) {
+        throw new IllegalArgumentException("Email already exists");
     }
 
+    AppRole role = AppRole.USER;
+
+    if ("SUPER_ADMIN".equalsIgnoreCase(request.getRole())) {
+        role = AppRole.SUPER_ADMIN;
+    } else if ("ADMIN".equalsIgnoreCase(request.getRole())) {
+        role = AppRole.ADMIN;
+    }
+
+    AppUser user = new AppUser(
+            request.getName(),
+            request.getEmail(),
+            request.getPassword(),
+            role);
+
+    AppUser saved = authRepository.save(user);
+
+    return new AuthResponse(
+            saved.getId(),
+            saved.getName(),
+            saved.getEmail(),
+            saved.getRole().name());
+}
     public AuthResponse login(LoginRequest request) {
         AppUser user = authRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));

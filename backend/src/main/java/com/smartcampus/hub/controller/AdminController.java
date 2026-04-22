@@ -15,7 +15,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/admin")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
 public class AdminController {
 
     @Autowired
@@ -107,7 +107,7 @@ public class AdminController {
             @RequestBody Map<String, String> roleData) {
         try {
             Optional<User> userOpt = userRepository.findByEmail(email);
-            if (!userOpt.isPresent()) {
+            if (userOpt.isEmpty()) {
                 Map<String, Object> error = new HashMap<>();
                 error.put("status", "error");
                 error.put("message", "User not found: " + email);
@@ -117,10 +117,16 @@ public class AdminController {
             User user = userOpt.get();
             String newRole = roleData.get("role");
 
-            if ("ADMIN".equals(newRole)) {
+            if ("SUPER_ADMIN".equalsIgnoreCase(newRole)) {
+                user.setRole(User.UserRole.SUPER_ADMIN);
+            } else if ("ADMIN".equalsIgnoreCase(newRole)) {
                 user.setRole(User.UserRole.ADMIN);
-            } else if ("USER".equals(newRole)) {
+            } else if ("USER".equalsIgnoreCase(newRole)) {
                 user.setRole(User.UserRole.USER);
+            } else if ("TECHNICIAN".equalsIgnoreCase(newRole)) {
+                user.setRole(User.UserRole.TECHNICIAN);
+            } else if ("MANAGER".equalsIgnoreCase(newRole)) {
+                user.setRole(User.UserRole.MANAGER);
             } else {
                 Map<String, Object> error = new HashMap<>();
                 error.put("status", "error");
@@ -142,6 +148,16 @@ public class AdminController {
             error.put("status", "error");
             error.put("message", "Failed to update user role: " + e.getMessage());
             return ResponseEntity.status(500).body(error);
+        }
+    }
+
+    @GetMapping("/users")
+    public ResponseEntity<List<User>> getAllUsers() {
+        try {
+            List<User> users = userRepository.findAll();
+            return ResponseEntity.ok(users);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
         }
     }
 }

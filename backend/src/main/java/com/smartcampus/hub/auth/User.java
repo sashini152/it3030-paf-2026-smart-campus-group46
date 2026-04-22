@@ -63,10 +63,11 @@ public class User implements UserDetails {
         return enabled;
     }
 
-    public enum UserRole {
-        USER,
-        ADMIN,
-        TECHNICIAN,
-        MANAGER
-    }
+  public enum UserRole {
+    SUPER_ADMIN,
+    ADMIN,
+    USER,
+    TECHNICIAN,
+    MANAGER
+}
 }
