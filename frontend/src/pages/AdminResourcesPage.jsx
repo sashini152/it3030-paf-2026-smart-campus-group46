@@ -1,6 +1,5 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 import { buildQuery, deleteRequest, getJson, postJson, putJson } from '../api/client'
-import { useAuth } from '../hooks/useAuth'
 import { useLocation } from 'react-router-dom'
 import EmptyState from '../components/EmptyState'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -9,6 +8,7 @@ import Reveal from '../components/Reveal'
 import SurfaceCard from '../components/SurfaceCard'
 import Tooltip from '../components/Tooltip'
 import AdminSidebar from '../components/AdminSidebar'
+import ResourceCharts from '../components/ResourceCharts'
 
 const TYPES = ['LECTURE_HALL', 'LAB', 'MEETING_ROOM', 'EQUIPMENT']
 const STATUSES = ['ACTIVE', 'OUT_OF_SERVICE']
@@ -36,9 +36,9 @@ const emptyForm = {
 }
 
 export default function AdminResourcesPage() {
-  const { user } = useAuth()
   const location = useLocation()
   const [items, setItems] = useState([])
+  const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filters, setFilters] = useState({
@@ -102,7 +102,17 @@ export default function AdminResourcesPage() {
     return filtered
   }, [items, filters])
 
-  const load = async () => {
+  const loadBookings = async () => {
+    try {
+      const data = await getJson('/api/bookings')
+      setBookings(Array.isArray(data) ? data : [])
+    } catch (e) {
+      console.error('Failed to load bookings:', e.message)
+      setBookings([])
+    }
+  }
+
+  const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -114,13 +124,14 @@ export default function AdminResourcesPage() {
       })
       const data = await getJson(`/api/resources${q}`)
       setItems(Array.isArray(data) ? data : [])
+      await loadBookings()
     } catch (e) {
       setError(e.message)
       setItems([])
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -170,7 +181,7 @@ export default function AdminResourcesPage() {
 
   useEffect(() => {
     load()
-  }, [])
+  }, [load])
 
   return (
     <div className="flex min-h-screen">
@@ -208,6 +219,30 @@ export default function AdminResourcesPage() {
                 <p className={`mt-3 text-3xl font-semibold ${card.accent}`}>{stats[card.key]}</p>
               </ParallaxPanel>
             ))}
+          </Reveal>
+
+          {/* Resource Analytics Charts */}
+          <Reveal delay={120}>
+            <SurfaceCard className="!border-[#FDA481] !bg-white !text-[#181A2F] shadow-none">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.26em] text-sky-500">Resource analytics</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-[#181A2F]">Resource insights</h2>
+                  <p className="mt-1 text-sm text-[#37415C]">Visual breakdown of campus resources by type, status, and utilization.</p>
+                </div>
+                <div className="hidden h-14 w-14 rounded-[20px] bg-[radial-gradient(circle_at_30%_30%,#7dd3fc,transparent_58%),linear-gradient(135deg,#eff6ff,#dbeafe)] sm:block" />
+              </div>
+              {loading ? (
+                <div className="mt-4 flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#B4182D] mr-3"></div>
+                  <span className="text-sm text-[#37415C]">Loading resource analytics...</span>
+                </div>
+              ) : (
+                <div className="mt-4">
+                  <ResourceCharts resources={items} bookings={bookings} />
+                </div>
+              )}
+            </SurfaceCard>
           </Reveal>
 
           <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">

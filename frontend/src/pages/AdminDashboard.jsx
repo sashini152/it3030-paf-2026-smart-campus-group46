@@ -8,6 +8,7 @@ import { deleteAnyTicket, updateAnyTicketStatus } from '../services/ticketServic
 import { getTicketReporterLabel } from '../utils/studentIdentity'
 import { normalizeTicketWorkflowStatus } from '../utils/ticketPresentation'
 import BookingCharts from '../components/BookingCharts'
+import ResourceCharts from '../components/ResourceCharts'
 
 const SECTIONS = ['overview', 'resources', 'bookings', 'tickets', 'notifications']
 const RESOURCE_TYPES = ['LECTURE_HALL', 'LAB', 'MEETING_ROOM', 'EQUIPMENT']
@@ -482,6 +483,25 @@ export default function AdminDashboard() {
 
             {section === 'resources' && (
               <div className="space-y-5">
+                {/* Resource Analytics Charts */}
+                <section className="hub-quarter-fade rounded-[30px] border border-sky-100 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-6 shadow-[0_20px_45px_rgba(148,163,184,0.14)]">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.26em] text-sky-500">Resource analytics</p>
+                      <h2 className="mt-2 text-2xl font-semibold text-slate-900">Resource insights</h2>
+                      <p className="mt-1 text-sm text-slate-500">Visual breakdown of campus resources by type, status, and utilization.</p>
+                    </div>
+                    <div className="hidden h-14 w-14 rounded-[20px] bg-[radial-gradient(circle_at_30%_30%,#7dd3fc,transparent_58%),linear-gradient(135deg,#eff6ff,#dbeafe)] sm:block" />
+                  </div>
+                  {resourcesLoading ? (
+                    <p className="mt-3 text-sm text-slate-500">Loading resource analytics...</p>
+                  ) : (
+                    <div className="mt-4">
+                      <ResourceCharts resources={resources} bookings={bookings} />
+                    </div>
+                  )}
+                </section>
+
                 <section className="hub-quarter-fade rounded-[24px] border border-slate-200 bg-white p-5">
                   <h2 className="text-xl font-semibold">{resourceEditId ? 'Edit resource' : 'Add resource'}</h2>
                   <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={saveResource}>
@@ -735,14 +755,15 @@ export default function AdminDashboard() {
                                             type="button" 
                                             disabled={busyId === item.id} 
                                             onClick={() => runBookingAction(item.id, 'approve')} 
-                                            className="px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium shadow-sm"
+                                            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium shadow-sm"
                                           >
                                             {busyId === item.id ? (
                                               <span className="flex items-center gap-1">
-                                                <span className="animate-spin">⏳</span>
+                                                <span className="animate-spin">{'\u23f3'}</span>
+                                                <span>Processing...</span>
                                               </span>
                                             ) : (
-                                              <span className="flex items-center gap-1">✅</span>
+                                              <span>Approve</span>
                                             )}
                                           </button>
                                           <button 
@@ -752,14 +773,15 @@ export default function AdminDashboard() {
                                               const reason = window.prompt('Rejection reason:');
                                               if (reason?.trim()) runBookingAction(item.id, 'reject', { reason: reason.trim() });
                                             }} 
-                                            className="px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium shadow-sm"
+                                            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium shadow-sm"
                                           >
                                             {busyId === item.id ? (
                                               <span className="flex items-center gap-1">
-                                                <span className="animate-spin">⏳</span>
+                                                <span className="animate-spin">{'\u23f3'}</span>
+                                                <span>Processing...</span>
                                               </span>
                                             ) : (
-                                              <span className="flex items-center gap-1">❌</span>
+                                              <span>Reject</span>
                                             )}
                                           </button>
                                         </>
@@ -773,14 +795,15 @@ export default function AdminDashboard() {
                                               runBookingAction(item.id, 'cancel');
                                             }
                                           }} 
-                                          className="px-3 py-1.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium shadow-sm"
+                                          className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium shadow-sm"
                                         >
                                           {busyId === item.id ? (
                                             <span className="flex items-center gap-1">
-                                              <span className="animate-spin">⏳</span>
+                                              <span className="animate-spin">{'\u23f3'}</span>
+                                              <span>Processing...</span>
                                             </span>
                                           ) : (
-                                            <span className="flex items-center gap-1">🚫</span>
+                                            <span>Cancel</span>
                                           )}
                                         </button>
                                       )}
@@ -792,14 +815,15 @@ export default function AdminDashboard() {
                                             deleteBooking(item.id);
                                           }
                                         }} 
-                                        className="px-3 py-1.5 bg-rose-500 text-white rounded-lg hover:bg-rose-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium shadow-sm"
+                                        className="px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium shadow-sm"
                                       >
                                         {busyId === item.id ? (
                                           <span className="flex items-center gap-1">
-                                            <span className="animate-spin">⏳</span>
+                                            <span className="animate-spin">{'\u23f3'}</span>
+                                            <span>Processing...</span>
                                           </span>
                                         ) : (
-                                          <span className="flex items-center gap-1">🗑️</span>
+                                          <span>Delete</span>
                                         )}
                                       </button>
                                     </div>
