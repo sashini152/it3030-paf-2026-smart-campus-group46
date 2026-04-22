@@ -22,6 +22,7 @@ import AdminAccessPage from './pages/AdminAccessPage'
 import { AuthProvider } from './contexts/AuthContext'
 import { useAuth } from './hooks/useAuth'
 import { ADMIN_EMAILS, SUPER_ADMIN_EMAILS } from './constants/auth'
+import SuperAdminUserManagementPage from './pages/SuperAdminUserManagementPage'
 
 function AuthLoadingScreen() {
   return (
