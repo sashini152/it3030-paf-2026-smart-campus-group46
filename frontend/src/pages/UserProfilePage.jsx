@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { getJson } from '../api/client'
 import { subscribeToBookingUpdates } from '../mock/mockData'
 import EmptyState from '../components/EmptyState'
@@ -65,6 +65,48 @@ export default function UserProfilePage() {
   const [activeSpotlight, setActiveSpotlight] = useState(0)
   const [pauseSpotlight, setPauseSpotlight] = useState(false)
 
+  const allowedAdminEmails = [
+    'sashini.unilocatelk@gmail.com',
+    'it23220492@my.sliit.lk',
+    'chamodyadewmini08@gmail.com',
+  ]
+
+  const currentEmail = user?.email || localStorage.getItem('userEmail')
+  const isAdminAllowedEmail = allowedAdminEmails.includes(currentEmail)
+  const alreadyAdmin =
+    user?.role === 'ADMIN' || localStorage.getItem('userRole') === 'ADMIN'
+
+  const getAdminDisplayName = (email, existingName) => {
+    if (existingName) return existingName
+    if (email === 'it23220492@my.sliit.lk') return 'IT Student'
+    if (email === 'chamodyadewmini08@gmail.com') return 'Chamodya Dewmini'
+    if (email === 'sashini.unilocatelk@gmail.com') return 'Sashini'
+    return 'Admin User'
+  }
+
+  const handleGrantAdmin = (redirect = false) => {
+    const email = user?.email || localStorage.getItem('userEmail')
+    const currentUser = {
+      ...user,
+      role: 'ADMIN',
+      name: getAdminDisplayName(email, user?.name),
+      email,
+    }
+
+    localStorage.setItem('user', JSON.stringify(currentUser))
+    localStorage.setItem('userRole', 'ADMIN')
+    localStorage.setItem('userEmail', currentUser.email)
+    localStorage.setItem('userName', currentUser.name)
+
+    if (redirect) {
+      alert('Admin role granted! Redirecting to admin dashboard...')
+      window.location.href = '/admin'
+    } else {
+      alert('Admin role granted! Refreshing page...')
+      window.location.reload()
+    }
+  }
+
   const handleLogout = () => {
     logout()
     navigate('/login', { replace: true })
@@ -95,10 +137,11 @@ export default function UserProfilePage() {
         try {
           const bookingsData = await getJson('/api/bookings')
           if (Array.isArray(bookingsData)) {
-            const userBookings = bookingsData.filter((booking) =>
-              booking.bookedEmail === user?.email ||
-              booking.createdBy === user?.email ||
-              booking.email === user?.email
+            const userBookings = bookingsData.filter(
+              (booking) =>
+                booking.bookedEmail === user?.email ||
+                booking.createdBy === user?.email ||
+                booking.email === user?.email
             )
             setBookings(userBookings)
           } else {
@@ -111,11 +154,17 @@ export default function UserProfilePage() {
         try {
           const ticketsData = await getJson('/api/tickets')
           if (Array.isArray(ticketsData)) {
-            const userKeys = new Set(getUserLookupKeys(user).map((value) => String(value).trim().toLowerCase()))
+            const userKeys = new Set(
+              getUserLookupKeys(user).map((value) =>
+                String(value).trim().toLowerCase()
+              )
+            )
             const userTickets = ticketsData.filter((ticket) =>
               [ticket.createdBy, ticket.createdByName, ticket.email, ticket.submittedBy]
                 .filter(Boolean)
-                .some((value) => userKeys.has(String(value).trim().toLowerCase()))
+                .some((value) =>
+                  userKeys.has(String(value).trim().toLowerCase())
+                )
             )
             setTickets(userTickets)
           } else {
@@ -135,23 +184,34 @@ export default function UserProfilePage() {
   }, [user?.email]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const recentBookings = useMemo(
-    () => [...bookings].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).slice(0, 5),
+    () =>
+      [...bookings]
+        .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+        .slice(0, 5),
     [bookings]
   )
 
   const recentTickets = useMemo(
-    () => [...tickets].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).slice(0, 5),
+    () =>
+      [...tickets]
+        .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+        .slice(0, 5),
     [tickets]
   )
 
-  const stats = useMemo(() => ({
-    totalBookings: bookings.length,
-    approvedBookings: bookings.filter((booking) => booking.status === 'APPROVED').length,
-    pendingBookings: bookings.filter((booking) => booking.status === 'PENDING').length,
-    totalTickets: tickets.length,
-    resolvedTickets: tickets.filter((ticket) => ticket.status === 'RESOLVED').length,
-    openTickets: tickets.filter((ticket) => ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS').length,
-  }), [bookings, tickets])
+  const stats = useMemo(
+    () => ({
+      totalBookings: bookings.length,
+      approvedBookings: bookings.filter((booking) => booking.status === 'APPROVED').length,
+      pendingBookings: bookings.filter((booking) => booking.status === 'PENDING').length,
+      totalTickets: tickets.length,
+      resolvedTickets: tickets.filter((ticket) => ticket.status === 'RESOLVED').length,
+      openTickets: tickets.filter(
+        (ticket) => ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS'
+      ).length,
+    }),
+    [bookings, tickets]
+  )
 
   const profileSlides = useMemo(
     () => buildProfileSlides(stats, recentBookings, recentTickets),
@@ -169,7 +229,9 @@ export default function UserProfilePage() {
 
       if (isUserBooking) {
         setBookings((prevBookings) =>
-          prevBookings.map((booking) => (booking.id === updatedBooking.id ? updatedBooking : booking))
+          prevBookings.map((booking) =>
+            booking.id === updatedBooking.id ? updatedBooking : booking
+          )
         )
       }
     }
@@ -206,6 +268,42 @@ export default function UserProfilePage() {
 
   return (
     <div className="hub-page hub-page--wide hub-profile-page">
+      {/* Admin Access Button - Always visible for admin emails */}
+      {isAdminAllowedEmail && !alreadyAdmin && (
+        <div
+          style={{
+            padding: '20px',
+            textAlign: 'center',
+            backgroundColor: '#fef3c7',
+            border: '2px solid #f59e0b',
+            borderRadius: '8px',
+            margin: '20px 0',
+          }}
+        >
+          <h3 style={{ color: '#92400e', margin: '0 0 10px 0' }}>
+            Admin Access Available
+          </h3>
+          <p style={{ color: '#92400e', margin: '0 0 15px 0' }}>
+            Click below to grant admin permissions to your account
+          </p>
+          <button
+            onClick={() => handleGrantAdmin(true)}
+            style={{
+              backgroundColor: '#dc2626',
+              color: 'white',
+              padding: '12px 24px',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+            }}
+          >
+            Grant Admin Access Now
+          </button>
+        </div>
+      )}
+
       <Reveal delay={30}>
         <ParallaxPanel as="section" className="hub-profile-hero hub-lift" strength={10}>
           <div className="hub-profile-avatar">
@@ -216,20 +314,43 @@ export default function UserProfilePage() {
             <h1>{userDetails?.name || user?.name || 'User'}</h1>
             <p className="hub-profile-email">{userDetails?.email || user?.email || 'N/A'}</p>
             <div className="hub-profile-badges">
-              <span className="hub-profile-badge hub-profile-badge--dark">{userDetails?.role || user?.role || 'USER'}</span>
+              <span className="hub-profile-badge hub-profile-badge--dark">
+                {userDetails?.role || user?.role || 'USER'}
+              </span>
               {userDetails?.department && (
-                <span className="hub-profile-badge hub-profile-badge--accent">{userDetails.department}</span>
+                <span className="hub-profile-badge hub-profile-badge--accent">
+                  {userDetails.department}
+                </span>
               )}
             </div>
           </div>
           <div className="hub-profile-actions">
-            <Tooltip text="Use this area later for editing personal details and account preferences." tone="ticket">
-              <button type="button" className="hub-profile-action hub-profile-action--ghost hub-button-pop">Edit profile</button>
+            <Tooltip
+              text="Use this area later for editing personal details and account preferences."
+              tone="ticket"
+            >
+              <button
+                type="button"
+                className="hub-profile-action hub-profile-action--ghost hub-button-pop"
+              >
+                Edit profile
+              </button>
             </Tooltip>
             <Tooltip text="Account settings and notification tuning live here." tone="ticket">
-              <button type="button" className="hub-profile-action hub-profile-action--accent hub-button-pop">Settings</button>
+              <button
+                type="button"
+                className="hub-profile-action hub-profile-action--accent hub-button-pop"
+              >
+                Settings
+              </button>
             </Tooltip>
-            <button type="button" className="hub-profile-action hub-profile-action--danger hub-button-pop" onClick={handleLogout}>Logout</button>
+            <button
+              type="button"
+              className="hub-profile-action hub-profile-action--danger hub-button-pop"
+              onClick={handleLogout}
+            >
+              Logout
+            </button>
           </div>
         </ParallaxPanel>
       </Reveal>
@@ -279,7 +400,18 @@ export default function UserProfilePage() {
                 </div>
                 <div className="hub-profile-detail-row">
                   <span>Role</span>
-                  <strong>{userDetails?.role || user?.role || 'USER'}</strong>
+                  <div className="flex items-center gap-2">
+                    <strong>{userDetails?.role || user?.role || 'USER'}</strong>
+                    {isAdminAllowedEmail && !alreadyAdmin ? (
+                      <button
+                        onClick={() => handleGrantAdmin(false)}
+                        className="hub-btn hub-btn--primary hub-btn--small"
+                        style={{ fontSize: '12px', padding: '4px 8px' }}
+                      >
+                        Grant Admin
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
                 {userDetails?.department && (
                   <div className="hub-profile-detail-row">
@@ -316,11 +448,17 @@ export default function UserProfilePage() {
                   <p className="hub-profile-card__eyebrow">Activity spotlight</p>
                   <h2>What needs your attention</h2>
                 </div>
-                <Tooltip text="This card rotates through booking, support, and recent activity cues." tone="ticket">
+                <Tooltip
+                  text="This card rotates through booking, support, and recent activity cues."
+                  tone="ticket"
+                >
                   <span className="hub-profile-info-badge">i</span>
                 </Tooltip>
               </div>
-              <div key={activeSpotlight} className={`hub-profile-spotlight hub-profile-spotlight--${profileSlides[activeSpotlight].accent} hub-fade-slide`}>
+              <div
+                key={activeSpotlight}
+                className={`hub-profile-spotlight hub-profile-spotlight--${profileSlides[activeSpotlight].accent} hub-fade-slide`}
+              >
                 <h3>{profileSlides[activeSpotlight].title}</h3>
                 <p>{profileSlides[activeSpotlight].body}</p>
               </div>
@@ -330,7 +468,9 @@ export default function UserProfilePage() {
                     <button
                       key={slide.title}
                       type="button"
-                      className={`hub-profile-spotlight__dot ${index === activeSpotlight ? 'hub-profile-spotlight__dot--active' : ''}`}
+                      className={`hub-profile-spotlight__dot ${
+                        index === activeSpotlight ? 'hub-profile-spotlight__dot--active' : ''
+                      }`}
                       onClick={() => setActiveSpotlight(index)}
                       aria-label={`Show activity spotlight ${index + 1}`}
                     />
@@ -340,14 +480,20 @@ export default function UserProfilePage() {
                   <button
                     type="button"
                     className="hub-profile-spotlight__button"
-                    onClick={() => setActiveSpotlight((current) => (current === 0 ? profileSlides.length - 1 : current - 1))}
+                    onClick={() =>
+                      setActiveSpotlight((current) =>
+                        current === 0 ? profileSlides.length - 1 : current - 1
+                      )
+                    }
                   >
                     Prev
                   </button>
                   <button
                     type="button"
                     className="hub-profile-spotlight__button"
-                    onClick={() => setActiveSpotlight((current) => (current + 1) % profileSlides.length)}
+                    onClick={() =>
+                      setActiveSpotlight((current) => (current + 1) % profileSlides.length)
+                    }
                   >
                     Next
                   </button>
@@ -403,7 +549,11 @@ export default function UserProfilePage() {
                       <div className="hub-profile-timeline__body">
                         <div className="hub-profile-timeline__top">
                           <strong>{booking.resourceName || booking.resourceId || 'Resource booking'}</strong>
-                          <span className={`hub-profile-pill hub-profile-pill--${(booking.status || 'PENDING').toLowerCase()}`}>
+                          <span
+                            className={`hub-profile-pill hub-profile-pill--${(
+                              booking.status || 'PENDING'
+                            ).toLowerCase()}`}
+                          >
                             {booking.status}
                           </span>
                         </div>
@@ -439,7 +589,13 @@ export default function UserProfilePage() {
                         <small>{getTicketReporterLabel(ticket)}</small>
                       </div>
                       <div className="hub-profile-ticket__meta">
-                        <span className={`hub-profile-pill hub-profile-pill--${(ticket.status || 'OPEN').toLowerCase().replaceAll('_', '-')}`}>
+                        <span
+                          className={`hub-profile-pill hub-profile-pill--${(
+                            ticket.status || 'OPEN'
+                          )
+                            .toLowerCase()
+                            .replaceAll('_', '-')}`}
+                        >
                           {ticket.status || 'OPEN'}
                         </span>
                         <small>{formatDate(ticket.createdAt)}</small>

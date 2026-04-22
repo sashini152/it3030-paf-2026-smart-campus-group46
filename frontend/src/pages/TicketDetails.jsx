@@ -7,7 +7,7 @@ import StatusBadge from '../components/StatusBadge'
 import SurfaceCard from '../components/SurfaceCard'
 import TicketProgress from '../components/TicketProgress'
 import { useComments } from '../hooks/useComments'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import * as ticketService from '../services/ticketService'
 import * as commentService from '../services/commentService'
 import { getSessionRole, isAdminRole } from '../utils/session'
@@ -491,3 +491,4 @@ export default function TicketDetails({ ticketId: ticketIdProp }) {
     </div>
   )
 }
+

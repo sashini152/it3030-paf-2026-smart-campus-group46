@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Access Grant</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        button {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #c0392b;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Admin Access Grant</h1>
+        <p>Click below to grant admin permissions to sashini.unilocatelk@gmail.com</p>
+        
+        <button onclick="grantSashiniAdmin()">Grant Admin to Sashini</button>
+        <button onclick="grantITStudentAdmin()">Grant Admin to IT Student</button>
+        
+        <div id="status"></div>
+    </div>
+
+    <script>
+        function grantSashiniAdmin() {
+            grantAdminAccess('sashini.unilocatelk@gmail.com', 'Sashini');
+        }
+        
+        function grantITStudentAdmin() {
+            grantAdminAccess('it23220492@my.sliit.lk', 'IT Student');
+        }
+        
+        function grantAdminAccess(email, name) {
+            const status = document.getElementById('status');
+            status.innerHTML = '<div class="spinner"></div><p>Granting admin access...</p>';
+            
+            // Set admin role
+            const adminUser = {
+                email: email,
+                role: 'ADMIN',
+                name: name
+            };
+            
+            // Update all storage
+            localStorage.setItem('user', JSON.stringify(adminUser));
+            localStorage.setItem('userRole', 'ADMIN');
+            localStorage.setItem('userEmail', email);
+            localStorage.setItem('userName', name);
+            
+            // Also set session storage
+            sessionStorage.setItem('userRole', 'ADMIN');
+            
+            // Update any existing window.user
+            if (window.user) {
+                window.user.role = 'ADMIN';
+                window.user.email = email;
+                window.user.name = name;
+            }
+            
+            // Show success and redirect
+            setTimeout(() => {
+                status.innerHTML = '<p style="color: #2ecc71;">Admin access granted! Redirecting...</p>';
+                setTimeout(() => {
+                    window.location.href = '/admin';
+                }, 1000);
+            }, 1500);
+        }
+        
+        // Auto-detect if user is already logged in
+        window.onload = function() {
+            const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+            if (currentUser.email) {
+                const status = document.getElementById('status');
+                status.innerHTML = `<p>Current user detected: ${currentUser.email}</p>`;
+            }
+        };
+    </script>
+</body>
+</html>

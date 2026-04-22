@@ -3,7 +3,7 @@ import { buildQuery, deleteRequest, getJson, postJson, putJson } from '../api/cl
 import ParallaxPanel from '../components/ParallaxPanel'
 import Reveal from '../components/Reveal'
 import Tooltip from '../components/Tooltip'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { isAdminRole } from '../utils/session'
 
 const TYPES = ['LECTURE_HALL', 'LAB', 'MEETING_ROOM', 'EQUIPMENT']
@@ -547,3 +547,4 @@ export default function ResourcesPage() {
     </div>
   )
 }
+

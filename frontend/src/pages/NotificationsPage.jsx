@@ -1,369 +1,171 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getJson, patchJson, putJson } from '../api/client'
-import ParallaxPanel from '../components/ParallaxPanel'
-import Reveal from '../components/Reveal'
-import Tooltip from '../components/Tooltip'
-import { useAuth } from '../contexts/AuthContext'
-import { getUserLookupKeys } from '../utils/studentIdentity'
-
-const notificationTypes = ['ALL', 'BOOKING', 'TICKET', 'COMMENT', 'SYSTEM']
-const digestSlides = [
-  {
-    title: 'Stay ahead of booking changes',
-    body: 'Unread booking notices usually point to approvals, rejections, or time changes that need attention.',
-  },
-  {
-    title: 'Support updates move fastest here',
-    body: 'Ticket notifications shorten the gap between a reply from support and the next action from you.',
-  },
-  {
-    title: 'Tune the feed to your workflow',
-    body: 'Switch categories on or off so the notification list feels focused instead of noisy.',
-  },
-]
-
-function formatType(type) {
-  return type === 'ALL' ? 'All' : type.replaceAll('_', ' ')
-}
-
-function formatDateTime(value) {
-  if (!value) return '-'
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString()
-}
-
-function dedupeNotifications(items) {
-  const seen = new Set()
-  return items.filter((item) => {
-    if (seen.has(item.id)) return false
-    seen.add(item.id)
-    return true
-  })
-}
+import { getJson, putJson } from '../api/client'
+import { useAuth } from '../hooks/useAuth'
+import '../index.css'
 
 export default function NotificationsPage() {
   const { user } = useAuth()
   const [notifications, setNotifications] = useState([])
-  const [preferences, setPreferences] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [savingPrefs, setSavingPrefs] = useState(false)
-  const [error, setError] = useState(null)
-  const [typeFilter, setTypeFilter] = useState('ALL')
-  const [onlyUnread, setOnlyUnread] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [activeDigest, setActiveDigest] = useState(0)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const userKeys = useMemo(() => getUserLookupKeys(user), [user])
-  const preferenceKey = user?.studentId || user?.email || user?.name || ''
-
-  const loadNotifications = useCallback(async () => {
-    setLoading(true)
-    setError(null)
+  async function loadNotifications() {
     try {
-      const responses = userKeys.length > 0
-        ? await Promise.all(userKeys.map((key) => getJson(`/api/notifications?targetUserId=${encodeURIComponent(key)}`)))
-        : [await getJson('/api/notifications')]
-      const merged = dedupeNotifications(responses.flat().filter(Boolean))
-      setNotifications(
-        merged.sort((left, right) => new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime())
+      setLoading(true)
+      setError('')
+      const data = await getJson(
+        `/api/notifications?email=${encodeURIComponent(user.email)}`
       )
-    } catch (requestError) {
-      setNotifications([])
-      setError(requestError.message)
+      setNotifications(data)
+    } catch (err) {
+      console.error('Failed to load notifications:', err)
+      setError('Failed to load notifications')
     } finally {
       setLoading(false)
     }
-  }, [userKeys])
+  }
 
-  const loadPreferences = useCallback(async () => {
-    if (!preferenceKey) return
-    try {
-      const data = await getJson(`/api/notification-preferences/${encodeURIComponent(preferenceKey)}`)
-      setPreferences(data)
-    } catch (requestError) {
-      setError(requestError.message)
+  useEffect(() => {
+    if (user?.email) {
+      loadNotifications()
     }
-  }, [preferenceKey])
+  }, [user])
 
-  useEffect(() => {
-    loadNotifications().catch(() => {})
-  }, [loadNotifications])
-
-  useEffect(() => {
-    loadPreferences().catch(() => {})
-  }, [loadPreferences])
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setActiveDigest((current) => (current + 1) % digestSlides.length)
-    }, 4500)
-    return () => clearInterval(timer)
-  }, [])
-
-  const filtered = useMemo(() => {
-    const query = searchTerm.trim().toLowerCase()
-    return notifications.filter((item) => {
-      const typeMatches = typeFilter === 'ALL' || item.type === typeFilter
-      const unreadMatches = !onlyUnread || !item.read
-      const searchMatches =
-        query.length === 0 ||
-        item.title?.toLowerCase().includes(query) ||
-        item.message?.toLowerCase().includes(query)
-      return typeMatches && unreadMatches && searchMatches
-    })
-  }, [notifications, onlyUnread, searchTerm, typeFilter])
-
-  const summary = useMemo(() => ({
-    total: notifications.length,
-    unread: notifications.filter((item) => !item.read).length,
-    bookings: notifications.filter((item) => item.type === 'BOOKING').length,
-    tickets: notifications.filter((item) => item.type === 'TICKET').length,
-  }), [notifications])
-
-  async function markRead(id, read) {
+  async function handleMarkAsRead(id) {
     try {
-      const updated = await patchJson(`/api/notifications/${id}/read`, { read })
-      setNotifications((current) => current.map((item) => (item.id === id ? updated : item)))
-    } catch (requestError) {
-      setError(requestError.message)
+      setError('')
+      await putJson(`/api/notifications/${id}/read`)
+      loadNotifications()
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err)
+      setError('Failed to mark as read')
     }
   }
 
-  async function markAllRead() {
-    try {
-      const key = preferenceKey ? `?targetUserId=${encodeURIComponent(preferenceKey)}` : ''
-      await patchJson(`/api/notifications/read-all${key}`, {})
-      await loadNotifications()
-    } catch (requestError) {
-      setError(requestError.message)
-    }
-  }
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-blue-50">
+        {/* Header */}
+        <header className="bg-white shadow-sm border-b border-slate-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <Link to="/" className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">SC</span>
+                </div>
+                <span className="text-xl font-semibold text-slate-900">Smart Campus Hub</span>
+              </Link>
+              <nav className="flex space-x-8">
+                <Link to="/" className="text-slate-600 hover:text-emerald-600 transition-colors">Home</Link>
+                <Link to="/login" className="text-emerald-600 font-medium">Sign in</Link>
+              </nav>
+            </div>
+          </div>
+        </header>
 
-  async function savePreferences(nextPreferences) {
-    if (!preferenceKey) return
-    setSavingPrefs(true)
-    setError(null)
-    try {
-      const saved = await putJson(`/api/notification-preferences/${encodeURIComponent(preferenceKey)}`, {
-        bookingEnabled: nextPreferences.bookingEnabled,
-        ticketEnabled: nextPreferences.ticketEnabled,
-        commentEnabled: nextPreferences.commentEnabled,
-        systemEnabled: nextPreferences.systemEnabled,
-      })
-      setPreferences(saved)
-    } catch (requestError) {
-      setError(requestError.message)
-    } finally {
-      setSavingPrefs(false)
-    }
-  }
-
-  function togglePreference(key) {
-    if (!preferences) return
-    const next = { ...preferences, [key]: !preferences[key] }
-    setPreferences(next)
-    savePreferences(next).catch(() => {})
+        {/* Main Content */}
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center py-12">
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">Notifications</h1>
+            <p className="text-lg text-slate-600">Please sign in first.</p>
+            <Link to="/login" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 transition-colors mt-4">
+              Sign in
+            </Link>
+          </div>
+        </main>
+      </div>
+    )
   }
 
   return (
-    <div className="hub-page hub-page--wide hub-page--notifications hub-notify-page space-y-6">
-      <Reveal delay={30}>
-        <ParallaxPanel className="hub-notify-hero" strength={8}>
-          <p className="hub-notify-kicker">Message center</p>
-          <h1>Notifications</h1>
-          <p className="hub-lead">
-            Review booking, ticket, comment, and system updates in one place and control what gets delivered.
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-blue-50">
+      {/* Header */}
+     
+
+      {/* Main Content */}
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">Notifications</h1>
+          <p className="text-lg text-slate-600">
+            Stay updated with booking decisions and system notices.
           </p>
-          {error && (
-            <div className="hub-alert hub-alert--error hub-notify-alert" role="alert">
-              {error}
-            </div>
-          )}
-        </ParallaxPanel>
-      </Reveal>
+        </div>
 
-      <Reveal className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" delay={70}>
-        <ParallaxPanel className="hub-notify-stat-card hub-notify-stat-card--total hub-lift" strength={6}>
-          <span>Total</span>
-          <strong>{summary.total}</strong>
-        </ParallaxPanel>
-        <ParallaxPanel className="hub-notify-stat-card hub-notify-stat-card--unread hub-lift" strength={6}>
-          <span>Unread</span>
-          <strong>{summary.unread}</strong>
-        </ParallaxPanel>
-        <ParallaxPanel className="hub-notify-stat-card hub-notify-stat-card--booking hub-lift" strength={6}>
-          <span>Booking</span>
-          <strong>{summary.bookings}</strong>
-        </ParallaxPanel>
-        <ParallaxPanel className="hub-notify-stat-card hub-notify-stat-card--ticket hub-lift" strength={6}>
-          <span>Ticket</span>
-          <strong>{summary.tickets}</strong>
-        </ParallaxPanel>
-      </Reveal>
-
-      <Reveal delay={100}>
-        <ParallaxPanel className="hub-notify-carousel" strength={8}>
-          <p className="hub-notify-panel__eyebrow">Delivery flow</p>
-          <div key={activeDigest} className="hub-notify-carousel__slide hub-fade-slide">
-            <h2>{digestSlides[activeDigest].title}</h2>
-            <p>{digestSlides[activeDigest].body}</p>
+        {/* Error State */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-800">{error}</p>
           </div>
-          <div className="hub-notify-carousel__controls">
-            <div className="hub-notify-carousel__dots">
-              {digestSlides.map((slide, index) => (
-                <button
-                  key={slide.title}
-                  type="button"
-                  className={`hub-notify-carousel__dot ${index === activeDigest ? 'hub-notify-carousel__dot--active' : ''}`}
-                  onClick={() => setActiveDigest(index)}
-                  aria-label={`Show digest ${index + 1}`}
-                />
-              ))}
-            </div>
-            <div className="hub-notify-carousel__actions">
-              <button type="button" className="hub-notify-carousel__button" onClick={() => setActiveDigest((current) => (current === 0 ? digestSlides.length - 1 : current - 1))}>
-                Prev
-              </button>
-              <button type="button" className="hub-notify-carousel__button" onClick={() => setActiveDigest((current) => (current + 1) % digestSlides.length)}>
-                Next
-              </button>
-            </div>
-          </div>
-        </ParallaxPanel>
-      </Reveal>
+        )}
 
-      {preferences && (
-        <Reveal delay={130}>
-          <ParallaxPanel className="hub-notify-panel" strength={8}>
-            <div className="hub-notify-panel__header">
-              <div>
-                <p className="hub-notify-panel__eyebrow">Preferences</p>
-                <h2>Notification categories</h2>
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+            <span className="ml-2 text-slate-600">Loading notifications...</span>
+          </div>
+        )}
+
+        {/* Notifications List */}
+        {!loading && (
+          <div className="space-y-4">
+            {notifications.length === 0 ? (
+              <div className="text-center py-12 bg-white rounded-lg border border-slate-200">
+                <div className="text-slate-400 text-5xl mb-4">inbox</div>
+                <h3 className="text-lg font-medium text-slate-900 mb-2">No notifications</h3>
+                <p className="text-slate-600">You do not have any notifications yet.</p>
               </div>
-            </div>
-            <div className="hub-notify-pref-grid">
-              {[
-                ['bookingEnabled', 'Booking updates'],
-                ['ticketEnabled', 'Ticket updates'],
-                ['commentEnabled', 'Comment updates'],
-                ['systemEnabled', 'System notices'],
-              ].map(([key, label], index) => (
-                <article key={key} className={`hub-notify-pref-card hub-notify-pref-card--${index % 4}`}>
-                  <div>
-                    <p className="hub-notify-pref-card__label">{label}</p>
-                    <p className="hub-notify-pref-card__state">
-                      {preferences[key] ? 'Enabled' : 'Disabled'}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className={`hub-notify-toggle ${preferences[key] ? 'hub-notify-toggle--on' : ''}`}
-                    disabled={savingPrefs}
-                    onClick={() => togglePreference(key)}
-                  >
-                    {preferences[key] ? 'On' : 'Off'}
-                  </button>
-                </article>
-              ))}
-            </div>
-          </ParallaxPanel>
-        </Reveal>
-      )}
-
-      <Reveal delay={160}>
-        <ParallaxPanel className="hub-notify-panel" strength={10}>
-          <div className="hub-notify-toolbar">
-            <label className="hub-notify-field">
-              <span className="hub-notify-field__label">
-                Category
-                <Tooltip text="Switch the message feed between booking, ticket, comment, and system updates." tone="ticket">
-                  <span className="hub-notify-field__info">i</span>
-                </Tooltip>
-              </span>
-              <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
-                {notificationTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {formatType(type)}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="hub-notify-field hub-notify-field--grow">
-              <span className="hub-notify-field__label">
-                Search
-                <Tooltip text="Search inside notification titles and message text." tone="ticket">
-                  <span className="hub-notify-field__info">i</span>
-                </Tooltip>
-              </span>
-              <input
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search title or message"
-              />
-            </label>
-
-            <button
-              type="button"
-              className={`hub-notify-filter-toggle ${onlyUnread ? 'hub-notify-filter-toggle--active' : ''}`}
-              onClick={() => setOnlyUnread((current) => !current)}
-            >
-              {onlyUnread ? 'Unread only' : 'Show all'}
-            </button>
-
-            <button type="button" className="hub-notify-primary-btn" onClick={markAllRead}>
-              Mark all read
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="hub-loading hub-notify-loading">Loading notifications...</div>
-          ) : filtered.length === 0 ? (
-            <div className="hub-notify-empty">
-              <p>No notifications found.</p>
-              <p className="hub-notify-empty__sub">Try another filter or wait for the next update.</p>
-            </div>
-          ) : (
-            <div className="grid gap-4">
-              {filtered.map((item, index) => (
-                <ParallaxPanel key={item.id} className="hub-notify-card hub-lift" strength={5} style={{ animationDelay: `${index * 45}ms` }}>
-                  <div className="hub-notify-card__content">
-                    <div className="hub-notify-card__meta">
-                      <span className="hub-notify-card__type">{formatType(item.type)}</span>
-                      <span className={`hub-notify-state ${item.read ? 'hub-notify-state--read' : 'hub-notify-state--unread'}`}>
-                        {item.read ? 'Read' : 'Unread'}
-                      </span>
+            ) : (
+              notifications.map((n) => (
+                <div
+                  key={n.id}
+                  className={`bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow ${
+                    !n.read ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200'
+                  }`}
+                >
+                  <div className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          {!n.read && (
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                          )}
+                          <h3 className="text-lg font-semibold text-slate-900">{n.type}</h3>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            n.read ? 'bg-gray-100 text-gray-600' : 'bg-emerald-100 text-emerald-700'
+                          }`}>
+                            {n.read ? 'Read' : 'Unread'}
+                          </span>
+                        </div>
+                        <p className="text-slate-700 mb-4">{n.message}</p>
+                        <div className="flex items-center text-sm text-slate-500">
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          {new Date(n.createdAt).toLocaleString()}
+                        </div>
+                      </div>
                     </div>
-                    <h2>{item.title}</h2>
-                    <p className="hub-notify-card__message">{item.message}</p>
-                    <p className="hub-notify-card__time">{formatDateTime(item.createdAt)}</p>
-                  </div>
-                  <div className="hub-notify-card__actions">
-                    <button
-                      type="button"
-                      className="hub-notify-secondary-btn"
-                      onClick={() => markRead(item.id, !item.read)}
-                    >
-                      {item.read ? 'Mark unread' : 'Mark read'}
-                    </button>
-                    {item.referenceType === 'BOOKING' && (
-                      <Link to="/user-bookings" className="hub-notify-link-btn">
-                        Open booking
-                      </Link>
-                    )}
-                    {item.referenceType === 'TICKET' && (
-                      <Link to={item.referenceId ? `/ticket-details/${item.referenceId}` : '/tickets'} className="hub-notify-link-btn">
-                        Open ticket
-                      </Link>
+                    {!n.read && (
+                      <div className="mt-4 pt-4 border-t border-slate-100">
+                        <button
+                          type="button"
+                          onClick={() => handleMarkAsRead(n.id)}
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 transition-colors"
+                        >
+                          Mark as read
+                        </button>
+                      </div>
                     )}
                   </div>
-                </ParallaxPanel>
-              ))}
-            </div>
-          )}
-        </ParallaxPanel>
-      </Reveal>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </main>
     </div>
   )
 }
+

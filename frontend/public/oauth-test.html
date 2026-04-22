@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OAuth Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; text-align: center; }
+        .success { color: green; font-size: 18px; margin: 20px 0; }
+        .error { color: red; font-size: 18px; margin: 20px 0; }
+        button { padding: 10px 20px; font-size: 16px; margin: 10px; }
+    </style>
+</head>
+<body>
+    <h1>OAuth2 Test Page</h1>
+    <div id="result"></div>
+    
+    <script>
+        function parseOAuthParams() {
+            console.log("=== Parsing OAuth Parameters ===");
+            console.log("Full URL:", window.location.href);
+            console.log("Search:", window.location.search);
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            const role = urlParams.get('role');
+            const name = urlParams.get('name');
+            const email = urlParams.get('email');
+            
+            console.log("OAuth params:", { token, role, name, email });
+            
+            const resultDiv = document.getElementById('result');
+            
+            if (token && role && name) {
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        ✅ OAuth2 Login Successful!
+                        <br><br>
+                        <strong>Name:</strong> ${name}
+                        <br>
+                        <strong>Email:</strong> ${email}
+                        <br>
+                        <strong>Role:</strong> ${role}
+                        <br>
+                        <strong>Token:</strong> ${token}
+                    </div>
+                    <button onclick="goToDashboard()">Go to Dashboard</button>
+                `;
+                
+                // Store in localStorage
+                localStorage.setItem('token', token);
+                localStorage.setItem('user', JSON.stringify({ name, role, email }));
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ No OAuth parameters found
+                        <br><br>
+                        <strong>URL:</strong> ${window.location.href}
+                    </div>
+                `;
+            }
+        }
+        
+        function goToDashboard() {
+            window.location.href = '/dashboard';
+        }
+        
+        // Parse parameters on page load
+        parseOAuthParams();
+    </script>
+</body>
+</html>

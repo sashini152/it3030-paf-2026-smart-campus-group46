@@ -1,9 +1,13 @@
 package com.smartcampus.hub.notification;
 
 public enum NotificationType {
-	BOOKING,
-	TICKET,
-	COMMENT,
-	SYSTEM
+    BOOKING,
+    BOOKING_CREATED,
+    BOOKING_APPROVED,
+    BOOKING_REJECTED,
+    BOOKING_CANCELLED,
+    BOOKING_CHECKED_IN,
+    TICKET,
+    COMMENT,
+    SYSTEM
 }
-

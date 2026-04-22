@@ -1,4 +1,4 @@
-import { getJson } from '../api/client'
+import { getJson, patchJson } from '../api/client'
 
 // Fetch user details by email
 export const fetchUserByEmail = async (email) => {
@@ -53,6 +53,26 @@ export const fetchUserData = async (email) => {
     }
   } catch (error) {
     console.error('Error fetching user data:', error)
+    throw error
+  }
+}
+
+// Update user role
+export const updateUserRole = async (email, newRole) => {
+  try {
+    const result = await patchJson(`/api/admin/users/${email}/role`, { role: newRole })
+    console.log(`Successfully updated ${email} role to ${newRole}`)
+    return result
+  } catch (error) {
+    console.error('Error updating user role:', error)
+    throw error
+  }
+}
+export const fetchAllUsers = async () => {
+  try {
+    return await getJson('/api/admin/users')
+  } catch (error) {
+    console.error('Error fetching all users:', error)
     throw error
   }
 }

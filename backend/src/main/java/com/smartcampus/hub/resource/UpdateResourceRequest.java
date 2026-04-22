@@ -1,31 +1,30 @@
 package com.smartcampus.hub.resource;
 
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public class UpdateResourceRequest {
 
-	@NotNull
-	private ResourceType type;
-	@NotBlank
+	@NotBlank(message = "Name is required")
 	private String name;
-	@Min(0)
-	private int capacity;
-	@NotBlank
+
+	@NotNull(message = "Type is required")
+	private String type;
+
+	@NotNull(message = "Capacity is required")
+	private Integer capacity;
+
+	@NotBlank(message = "Location is required")
 	private String location;
+
 	private String availabilityWindows;
-	@NotNull
-	private ResourceStatus status;
 
-	public ResourceType getType() {
-		return type;
-	}
+	@NotNull(message = "Status is required")
+	private String status;
 
-	public void setType(ResourceType type) {
-		this.type = type;
-	}
+	private String description;
 
+	// Getters and Setters
 	public String getName() {
 		return name;
 	}
@@ -34,11 +33,19 @@ public class UpdateResourceRequest {
 		this.name = name;
 	}
 
-	public int getCapacity() {
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
+	public Integer getCapacity() {
 		return capacity;
 	}
 
-	public void setCapacity(int capacity) {
+	public void setCapacity(Integer capacity) {
 		this.capacity = capacity;
 	}
 
@@ -58,11 +65,19 @@ public class UpdateResourceRequest {
 		this.availabilityWindows = availabilityWindows;
 	}
 
-	public ResourceStatus getStatus() {
+	public String getStatus() {
 		return status;
 	}
 
-	public void setStatus(ResourceStatus status) {
+	public void setStatus(String status) {
 		this.status = status;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
 	}
 }

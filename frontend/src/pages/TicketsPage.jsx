@@ -8,7 +8,7 @@ import SurfaceCard from '../components/SurfaceCard'
 import TicketProgress from '../components/TicketProgress'
 import TicketForm from '../components/TicketForm'
 import Tooltip from '../components/Tooltip'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { useTickets } from '../hooks/useTickets'
 import { getTicketDisplayId } from '../utils/ticketIdentity'
 import { formatTicketDate, normalizeTicketWorkflowStatus } from '../utils/ticketPresentation'
@@ -235,3 +235,4 @@ export default function TicketsPage() {
     </div>
   )
 }
+

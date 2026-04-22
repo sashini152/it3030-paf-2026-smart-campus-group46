@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from './useAuth'
 import { fetchUserData } from '../services/userService'
 
 export function useUserData() {
