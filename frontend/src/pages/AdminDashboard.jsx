@@ -7,6 +7,7 @@ import { useTickets } from '../hooks/useTickets'
 import { deleteAnyTicket, updateAnyTicketStatus } from '../services/ticketService'
 import { getTicketReporterLabel } from '../utils/studentIdentity'
 import { normalizeTicketWorkflowStatus } from '../utils/ticketPresentation'
+import BookingCharts from '../components/BookingCharts'
 
 const SECTIONS = ['overview', 'resources', 'bookings', 'tickets', 'notifications']
 const RESOURCE_TYPES = ['LECTURE_HALL', 'LAB', 'MEETING_ROOM', 'EQUIPMENT']
@@ -86,6 +87,7 @@ export default function AdminDashboard() {
   const [bookingsLoading, setBookingsLoading] = useState(true)
   const [bookingsError, setBookingsError] = useState(null)
   const [bookingFilter, setBookingFilter] = useState('ALL')
+  const [bookingViewMode, setBookingViewMode] = useState('table') // 'table' or 'charts'
   const [notifications, setNotifications] = useState([])
   const [notificationsLoading, setNotificationsLoading] = useState(true)
   const [notificationsError, setNotificationsError] = useState(null)
@@ -591,25 +593,68 @@ export default function AdminDashboard() {
                   </div>
                 </section>
 
-                {/* Booking Management Table */}
+                {/* Booking Management */}
                 <section className="hub-quarter-fade rounded-[24px] border border-slate-200 bg-white p-5">
                   <div className="mb-4 flex items-center justify-between">
                     <h2 className="text-xl font-semibold">Booking Management</h2>
                     <div className="flex items-center gap-3">
-                      <select 
-                        value={bookingFilter} 
-                        onChange={(event) => setBookingFilter(event.target.value)} 
-                        className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
-                      >
-                        {BOOKING_FILTERS.map((item) => (
-                          <option key={item} value={item}>
-                            {item === 'ALL' ? 'All Bookings' : label(item)}
-                          </option>
-                        ))}
-                      </select>
-                      <span className="text-sm text-slate-500">
-                        {visibleBookings.length} of {bookings.length} bookings
-                      </span>
+                      <div className="flex gap-2" style={{border: '2px solid #FDA481', padding: '8px', borderRadius: '6px', backgroundColor: '#242e49'}}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            console.log('Switching to table view');
+                            setBookingViewMode('table');
+                          }}
+                          style={{
+                            backgroundColor: bookingViewMode === 'table' ? '#FDA481' : '#37415c',
+                            color: '#ffffff',
+                            border: '1px solid #FDA481',
+                            padding: '8px 16px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontWeight: 'bold',
+                            marginRight: '8px'
+                          }}
+                        >
+                          Table View
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            console.log('Switching to chart view');
+                            setBookingViewMode('charts');
+                          }}
+                          style={{
+                            backgroundColor: bookingViewMode === 'charts' ? '#FDA481' : '#37415c',
+                            color: '#ffffff',
+                            border: '1px solid #FDA481',
+                            padding: '8px 16px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          Chart View
+                        </button>
+                      </div>
+                      {bookingViewMode === 'table' && (
+                        <>
+                          <select 
+                            value={bookingFilter} 
+                            onChange={(event) => setBookingFilter(event.target.value)} 
+                            className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                          >
+                            {BOOKING_FILTERS.map((item) => (
+                              <option key={item} value={item}>
+                                {item === 'ALL' ? 'All Bookings' : label(item)}
+                              </option>
+                            ))}
+                          </select>
+                          <span className="text-sm text-slate-500">
+                            {visibleBookings.length} of {bookings.length} bookings
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                   {bookingsError && <p className="mb-3 text-sm text-rose-600">{bookingsError}</p>}
@@ -619,155 +664,260 @@ export default function AdminDashboard() {
                       <span className="text-sm text-slate-500">Loading bookings...</span>
                     </div>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full text-sm">
-                        <thead>
-                          <tr className="text-left text-xs text-slate-500 border-b border-slate-200">
-                            <th className="pb-3 font-semibold">Resource</th>
-                            <th className="pb-3 font-semibold">User</th>
-                            <th className="pb-3 font-semibold">Time</th>
-                            <th className="pb-3 font-semibold">Status</th>
-                            <th className="pb-3 font-semibold">Check-in</th>
-                            <th className="pb-3 font-semibold">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {visibleBookings.map((item) => (
-                            <tr key={item.id} className="border-t border-slate-100 hover:bg-slate-50 transition-colors">
-                              <td className="py-3">
-                                <div className="font-semibold text-slate-900">{item.resourceName || item.resourceId}</div>
-                                <div className="text-xs text-slate-500">{item.resourceType || ''}</div>
-                              </td>
-                              <td className="py-3">
-                                <div className="font-medium text-slate-900">{item.bookedBy || item.requestedByUserId}</div>
-                                <div className="text-xs text-slate-500">{item.bookedEmail || ''}</div>
-                              </td>
-                              <td className="py-3">
-                                <div className="font-medium text-slate-900">{dt(item.startDateTime)}</div>
-                                <div className="text-xs text-slate-500">to {dt(item.endDateTime)}</div>
-                              </td>
-                              <td className="py-3">
-                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                                  item.status === 'APPROVED' ? 'bg-green-100 text-green-800 border border-green-200' :
-                                  item.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
-                                  item.status === 'REJECTED' ? 'bg-red-100 text-red-800 border border-red-200' :
-                                  item.status === 'CANCELLED' ? 'bg-gray-100 text-gray-800 border border-gray-200' :
-                                  'bg-gray-100 text-gray-800 border border-gray-200'
-                                }`}>
-                                  <span className={`w-2 h-2 rounded-full mr-1.5 ${
-                                    item.status === 'APPROVED' ? 'bg-green-500' :
-                                    item.status === 'PENDING' ? 'bg-yellow-500' :
-                                    item.status === 'REJECTED' ? 'bg-red-500' :
-                                    item.status === 'CANCELLED' ? 'bg-gray-500' :
-                                    'bg-gray-500'
-                                  }`}></span>
-                                  {label(item.status)}
-                                </span>
-                              </td>
-                              <td className="py-3">
-                                {item.checkedInAt ? (
-                                  <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200">
-                                    ✅ Verified
-                                  </span>
-                                ) : item.status === 'APPROVED' ? (
-                                  <Link 
-                                    to={`/booking-check-in?booking=${item.id}`} 
-                                    className="inline-flex items-center px-2 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-lg border border-emerald-200 hover:bg-emerald-100 transition-colors"
-                                  >
-                                    📱 Check-in
-                                  </Link>
-                                ) : (
-                                  <span className="text-xs text-slate-400">-</span>
-                                )}
-                              </td>
-                              <td className="py-3">
-                                <div className="flex gap-2 flex-wrap">
-                                  {item.status === 'PENDING' && (
-                                    <>
-                                      <button 
-                                        type="button" 
-                                        disabled={busyId === item.id} 
-                                        onClick={() => runBookingAction(item.id, 'approve')} 
-                                        className="px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium shadow-sm"
+                    <>
+                      {bookingViewMode === 'table' ? (
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full text-sm">
+                            <thead>
+                              <tr className="text-left text-xs text-slate-500 border-b border-slate-200">
+                                <th className="pb-3 font-semibold">Resource</th>
+                                <th className="pb-3 font-semibold">User</th>
+                                <th className="pb-3 font-semibold">Time</th>
+                                <th className="pb-3 font-semibold">Status</th>
+                                <th className="pb-3 font-semibold">Check-in</th>
+                                <th className="pb-3 font-semibold">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {visibleBookings.map((item) => (
+                                <tr key={item.id} className="border-t border-slate-100 hover:bg-slate-50 transition-colors">
+                                  <td className="py-3">
+                                    <div className="font-semibold text-slate-900">{item.resourceName || item.resourceId}</div>
+                                    <div className="text-xs text-slate-500">{item.resourceType || ''}</div>
+                                  </td>
+                                  <td className="py-3">
+                                    <div className="font-medium text-slate-900">{item.bookedBy || item.requestedByUserId}</div>
+                                    <div className="text-xs text-slate-500">{item.bookedEmail || ''}</div>
+                                  </td>
+                                  <td className="py-3">
+                                    <div className="font-medium text-slate-900">{dt(item.startDateTime)}</div>
+                                    <div className="text-xs text-slate-500">to {dt(item.endDateTime)}</div>
+                                  </td>
+                                  <td className="py-3">
+                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                                      item.status === 'APPROVED' ? 'bg-green-100 text-green-800 border border-green-200' :
+                                      item.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
+                                      item.status === 'REJECTED' ? 'bg-red-100 text-red-800 border border-red-200' :
+                                      item.status === 'CANCELLED' ? 'bg-gray-100 text-gray-800 border border-gray-200' :
+                                      'bg-gray-100 text-gray-800 border border-gray-200'
+                                    }`}>
+                                      <span className={`w-2 h-2 rounded-full mr-1.5 ${
+                                        item.status === 'APPROVED' ? 'bg-green-500' :
+                                        item.status === 'PENDING' ? 'bg-yellow-500' :
+                                        item.status === 'REJECTED' ? 'bg-red-500' :
+                                        item.status === 'CANCELLED' ? 'bg-gray-500' :
+                                        'bg-gray-500'
+                                      }`}></span>
+                                      {label(item.status)}
+                                    </span>
+                                  </td>
+                                  <td className="py-3">
+                                    {item.checkedInAt ? (
+                                      <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200">
+                                        ✅ Verified
+                                      </span>
+                                    ) : item.status === 'APPROVED' ? (
+                                      <Link 
+                                        to={`/booking-check-in?booking=${item.id}`} 
+                                        className="inline-flex items-center px-2 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-lg border border-emerald-200 hover:bg-emerald-100 transition-colors"
                                       >
-                                        {busyId === item.id ? (
-                                          <span className="flex items-center gap-1">
-                                            <span className="animate-spin">⏳</span>
-                                          </span>
-                                        ) : (
-                                          <span className="flex items-center gap-1">✅</span>
-                                        )}
-                                      </button>
+                                        📱 Check-in
+                                      </Link>
+                                    ) : (
+                                      <span className="text-xs text-slate-400">-</span>
+                                    )}
+                                  </td>
+                                  <td className="py-3">
+                                    <div className="flex gap-2 flex-wrap">
+                                      {item.status === 'PENDING' && (
+                                        <>
+                                          <button 
+                                            type="button" 
+                                            disabled={busyId === item.id} 
+                                            onClick={() => runBookingAction(item.id, 'approve')} 
+                                            className="px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium shadow-sm"
+                                          >
+                                            {busyId === item.id ? (
+                                              <span className="flex items-center gap-1">
+                                                <span className="animate-spin">⏳</span>
+                                              </span>
+                                            ) : (
+                                              <span className="flex items-center gap-1">✅</span>
+                                            )}
+                                          </button>
+                                          <button 
+                                            type="button" 
+                                            disabled={busyId === item.id} 
+                                            onClick={() => {
+                                              const reason = window.prompt('Rejection reason:');
+                                              if (reason?.trim()) runBookingAction(item.id, 'reject', { reason: reason.trim() });
+                                            }} 
+                                            className="px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium shadow-sm"
+                                          >
+                                            {busyId === item.id ? (
+                                              <span className="flex items-center gap-1">
+                                                <span className="animate-spin">⏳</span>
+                                              </span>
+                                            ) : (
+                                              <span className="flex items-center gap-1">❌</span>
+                                            )}
+                                          </button>
+                                        </>
+                                      )}
+                                      {(item.status === 'PENDING' || item.status === 'APPROVED') && (
+                                        <button 
+                                          type="button" 
+                                          disabled={busyId === item.id} 
+                                          onClick={() => {
+                                            if (window.confirm('Cancel this booking?')) {
+                                              runBookingAction(item.id, 'cancel');
+                                            }
+                                          }} 
+                                          className="px-3 py-1.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium shadow-sm"
+                                        >
+                                          {busyId === item.id ? (
+                                            <span className="flex items-center gap-1">
+                                              <span className="animate-spin">⏳</span>
+                                            </span>
+                                          ) : (
+                                            <span className="flex items-center gap-1">🚫</span>
+                                          )}
+                                        </button>
+                                      )}
                                       <button 
                                         type="button" 
                                         disabled={busyId === item.id} 
                                         onClick={() => {
-                                          const reason = window.prompt('Rejection reason:');
-                                          if (reason?.trim()) runBookingAction(item.id, 'reject', { reason: reason.trim() });
+                                          if (window.confirm('Delete this booking? This action cannot be undone.')) {
+                                            deleteBooking(item.id);
+                                          }
                                         }} 
-                                        className="px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium shadow-sm"
+                                        className="px-3 py-1.5 bg-rose-500 text-white rounded-lg hover:bg-rose-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium shadow-sm"
                                       >
                                         {busyId === item.id ? (
                                           <span className="flex items-center gap-1">
                                             <span className="animate-spin">⏳</span>
                                           </span>
                                         ) : (
-                                          <span className="flex items-center gap-1">❌</span>
+                                          <span className="flex items-center gap-1">🗑️</span>
                                         )}
                                       </button>
-                                    </>
-                                  )}
-                                  {(item.status === 'PENDING' || item.status === 'APPROVED') && (
-                                    <button 
-                                      type="button" 
-                                      disabled={busyId === item.id} 
-                                      onClick={() => {
-                                        if (window.confirm('Cancel this booking?')) {
-                                          runBookingAction(item.id, 'cancel');
-                                        }
-                                      }} 
-                                      className="px-3 py-1.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium shadow-sm"
-                                    >
-                                      {busyId === item.id ? (
-                                        <span className="flex items-center gap-1">
-                                          <span className="animate-spin">⏳</span>
-                                        </span>
-                                      ) : (
-                                        <span className="flex items-center gap-1">🚫</span>
-                                      )}
-                                    </button>
-                                  )}
-                                  <button 
-                                    type="button" 
-                                    disabled={busyId === item.id} 
-                                    onClick={() => {
-                                      if (window.confirm('Delete this booking? This action cannot be undone.')) {
-                                        deleteBooking(item.id);
-                                      }
-                                    }} 
-                                    className="px-3 py-1.5 bg-rose-500 text-white rounded-lg hover:bg-rose-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium shadow-sm"
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                          {visibleBookings.length === 0 && (
+                            <div className="text-center py-8 bg-slate-50 rounded-lg border border-slate-200">
+                              <div className="text-slate-400 text-4xl mb-2">📅</div>
+                              <p className="text-sm text-slate-500">No bookings found for this filter</p>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="space-y-6">
+                          <div className="w-full bg-white rounded-[24px] border border-slate-200 p-6 shadow-lg">
+                            <h3 className="text-xl font-semibold text-slate-900 mb-4">Booking Analytics & Charts</h3>
+                            <div className="w-full min-h-[500px]">
+                              <BookingCharts bookings={bookings} resources={resources} />
+                            </div>
+                          </div>
+                          
+                          {/* Admin-specific quick actions for chart view */}
+                          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                            <h4 className="font-medium text-blue-900">Admin Quick Actions</h4>
+                            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                              <button
+                                onClick={() => { setBookingFilter('PENDING'); setBookingViewMode('table') }}
+                                className="px-3 py-2 bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200 text-sm"
+                              >
+                                View Pending ({pendingBookings.length})
+                              </button>
+                              <button
+                                onClick={() => { setBookingFilter('APPROVED'); setBookingViewMode('table') }}
+                                className="px-3 py-2 bg-green-100 text-green-800 rounded hover:bg-green-200 text-sm"
+                              >
+                                View Approved ({bookings.filter(b => b.status === 'APPROVED').length})
+                              </button>
+                              <button
+                                onClick={() => { setBookingFilter('REJECTED'); setBookingViewMode('table') }}
+                                className="px-3 py-2 bg-red-100 text-red-800 rounded hover:bg-red-200 text-sm"
+                              >
+                                View Rejected ({bookings.filter(b => b.status === 'REJECTED').length})
+                              </button>
+                              <button
+                                onClick={() => { setBookingFilter('ALL'); setBookingViewMode('table') }}
+                                className="px-3 py-2 bg-gray-100 text-gray-800 rounded hover:bg-gray-200 text-sm"
+                              >
+                                View All ({bookings.length})
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Summary table for chart view */}
+                          <div className="overflow-x-auto rounded-[24px] border border-slate-200 bg-white p-4">
+                            <h4 className="text-slate-900 font-semibold mb-3">Recent Bookings Summary</h4>
+                            <table className="min-w-full text-sm">
+                              <thead>
+                                <tr className="text-left text-xs text-slate-500 border-b border-slate-200">
+                                  <th className="pb-3 font-semibold">Resource</th>
+                                  <th className="pb-3 font-semibold">User</th>
+                                  <th className="pb-3 font-semibold">Status</th>
+                                  <th className="pb-3 font-semibold">Time</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {bookings.slice(0, 10).map((booking, index) => (
+                                  <tr
+                                    key={booking.id}
+                                    className="border-t border-slate-100 hover:bg-slate-50 transition-colors"
+                                    style={{ animationDelay: `${index * 30}ms` }}
                                   >
-                                    {busyId === item.id ? (
-                                      <span className="flex items-center gap-1">
-                                        <span className="animate-spin">⏳</span>
+                                    <td className="py-3">
+                                      <div className="font-semibold text-slate-900">{booking.resourceName || booking.resourceId}</div>
+                                      <div className="text-xs text-slate-500">{booking.resourceType || ''}</div>
+                                    </td>
+                                    <td className="py-3">
+                                      <div className="font-medium text-slate-900">{booking.bookedBy || booking.requestedByUserId}</div>
+                                      <div className="text-xs text-slate-500">{booking.bookedEmail || ''}</div>
+                                    </td>
+                                    <td className="py-3">
+                                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                                        booking.status === 'APPROVED' ? 'bg-green-100 text-green-800 border border-green-200' :
+                                        booking.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
+                                        booking.status === 'REJECTED' ? 'bg-red-100 text-red-800 border border-red-200' :
+                                        booking.status === 'CANCELLED' ? 'bg-gray-100 text-gray-800 border border-gray-200' :
+                                        'bg-gray-100 text-gray-800 border border-gray-200'
+                                      }`}>
+                                        <span className={`w-2 h-2 rounded-full mr-1.5 ${
+                                          booking.status === 'APPROVED' ? 'bg-green-500' :
+                                          booking.status === 'PENDING' ? 'bg-yellow-500' :
+                                          booking.status === 'REJECTED' ? 'bg-red-500' :
+                                          booking.status === 'CANCELLED' ? 'bg-gray-500' :
+                                          'bg-gray-500'
+                                        }`}></span>
+                                        {label(booking.status)}
                                       </span>
-                                    ) : (
-                                      <span className="flex items-center gap-1">🗑️</span>
-                                    )}
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      {visibleBookings.length === 0 && (
-                        <div className="text-center py-8 bg-slate-50 rounded-lg border border-slate-200">
-                          <div className="text-slate-400 text-4xl mb-2">📅</div>
-                          <p className="text-sm text-slate-500">No bookings found for this filter</p>
+                                    </td>
+                                    <td className="py-3">
+                                      <div className="font-medium text-slate-900">{dt(booking.startDateTime)}</div>
+                                      <div className="text-xs text-slate-500">to {dt(booking.endDateTime)}</div>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            {bookings.length === 0 && (
+                              <div className="text-center py-8 bg-slate-50 rounded-lg border border-slate-200">
+                                <div className="text-slate-400 text-4xl mb-2">📅</div>
+                                <p className="text-sm text-slate-500">No bookings found</p>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
-                    </div>
+                    </>
                   )}
                 </section>
               </div>

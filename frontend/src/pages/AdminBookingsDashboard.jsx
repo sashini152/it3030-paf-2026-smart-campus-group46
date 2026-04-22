@@ -407,9 +407,7 @@ export default function AdminBookingsDashboard() {
                                             <span className="animate-spin">⏳</span> Processing...
                                           </span>
                                         ) : (
-                                          <span className="flex items-center gap-1">
-                                            ✅ Approve
-                                          </span>
+                                          <span>Approve</span>
                                         )}
                                       </button>
                                       <button
@@ -427,9 +425,7 @@ export default function AdminBookingsDashboard() {
                                             <span className="animate-spin">⏳</span> Processing...
                                           </span>
                                         ) : (
-                                          <span className="flex items-center gap-1">
-                                            ❌ Reject
-                                          </span>
+                                          <span>Reject</span>
                                         )}
                                       </button>
                                     </>
@@ -449,9 +445,7 @@ export default function AdminBookingsDashboard() {
                                           <span className="animate-spin">⏳</span> Processing...
                                         </span>
                                       ) : (
-                                        <span className="flex items-center gap-1">
-                                          🚫 Cancel
-                                        </span>
+                                        <span>Cancel</span>
                                       )}
                                     </button>
                                   )}
@@ -462,9 +456,7 @@ export default function AdminBookingsDashboard() {
                                       }}
                                       className="text-xs px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium shadow-sm"
                                     >
-                                      <span className="flex items-center gap-1">
-                                        📱 Check-in
-                                      </span>
+                                      <span>Check-in</span>
                                     </button>
                                   )}
                                 </div>
