@@ -7,6 +7,7 @@ const navItems = [
   { label: 'Tickets', to: '/admin-tickets' },
   { label: 'Notifications', to: '/notifications' },
   { label: 'Profile', to: '/login' },
+  { label: 'User Management', to: '/super-admin-users' },
 ]
 
 function cls(...values) {
