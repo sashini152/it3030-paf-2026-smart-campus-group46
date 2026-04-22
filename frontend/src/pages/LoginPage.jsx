@@ -48,10 +48,6 @@ export default function LoginPage() {
 
   return (
     <div className="hub-app hub-app--auth">
-      <header className="hub-header">
-        
-      </header>
-
       <main className="hub-main">
         <div className="hub-auth-card hub-auth-card--playful">
           <div className="hub-auth-hero">

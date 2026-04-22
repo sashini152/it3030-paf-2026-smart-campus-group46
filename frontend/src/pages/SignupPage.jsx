@@ -31,19 +31,6 @@ export default function SignupPage() {
 
   return (
     <div className="hub-app hub-app--auth">
-      <header className="hub-header">
-        <div className="hub-header__inner">
-          <Link to="/" className="hub-brand">
-            <span className="hub-brand__text">Smart Campus Hub</span>
-          </Link>
-
-          <nav className="hub-nav">
-            <Link to="/" className="hub-nav__link">Home</Link>
-            <Link to="/login" className="hub-nav__link">Sign in</Link>
-          </nav>
-        </div>
-      </header>
-
       <main className="hub-main">
         <div className="hub-page hub-page--narrow hub-auth-page">
           <div className="hub-auth-card hub-auth-card--playful">
