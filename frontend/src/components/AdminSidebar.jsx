@@ -1,13 +1,17 @@
 import { Link } from 'react-router-dom'
 
+const role = localStorage.getItem('userRole')
+
 const navItems = [
   { label: 'Overview', to: '/admin', active: true },
   { label: 'Resources', to: '/admin-resources' },
   { label: 'Bookings', to: '/admin-bookings-dashboard' },
   { label: 'Tickets', to: '/admin-tickets' },
   { label: 'Notifications', to: '/notifications' },
+  ...(role === 'SUPER_ADMIN'
+    ? [{ label: 'User Management', to: '/super-admin-users' }]
+    : []),
   { label: 'Profile', to: '/login' },
-  { label: 'User Management', to: '/super-admin-users' },
 ]
 
 function cls(...values) {
