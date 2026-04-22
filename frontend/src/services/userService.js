@@ -68,3 +68,11 @@ export const updateUserRole = async (email, newRole) => {
     throw error
   }
 }
+export const fetchAllUsers = async () => {
+  try {
+    return await getJson('/api/admin/users')
+  } catch (error) {
+    console.error('Error fetching all users:', error)
+    throw error
+  }
+}

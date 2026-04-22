@@ -12,6 +12,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 @NoArgsConstructor
@@ -25,19 +26,15 @@ public class User implements UserDetails {
     private String email;
     private String name;
     private String picture;
-    private String studentId;
     private String password;
     private UserRole role;
     private boolean enabled = true;
     private LocalDateTime createdAt;
     private LocalDateTime lastLoginAt;
 
-    // =========================
-    // Spring Security Roles
-    // =========================
+    // UserDetails implementation
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Converts ADMIN → ROLE_ADMIN
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
@@ -66,14 +63,11 @@ public class User implements UserDetails {
         return enabled;
     }
 
-    // =========================
-    // USER ROLE ENUM (FIXED)
-    // =========================
-    public enum UserRole {
-        USER,
-        ADMIN,
-        SUPER_ADMIN,
-        TECHNICIAN,
-        MANAGER;
-    }
+  public enum UserRole {
+    SUPER_ADMIN,
+    ADMIN,
+    USER,
+    TECHNICIAN,
+    MANAGER
+}
 }

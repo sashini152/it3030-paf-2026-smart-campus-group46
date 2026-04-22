@@ -6,5 +6,6 @@ export const ADMIN_EMAILS = [
 ].map(email => email.toLowerCase())
 
 export const SUPER_ADMIN_EMAILS = [
-  'sashini.unilocatelk@gmail.com'
+  'chamodyadewmini92@gmail.com',
+  'sashini.unilocatelk@gmail.com',
 ].map(email => email.toLowerCase())

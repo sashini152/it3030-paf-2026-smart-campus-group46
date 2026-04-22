@@ -6,12 +6,12 @@ import BookingsPage from './pages/BookingsPage'
 import UserBookingsPage from './pages/UserBookingsPage'
 import AdminResourcesPage from './pages/AdminResourcesPage'
 import AdminBookingsDashboard from './pages/AdminBookingsDashboard'
+import AdminBookingChartsPage from './pages/AdminBookingChartsPage'
 import AdminTicketsPage from './pages/AdminTicketsPage'
 import TicketsPage from './pages/TicketsPage'
 import TicketList from './pages/TicketList'
 import TicketDetails from './pages/TicketDetails'
 import AdminDashboard from './pages/AdminDashboard'
-import SuperAdminDashboard from './pages/SuperAdminDashboard'
 import UserDashboard from './pages/UserDashboard'
 import UserProfilePage from './pages/UserProfilePage'
 import NotificationsPage from './pages/NotificationsPage'
@@ -20,10 +20,10 @@ import SignupPage from './pages/SignupPage'
 import BookingCheckInPage from './pages/BookingCheckInPage'
 import OAuthSuccessPage from './pages/OAuthSuccessPage'
 import AdminAccessPage from './pages/AdminAccessPage'
-import AdminRedirect from './components/AdminRedirect'
 import { AuthProvider } from './contexts/AuthContext'
 import { useAuth } from './hooks/useAuth'
 import { ADMIN_EMAILS, SUPER_ADMIN_EMAILS } from './constants/auth'
+import SuperAdminUserManagementPage from './pages/SuperAdminUserManagementPage'
 
 function AuthLoadingScreen() {
   return (
@@ -38,100 +38,71 @@ function AuthLoadingScreen() {
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading, user } = useAuth()
-  console.log('ProtectedRoute check:', { isAuthenticated, loading, userEmail: user?.email, userRole: user?.role })
+
+  console.log('ProtectedRoute check:', {
+    isAuthenticated,
+    loading,
+    userEmail: user?.email,
+    userRole: user?.role,
+  })
+
   if (loading) return <AuthLoadingScreen />
   return isAuthenticated ? children : <Navigate to="/login" replace />
 }
 
 function AdminRoute({ children }) {
-  const { isAuthenticated, hasRole, loading, user } = useAuth()
-  if (loading) return <AuthLoadingScreen />
-  
-  // Debug logging to check user role
-  console.log('AdminRoute check:', { 
-    isAuthenticated, 
-    userRole: user?.role, 
-    hasAdminRole: hasRole('ADMIN'),
-    hasSuperAdminRole: hasRole('SUPER_ADMIN'),
-    userEmail: user?.email,
-    localStorageRole: localStorage.getItem('userRole')
-  })
-  
-  // Strict admin check
-  if (!isAuthenticated) {
-    console.log('Not authenticated, redirecting to login')
-    return <Navigate to="/login" replace />
-  }
-  
-  // Multiple layers of admin role checking
-  const isAdmin = hasRole('ADMIN') && user?.role === 'ADMIN' && localStorage.getItem('userRole') === 'ADMIN'
-  const isSuperAdmin = hasRole('SUPER_ADMIN') && user?.role === 'SUPER_ADMIN' && localStorage.getItem('userRole') === 'SUPER_ADMIN'
-  
-  if (!isAdmin && !isSuperAdmin) {
-    console.log('Not admin user, redirecting to user dashboard')
-    // Redirect regular users to user dashboard instead of login
-    return <Navigate to="/user-dashboard" replace />
-  }
-  
-  // Additional check for specific admin email
-  if (!ADMIN_EMAILS.includes(user?.email) && !SUPER_ADMIN_EMAILS.includes(user?.email)) {
-    console.log('Not authorized admin email, redirecting to user dashboard')
-    return <Navigate to="/user-dashboard" replace />
-  }
-  
-  console.log('Admin access granted for:', user?.email)
-  return children
-}
+  const { isAuthenticated, loading, user } = useAuth()
 
-function SuperAdminRoute({ children }) {
-  const { isAuthenticated, hasRole, loading, user } = useAuth()
   if (loading) return <AuthLoadingScreen />
-  
-  // Debug logging to check user role
-  console.log('SuperAdminRoute check:', { 
-    isAuthenticated, 
-    userRole: user?.role, 
-    hasSuperAdminRole: hasRole('SUPER_ADMIN'),
-    userEmail: user?.email,
-    localStorageRole: localStorage.getItem('userRole')
-  })
-  
-  // Strict super admin check
+
   if (!isAuthenticated) {
-    console.log('Not authenticated, redirecting to login')
     return <Navigate to="/login" replace />
   }
-  
-  // Check if user is super admin
-  const isSuperAdmin = hasRole('SUPER_ADMIN') && user?.role === 'SUPER_ADMIN' && localStorage.getItem('userRole') === 'SUPER_ADMIN'
-  
-  if (!isSuperAdmin) {
-    console.log('Not super admin user, redirecting to admin dashboard')
-    return <Navigate to="/admin" replace />
+
+  const role = user?.role || localStorage.getItem('userRole')
+  const email = user?.email || localStorage.getItem('userEmail')
+
+  const normalizedEmail = email?.toLowerCase?.() || ''
+
+  const isAllowedRole = role === 'ADMIN' || role === 'SUPER_ADMIN'
+  const isAllowedEmail =
+    ADMIN_EMAILS.map((e) => e.toLowerCase()).includes(normalizedEmail) ||
+    SUPER_ADMIN_EMAILS.map((e) => e.toLowerCase()).includes(normalizedEmail)
+
+  console.log('AdminRoute check:', {
+    isAuthenticated,
+    role,
+    email: normalizedEmail,
+    isAllowedRole,
+    isAllowedEmail,
+  })
+
+  if (!isAllowedRole || !isAllowedEmail) {
+    return <Navigate to="/user-dashboard" replace />
   }
-  
-  // Additional check for specific super admin email
-  if (!SUPER_ADMIN_EMAILS.includes(user?.email)) {
-    console.log('Not authorized super admin email, redirecting to admin dashboard')
-    return <Navigate to="/admin" replace />
-  }
-  
-  console.log('Super admin access granted for:', user?.email)
+
   return children
 }
 
 function DashboardRoute() {
   const { isAuthenticated, hasRole, loading } = useAuth()
+
   if (loading) return <AuthLoadingScreen />
   if (!isAuthenticated) return <Navigate to="/login" replace />
-  if (hasRole('ADMIN')) return <Navigate to="/admin" replace />
+
+  if (hasRole('ADMIN') || hasRole('SUPER_ADMIN')) {
+    return <Navigate to="/admin" replace />
+  }
+
   return <Navigate to="/user-dashboard" replace />
 }
 
 function HomeRoute() {
   const { isAuthenticated, loading } = useAuth()
+
   if (loading) return <AuthLoadingScreen />
   if (!isAuthenticated) return <Navigate to="/login" replace />
+
   return <HomePage />
 }
 
@@ -140,6 +111,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<Layout />}>
         <Route index element={<HomeRoute />} />
+
         <Route
           path="resources"
           element={
@@ -148,6 +120,7 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="bookings"
           element={
@@ -156,6 +129,7 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="user-bookings"
           element={
@@ -164,6 +138,7 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="profile"
           element={
@@ -172,6 +147,7 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="tickets"
           element={
@@ -180,6 +156,7 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="ticket-list"
           element={
@@ -188,6 +165,7 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="ticket-details/:id"
           element={
@@ -196,6 +174,7 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="booking-check-in"
           element={
@@ -204,6 +183,7 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="admin"
           element={
@@ -212,6 +192,7 @@ function AppRoutes() {
             </AdminRoute>
           }
         />
+
         <Route
           path="admin-resources"
           element={
@@ -220,6 +201,7 @@ function AppRoutes() {
             </AdminRoute>
           }
         />
+
         <Route
           path="admin-bookings-dashboard"
           element={
@@ -228,14 +210,16 @@ function AppRoutes() {
             </AdminRoute>
           }
         />
+
         <Route
           path="admin-bookings"
           element={
             <AdminRoute>
-              <AdminBookingsDashboard />
+              <AdminBookingChartsPage />
             </AdminRoute>
           }
         />
+
         <Route
           path="admin-tickets"
           element={
@@ -244,6 +228,7 @@ function AppRoutes() {
             </AdminRoute>
           }
         />
+
         <Route
           path="notifications"
           element={
@@ -252,6 +237,7 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="user-dashboard"
           element={
@@ -260,24 +246,26 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+        <Route
+  path="super-admin-users"
+  element={
+    <AdminRoute>
+      <SuperAdminUserManagementPage />
+    </AdminRoute>
+  }
+/>
+
         <Route path="login" element={<LoginPage />} />
         <Route path="signup" element={<SignupPage />} />
-        <Route
-          path="super-admin"
-          element={
-            <SuperAdminRoute>
-              <SuperAdminDashboard />
-            </SuperAdminRoute>
-          }
-        />
         <Route path="dashboard" element={<DashboardRoute />} />
       </Route>
-      {/* OAuth callback routes outside main layout */}
+
       <Route path="oauth-success" element={<OAuthSuccessPage />} />
       <Route path="admin-access" element={<AdminAccessPage />} />
     </Routes>
   )
 }
+
 
 export default function App() {
   return (

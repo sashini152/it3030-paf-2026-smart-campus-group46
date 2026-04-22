@@ -19,6 +19,7 @@ export default function NotificationsPage() {
       )
       setNotifications(data)
     } catch (err) {
+      console.error('Failed to load notifications:', err)
       setError('Failed to load notifications')
     } finally {
       setLoading(false)
@@ -37,6 +38,7 @@ export default function NotificationsPage() {
       await putJson(`/api/notifications/${id}/read`)
       loadNotifications()
     } catch (err) {
+      console.error('Failed to mark notification as read:', err)
       setError('Failed to mark as read')
     }
   }

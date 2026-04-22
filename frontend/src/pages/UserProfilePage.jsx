@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { getJson, putJson } from '../api/client'
+import { getJson } from '../api/client'
 import { subscribeToBookingUpdates } from '../mock/mockData'
 import EmptyState from '../components/EmptyState'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -64,65 +64,52 @@ export default function UserProfilePage() {
   const [tickets, setTickets] = useState([])
   const [activeSpotlight, setActiveSpotlight] = useState(0)
   const [pauseSpotlight, setPauseSpotlight] = useState(false)
-  const [adminUsers, setAdminUsers] = useState([])
-  const [newAdminEmail, setNewAdminEmail] = useState('')
+
+  const allowedAdminEmails = [
+    'sashini.unilocatelk@gmail.com',
+    'it23220492@my.sliit.lk',
+    'chamodyadewmini08@gmail.com',
+  ]
+
+  const currentEmail = user?.email || localStorage.getItem('userEmail')
+  const isAdminAllowedEmail = allowedAdminEmails.includes(currentEmail)
+  const alreadyAdmin =
+    user?.role === 'ADMIN' || localStorage.getItem('userRole') === 'ADMIN'
+
+  const getAdminDisplayName = (email, existingName) => {
+    if (existingName) return existingName
+    if (email === 'it23220492@my.sliit.lk') return 'IT Student'
+    if (email === 'chamodyadewmini08@gmail.com') return 'Chamodya Dewmini'
+    if (email === 'sashini.unilocatelk@gmail.com') return 'Sashini'
+    return 'Admin User'
+  }
+
+  const handleGrantAdmin = (redirect = false) => {
+    const email = user?.email || localStorage.getItem('userEmail')
+    const currentUser = {
+      ...user,
+      role: 'ADMIN',
+      name: getAdminDisplayName(email, user?.name),
+      email,
+    }
+
+    localStorage.setItem('user', JSON.stringify(currentUser))
+    localStorage.setItem('userRole', 'ADMIN')
+    localStorage.setItem('userEmail', currentUser.email)
+    localStorage.setItem('userName', currentUser.name)
+
+    if (redirect) {
+      alert('Admin role granted! Redirecting to admin dashboard...')
+      window.location.href = '/admin'
+    } else {
+      alert('Admin role granted! Refreshing page...')
+      window.location.reload()
+    }
+  }
 
   const handleLogout = () => {
     logout()
     navigate('/login', { replace: true })
-  }
-
-  const loadAdminUsers = async () => {
-    try {
-      const usersData = await getJson('/api/users')
-      if (Array.isArray(usersData)) {
-        const admins = usersData.filter(u => u.role === 'ADMIN' || u.role === 'SUPER_ADMIN')
-        setAdminUsers(admins)
-      }
-    } catch (err) {
-      console.error('Failed to load admin users:', err)
-    }
-  }
-
-  const handleAddAdmin = async () => {
-    if (!newAdminEmail.trim()) {
-      alert('Please enter a valid email address')
-      return
-    }
-
-    try {
-      // Check if user exists
-      const userResponse = await getJson(`/api/users/email/${newAdminEmail.trim()}`)
-      if (!userResponse) {
-        alert('User with this email does not exist')
-        return
-      }
-
-      // Update user role to ADMIN
-      await putJson(`/api/users/${userResponse.id}/role`, { role: 'ADMIN' })
-      
-      alert(`Admin access granted to ${newAdminEmail}`)
-      setNewAdminEmail('')
-      await loadAdminUsers() // Refresh admin list
-    } catch (err) {
-      console.error('Failed to add admin:', err)
-      alert('Failed to grant admin access. Please try again.')
-    }
-  }
-
-  const handleRemoveAdmin = async (userId, userEmail) => {
-    if (!confirm(`Are you sure you want to remove admin access from ${userEmail}?`)) {
-      return
-    }
-
-    try {
-      await putJson(`/api/users/${userId}/role`, { role: 'USER' })
-      alert(`Admin access removed from ${userEmail}`)
-      await loadAdminUsers() // Refresh admin list
-    } catch (err) {
-      console.error('Failed to remove admin:', err)
-      alert('Failed to remove admin access. Please try again.')
-    }
   }
 
   useEffect(() => {
@@ -150,10 +137,11 @@ export default function UserProfilePage() {
         try {
           const bookingsData = await getJson('/api/bookings')
           if (Array.isArray(bookingsData)) {
-            const userBookings = bookingsData.filter((booking) =>
-              booking.bookedEmail === user?.email ||
-              booking.createdBy === user?.email ||
-              booking.email === user?.email
+            const userBookings = bookingsData.filter(
+              (booking) =>
+                booking.bookedEmail === user?.email ||
+                booking.createdBy === user?.email ||
+                booking.email === user?.email
             )
             setBookings(userBookings)
           } else {
@@ -166,11 +154,17 @@ export default function UserProfilePage() {
         try {
           const ticketsData = await getJson('/api/tickets')
           if (Array.isArray(ticketsData)) {
-            const userKeys = new Set(getUserLookupKeys(user).map((value) => String(value).trim().toLowerCase()))
+            const userKeys = new Set(
+              getUserLookupKeys(user).map((value) =>
+                String(value).trim().toLowerCase()
+              )
+            )
             const userTickets = ticketsData.filter((ticket) =>
               [ticket.createdBy, ticket.createdByName, ticket.email, ticket.submittedBy]
                 .filter(Boolean)
-                .some((value) => userKeys.has(String(value).trim().toLowerCase()))
+                .some((value) =>
+                  userKeys.has(String(value).trim().toLowerCase())
+                )
             )
             setTickets(userTickets)
           } else {
@@ -178,11 +172,6 @@ export default function UserProfilePage() {
           }
         } catch {
           setTickets([])
-        }
-
-        // Load admin users if user is super admin
-        if ((user?.role === 'SUPER_ADMIN' || localStorage.getItem('userRole') === 'SUPER_ADMIN')) {
-          await loadAdminUsers()
         }
       } catch (err) {
         setError(`Failed to load profile data: ${err.message}`)
@@ -195,23 +184,34 @@ export default function UserProfilePage() {
   }, [user?.email]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const recentBookings = useMemo(
-    () => [...bookings].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).slice(0, 5),
+    () =>
+      [...bookings]
+        .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+        .slice(0, 5),
     [bookings]
   )
 
   const recentTickets = useMemo(
-    () => [...tickets].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).slice(0, 5),
+    () =>
+      [...tickets]
+        .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+        .slice(0, 5),
     [tickets]
   )
 
-  const stats = useMemo(() => ({
-    totalBookings: bookings.length,
-    approvedBookings: bookings.filter((booking) => booking.status === 'APPROVED').length,
-    pendingBookings: bookings.filter((booking) => booking.status === 'PENDING').length,
-    totalTickets: tickets.length,
-    resolvedTickets: tickets.filter((ticket) => ticket.status === 'RESOLVED').length,
-    openTickets: tickets.filter((ticket) => ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS').length,
-  }), [bookings, tickets])
+  const stats = useMemo(
+    () => ({
+      totalBookings: bookings.length,
+      approvedBookings: bookings.filter((booking) => booking.status === 'APPROVED').length,
+      pendingBookings: bookings.filter((booking) => booking.status === 'PENDING').length,
+      totalTickets: tickets.length,
+      resolvedTickets: tickets.filter((ticket) => ticket.status === 'RESOLVED').length,
+      openTickets: tickets.filter(
+        (ticket) => ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS'
+      ).length,
+    }),
+    [bookings, tickets]
+  )
 
   const profileSlides = useMemo(
     () => buildProfileSlides(stats, recentBookings, recentTickets),
@@ -229,7 +229,9 @@ export default function UserProfilePage() {
 
       if (isUserBooking) {
         setBookings((prevBookings) =>
-          prevBookings.map((booking) => (booking.id === updatedBooking.id ? updatedBooking : booking))
+          prevBookings.map((booking) =>
+            booking.id === updatedBooking.id ? updatedBooking : booking
+          )
         )
       }
     }
@@ -266,85 +268,42 @@ export default function UserProfilePage() {
 
   return (
     <div className="hub-page hub-page--wide hub-profile-page">
-      {/* Super Admin Access Button - Only for super admin email */}
-      {((user?.email === 'sashini.unilocatelk@gmail.com') || 
-        (localStorage.getItem('userEmail') === 'sashini.unilocatelk@gmail.com')) && 
-        (user?.role !== 'SUPER_ADMIN' && localStorage.getItem('userRole') !== 'SUPER_ADMIN') && (
-        <div style={{ padding: '20px', textAlign: 'center', backgroundColor: '#fef3c7', border: '2px solid #f59e0b', borderRadius: '8px', margin: '20px 0' }}>
-          <h3 style={{ color: '#92400e', margin: '0 0 10px 0' }}>Super Admin Access Available</h3>
-          <p style={{ color: '#92400e', margin: '0 0 15px 0' }}>Click below to grant super admin permissions to your account</p>
+      {/* Admin Access Button - Always visible for admin emails */}
+      {isAdminAllowedEmail && !alreadyAdmin && (
+        <div
+          style={{
+            padding: '20px',
+            textAlign: 'center',
+            backgroundColor: '#fef3c7',
+            border: '2px solid #f59e0b',
+            borderRadius: '8px',
+            margin: '20px 0',
+          }}
+        >
+          <h3 style={{ color: '#92400e', margin: '0 0 10px 0' }}>
+            Admin Access Available
+          </h3>
+          <p style={{ color: '#92400e', margin: '0 0 15px 0' }}>
+            Click below to grant admin permissions to your account
+          </p>
           <button
-            onClick={() => {
-              // Force super admin access
-              const currentUser = { 
-                ...user, 
-                role: 'SUPER_ADMIN', 
-                name: user?.name || 'Sashini',
-                email: user?.email || localStorage.getItem('userEmail')
-              }
-              localStorage.setItem('user', JSON.stringify(currentUser))
-              localStorage.setItem('userRole', 'SUPER_ADMIN')
-              localStorage.setItem('userEmail', currentUser.email)
-              localStorage.setItem('userName', currentUser.name)
-              alert('Super admin role granted! Redirecting to admin dashboard...')
-              window.location.href = '/admin'
-            }}
-            style={{ 
-              backgroundColor: '#7c3aed', 
-              color: 'white', 
-              padding: '12px 24px', 
-              border: 'none', 
-              borderRadius: '6px', 
-              fontSize: '16px', 
+            onClick={() => handleGrantAdmin(true)}
+            style={{
+              backgroundColor: '#dc2626',
+              color: 'white',
+              padding: '12px 24px',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '16px',
               fontWeight: 'bold',
-              cursor: 'pointer'
-            }}
-          >
-            Grant Super Admin Access Now
-          </button>
-        </div>
-      )}
-      
-      {/* Admin Access Button - For regular admin emails */}
-      {((user?.email === 'it23220492@my.sliit.lk') || 
-        (localStorage.getItem('userEmail') === 'it23220492@my.sliit.lk')) && 
-        (user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN' && 
-         localStorage.getItem('userRole') !== 'ADMIN' && localStorage.getItem('userRole') !== 'SUPER_ADMIN') && (
-        <div style={{ padding: '20px', textAlign: 'center', backgroundColor: '#fef3c7', border: '2px solid #f59e0b', borderRadius: '8px', margin: '20px 0' }}>
-          <h3 style={{ color: '#92400e', margin: '0 0 10px 0' }}>Admin Access Available</h3>
-          <p style={{ color: '#92400e', margin: '0 0 15px 0' }}>Click below to grant admin permissions to your account</p>
-          <button
-            onClick={() => {
-              // Force admin access
-              const currentUser = { 
-                ...user, 
-                role: 'ADMIN', 
-                name: user?.name || 'IT Student',
-                email: user?.email || localStorage.getItem('userEmail')
-              }
-              localStorage.setItem('user', JSON.stringify(currentUser))
-              localStorage.setItem('userRole', 'ADMIN')
-              localStorage.setItem('userEmail', currentUser.email)
-              localStorage.setItem('userName', currentUser.name)
-              alert('Admin role granted! Redirecting to admin dashboard...')
-              window.location.href = '/admin'
-            }}
-            style={{ 
-              backgroundColor: '#dc2626', 
-              color: 'white', 
-              padding: '12px 24px', 
-              border: 'none', 
-              borderRadius: '6px', 
-              fontSize: '16px', 
-              fontWeight: 'bold',
-              cursor: 'pointer'
+              cursor: 'pointer',
             }}
           >
             Grant Admin Access Now
           </button>
         </div>
       )}
-      
+
       <Reveal delay={30}>
         <ParallaxPanel as="section" className="hub-profile-hero hub-lift" strength={10}>
           <div className="hub-profile-avatar">
@@ -355,28 +314,43 @@ export default function UserProfilePage() {
             <h1>{userDetails?.name || user?.name || 'User'}</h1>
             <p className="hub-profile-email">{userDetails?.email || user?.email || 'N/A'}</p>
             <div className="hub-profile-badges">
-              <span className={`hub-profile-badge ${
-                (userDetails?.role || user?.role || 'USER') === 'SUPER_ADMIN' 
-                  ? 'hub-profile-badge--purple' 
-                  : (userDetails?.role || user?.role || 'USER') === 'ADMIN'
-                  ? 'hub-profile-badge--accent'
-                  : 'hub-profile-badge--dark'
-              }`}>
+              <span className="hub-profile-badge hub-profile-badge--dark">
                 {userDetails?.role || user?.role || 'USER'}
               </span>
               {userDetails?.department && (
-                <span className="hub-profile-badge hub-profile-badge--accent">{userDetails.department}</span>
+                <span className="hub-profile-badge hub-profile-badge--accent">
+                  {userDetails.department}
+                </span>
               )}
             </div>
           </div>
           <div className="hub-profile-actions">
-            <Tooltip text="Use this area later for editing personal details and account preferences." tone="ticket">
-              <button type="button" className="hub-profile-action hub-profile-action--ghost hub-button-pop">Edit profile</button>
+            <Tooltip
+              text="Use this area later for editing personal details and account preferences."
+              tone="ticket"
+            >
+              <button
+                type="button"
+                className="hub-profile-action hub-profile-action--ghost hub-button-pop"
+              >
+                Edit profile
+              </button>
             </Tooltip>
             <Tooltip text="Account settings and notification tuning live here." tone="ticket">
-              <button type="button" className="hub-profile-action hub-profile-action--accent hub-button-pop">Settings</button>
+              <button
+                type="button"
+                className="hub-profile-action hub-profile-action--accent hub-button-pop"
+              >
+                Settings
+              </button>
             </Tooltip>
-            <button type="button" className="hub-profile-action hub-profile-action--danger hub-button-pop" onClick={handleLogout}>Logout</button>
+            <button
+              type="button"
+              className="hub-profile-action hub-profile-action--danger hub-button-pop"
+              onClick={handleLogout}
+            >
+              Logout
+            </button>
           </div>
         </ParallaxPanel>
       </Reveal>
@@ -427,57 +401,10 @@ export default function UserProfilePage() {
                 <div className="hub-profile-detail-row">
                   <span>Role</span>
                   <div className="flex items-center gap-2">
-                    <span className={`font-medium ${
-                      (userDetails?.role || user?.role || 'USER') === 'SUPER_ADMIN'
-                        ? 'text-purple-800'
-                        : (userDetails?.role || user?.role || 'USER') === 'ADMIN'
-                        ? 'text-blue-800'
-                        : 'text-gray-800'
-                    }`}>
-                      {userDetails?.role || user?.role || 'USER'}
-                    </span>
-                    {((user?.email === 'sashini.unilocatelk@gmail.com') && user?.role !== 'SUPER_ADMIN') || 
-                    ((localStorage.getItem('userEmail') === 'sashini.unilocatelk@gmail.com') && localStorage.getItem('userRole') !== 'SUPER_ADMIN') ? (
+                    <strong>{userDetails?.role || user?.role || 'USER'}</strong>
+                    {isAdminAllowedEmail && !alreadyAdmin ? (
                       <button
-                        onClick={() => {
-                          // Force super admin access
-                          const currentUser = { 
-                            ...user, 
-                            role: 'SUPER_ADMIN', 
-                            name: user?.name || 'Sashini',
-                            email: user?.email || localStorage.getItem('userEmail')
-                          }
-                          localStorage.setItem('user', JSON.stringify(currentUser))
-                          localStorage.setItem('userRole', 'SUPER_ADMIN')
-                          localStorage.setItem('userEmail', currentUser.email)
-                          localStorage.setItem('userName', currentUser.name)
-                          alert('Super admin role granted! Refreshing page...')
-                          window.location.reload()
-                        }}
-                        className="hub-btn hub-btn--primary hub-btn--small"
-                        style={{ fontSize: '12px', padding: '4px 8px', backgroundColor: '#7c3aed' }}
-                      >
-                        Grant Super Admin
-                      </button>
-                    ) : ((user?.email === 'it23220492@my.sliit.lk') && user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN') || 
-                       ((localStorage.getItem('userEmail') === 'it23220492@my.sliit.lk') && 
-                        localStorage.getItem('userRole') !== 'ADMIN' && localStorage.getItem('userRole') !== 'SUPER_ADMIN') ? (
-                      <button
-                        onClick={() => {
-                          // Force admin access
-                          const currentUser = { 
-                            ...user, 
-                            role: 'ADMIN', 
-                            name: user?.name || 'IT Student',
-                            email: user?.email || localStorage.getItem('userEmail')
-                          }
-                          localStorage.setItem('user', JSON.stringify(currentUser))
-                          localStorage.setItem('userRole', 'ADMIN')
-                          localStorage.setItem('userEmail', currentUser.email)
-                          localStorage.setItem('userName', currentUser.name)
-                          alert('Admin role granted! Refreshing page...')
-                          window.location.reload()
-                        }}
+                        onClick={() => handleGrantAdmin(false)}
                         className="hub-btn hub-btn--primary hub-btn--small"
                         style={{ fontSize: '12px', padding: '4px 8px' }}
                       >
@@ -521,11 +448,17 @@ export default function UserProfilePage() {
                   <p className="hub-profile-card__eyebrow">Activity spotlight</p>
                   <h2>What needs your attention</h2>
                 </div>
-                <Tooltip text="This card rotates through booking, support, and recent activity cues." tone="ticket">
+                <Tooltip
+                  text="This card rotates through booking, support, and recent activity cues."
+                  tone="ticket"
+                >
                   <span className="hub-profile-info-badge">i</span>
                 </Tooltip>
               </div>
-              <div key={activeSpotlight} className={`hub-profile-spotlight hub-profile-spotlight--${profileSlides[activeSpotlight].accent} hub-fade-slide`}>
+              <div
+                key={activeSpotlight}
+                className={`hub-profile-spotlight hub-profile-spotlight--${profileSlides[activeSpotlight].accent} hub-fade-slide`}
+              >
                 <h3>{profileSlides[activeSpotlight].title}</h3>
                 <p>{profileSlides[activeSpotlight].body}</p>
               </div>
@@ -535,7 +468,9 @@ export default function UserProfilePage() {
                     <button
                       key={slide.title}
                       type="button"
-                      className={`hub-profile-spotlight__dot ${index === activeSpotlight ? 'hub-profile-spotlight__dot--active' : ''}`}
+                      className={`hub-profile-spotlight__dot ${
+                        index === activeSpotlight ? 'hub-profile-spotlight__dot--active' : ''
+                      }`}
                       onClick={() => setActiveSpotlight(index)}
                       aria-label={`Show activity spotlight ${index + 1}`}
                     />
@@ -545,14 +480,20 @@ export default function UserProfilePage() {
                   <button
                     type="button"
                     className="hub-profile-spotlight__button"
-                    onClick={() => setActiveSpotlight((current) => (current === 0 ? profileSlides.length - 1 : current - 1))}
+                    onClick={() =>
+                      setActiveSpotlight((current) =>
+                        current === 0 ? profileSlides.length - 1 : current - 1
+                      )
+                    }
                   >
                     Prev
                   </button>
                   <button
                     type="button"
                     className="hub-profile-spotlight__button"
-                    onClick={() => setActiveSpotlight((current) => (current + 1) % profileSlides.length)}
+                    onClick={() =>
+                      setActiveSpotlight((current) => (current + 1) % profileSlides.length)
+                    }
                   >
                     Next
                   </button>
@@ -584,81 +525,6 @@ export default function UserProfilePage() {
               </div>
             </ParallaxPanel>
           </Reveal>
-
-          {/* Super Admin Management Section */}
-          {(user?.role === 'SUPER_ADMIN' || localStorage.getItem('userRole') === 'SUPER_ADMIN') && (
-            <Reveal delay={220}>
-              <ParallaxPanel as="section" className="hub-profile-card hub-lift" strength={8}>
-                <div className="hub-profile-card__header">
-                  <div>
-                    <p className="hub-profile-card__eyebrow">Super Admin Controls</p>
-                    <h2>Admin User Management</h2>
-                  </div>
-                  <Tooltip text="Manage admin user accounts and permissions." tone="ticket">
-                    <span className="hub-profile-info-badge">i</span>
-                  </Tooltip>
-                </div>
-                
-                <div className="space-y-4">
-                  {/* Add New Admin */}
-                  <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                    <h4 className="font-medium text-purple-900 mb-3">Grant Admin Access</h4>
-                    <div className="flex gap-2">
-                      <input
-                        type="email"
-                        value={newAdminEmail}
-                        onChange={(e) => setNewAdminEmail(e.target.value)}
-                        placeholder="Enter user email"
-                        className="flex-1 px-3 py-2 border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      />
-                      <button
-                        onClick={handleAddAdmin}
-                        className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-                      >
-                        Add Admin
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {/* Current Admins */}
-                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <h4 className="font-medium text-gray-900 mb-3">Current Admin Users ({adminUsers.length})</h4>
-                    {adminUsers.length === 0 ? (
-                      <p className="text-gray-500 text-sm">No admin users found</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {adminUsers.map((adminUser) => (
-                          <div key={adminUser.id} className="flex items-center justify-between p-3 bg-white rounded-md border border-gray-200">
-                            <div>
-                              <div className="font-medium text-gray-900">{adminUser.name || adminUser.email}</div>
-                              <div className="text-sm text-gray-500">{adminUser.email}</div>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className={`text-xs px-2 py-1 rounded-full ${
-                                  adminUser.role === 'SUPER_ADMIN' 
-                                    ? 'bg-purple-100 text-purple-800' 
-                                    : 'bg-blue-100 text-blue-800'
-                                }`}>
-                                  {adminUser.role}
-                                </span>
-                              </div>
-                            </div>
-                            {adminUser.role !== 'SUPER_ADMIN' && (
-                              <button
-                                onClick={() => handleRemoveAdmin(adminUser.id, adminUser.email)}
-                                className="px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 transition-colors text-sm"
-                              >
-                                Remove Admin
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </ParallaxPanel>
-            </Reveal>
-          )}
         </div>
 
         <div className="hub-profile-grid__content">
@@ -683,7 +549,11 @@ export default function UserProfilePage() {
                       <div className="hub-profile-timeline__body">
                         <div className="hub-profile-timeline__top">
                           <strong>{booking.resourceName || booking.resourceId || 'Resource booking'}</strong>
-                          <span className={`hub-profile-pill hub-profile-pill--${(booking.status || 'PENDING').toLowerCase()}`}>
+                          <span
+                            className={`hub-profile-pill hub-profile-pill--${(
+                              booking.status || 'PENDING'
+                            ).toLowerCase()}`}
+                          >
                             {booking.status}
                           </span>
                         </div>
@@ -719,7 +589,13 @@ export default function UserProfilePage() {
                         <small>{getTicketReporterLabel(ticket)}</small>
                       </div>
                       <div className="hub-profile-ticket__meta">
-                        <span className={`hub-profile-pill hub-profile-pill--${(ticket.status || 'OPEN').toLowerCase().replaceAll('_', '-')}`}>
+                        <span
+                          className={`hub-profile-pill hub-profile-pill--${(
+                            ticket.status || 'OPEN'
+                          )
+                            .toLowerCase()
+                            .replaceAll('_', '-')}`}
+                        >
                           {ticket.status || 'OPEN'}
                         </span>
                         <small>{formatDate(ticket.createdAt)}</small>
@@ -735,4 +611,3 @@ export default function UserProfilePage() {
     </div>
   )
 }
-
