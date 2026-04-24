@@ -11,35 +11,40 @@ public class AuthService {
         this.authRepository = authRepository;
     }
 
-   public AuthResponse register(RegisterRequest request) {
-    if (authRepository.existsByEmail(request.getEmail())) {
-        throw new IllegalArgumentException("Email already exists");
+    public AuthResponse register(RegisterRequest request) {
+        String email = request.getEmail() == null ? "" : request.getEmail().trim().toLowerCase();
+        String name = request.getName() == null ? "" : request.getName().trim();
+        String password = request.getPassword() == null ? "" : request.getPassword();
+
+        if (name.isEmpty() || email.isEmpty() || password.isEmpty()) {
+            throw new IllegalArgumentException("Name, email and password are required");
+        }
+
+        if (authRepository.existsByEmail(email)) {
+            throw new IllegalArgumentException("Email already exists");
+        }
+
+        AppUser user = new AppUser(
+                name,
+                email,
+                password,
+                AppRole.USER
+        );
+
+        AppUser saved = authRepository.save(user);
+
+        return new AuthResponse(
+                saved.getId(),
+                saved.getName(),
+                saved.getEmail(),
+                saved.getRole().name()
+        );
     }
 
-    AppRole role = AppRole.USER;
-
-    if ("SUPER_ADMIN".equalsIgnoreCase(request.getRole())) {
-        role = AppRole.SUPER_ADMIN;
-    } else if ("ADMIN".equalsIgnoreCase(request.getRole())) {
-        role = AppRole.ADMIN;
-    }
-
-    AppUser user = new AppUser(
-            request.getName(),
-            request.getEmail(),
-            request.getPassword(),
-            role);
-
-    AppUser saved = authRepository.save(user);
-
-    return new AuthResponse(
-            saved.getId(),
-            saved.getName(),
-            saved.getEmail(),
-            saved.getRole().name());
-}
     public AuthResponse login(LoginRequest request) {
-        AppUser user = authRepository.findByEmail(request.getEmail())
+        String email = request.getEmail() == null ? "" : request.getEmail().trim().toLowerCase();
+
+        AppUser user = authRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (user.getPassword() == null || !user.getPassword().equals(request.getPassword())) {
@@ -50,6 +55,7 @@ public class AuthService {
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
-                user.getRole().name());
+                user.getRole().name()
+        );
     }
 }
