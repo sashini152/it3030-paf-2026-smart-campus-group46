@@ -65,10 +65,14 @@ export default function Layout() {
 
   // Remove admin route bypass to show consistent header for all pages
 
+  // Don't show header on login/signup pages since they have their own
+  const shouldShowHeader = location.pathname !== '/login' && location.pathname !== '/signup';
+
   return (
     <div className={`hub-app ${getPageClass()}`}>
-      <header className="hub-header">
-        <div className="hub-header__inner">
+      {shouldShowHeader && (
+        <header className="hub-header">
+          <div className="hub-header__inner">
           <NavLink to="/" className="hub-brand" end>
             <img src={sliitLogo} alt="SLIIT logo" className="hub-brand__mark" />
             <span className="hub-brand__text">Smart Campus Hub</span>
@@ -115,6 +119,7 @@ export default function Layout() {
           </nav>
         </div>
       </header>
+      )}
       <main className="hub-main">
         <Outlet />
       </main>
