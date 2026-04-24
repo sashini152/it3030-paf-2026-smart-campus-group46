@@ -1,7 +1,10 @@
 package com.smartcampus.hub.auth;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
@@ -9,16 +12,19 @@ import java.nio.charset.StandardCharsets;
 @RequestMapping("/api/users")
 public class UserController {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final AppUserService appUserService;
+
+    public UserController(AppUserService appUserService) {
+        this.appUserService = appUserService;
+    }
 
     @GetMapping("/email/{email}")
-    public User getByEmail(@PathVariable String email) {
-        return userRepository.findByEmail(URLDecoder.decode(email, StandardCharsets.UTF_8)).orElse(null);
+    public AppUser getByEmail(@PathVariable String email) {
+        return appUserService.findByEmail(URLDecoder.decode(email, StandardCharsets.UTF_8));
     }
 
     @GetMapping("/{email}")
-    public User getUserByEmail(@PathVariable String email) {
-        return userRepository.findByEmail(URLDecoder.decode(email, StandardCharsets.UTF_8)).orElse(null);
+    public AppUser getUserByEmail(@PathVariable String email) {
+        return appUserService.findByEmail(URLDecoder.decode(email, StandardCharsets.UTF_8));
     }
 }

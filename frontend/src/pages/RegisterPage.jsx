@@ -3,12 +3,12 @@ import { Link, useNavigate } from 'react-router-dom'
 import { postJson } from '../api/client'
 
 export default function RegisterPage() {
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    password: '',
-    role: 'USER',
-  })
+ const [form, setForm] = useState({
+  name: '',
+  email: '',
+  password: '',
+})
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
@@ -34,15 +34,13 @@ export default function RegisterPage() {
     }
 
     try {
-      setLoading(true)
-      await postJson('/api/auth/register', {
-        name: form.name.trim(),
-        email: form.email.trim(),
-        password: form.password,
-        role: form.role,
-      })
-      setSuccess('Registration successful')
-      setTimeout(() => navigate('/login'), 1000)
+   await postJson('/api/auth/register', {
+  name: form.name.trim(),
+  email: form.email.trim(),
+  password: form.password,
+})
+      setSuccess('Registration successful. Redirecting to login...')
+      setTimeout(() => navigate('/login'), 1200)
     } catch (err) {
       setError(err.message || 'Registration failed')
     } finally {
@@ -51,92 +49,150 @@ export default function RegisterPage() {
   }
 
   return (
-    <>
-      <div className="topbar">
-        <div className="topbar-inner">
-          <Link to="/" className="brand">
-            <div className="brand-badge">🏫</div>
-            <span>Smart Campus Hub</span>
+    <div className="hub-app hub-app--auth">
+      <header className="hub-header hub-header--auth">
+        <div className="hub-header__inner">
+          <Link to="/" className="hub-brand">
+            <div className="hub-brand__badge">SC</div>
+            <span className="hub-brand__text">Smart Campus Hub</span>
           </Link>
 
-          <div className="nav-links">
-            <Link to="/">Home</Link>
-            <Link to="/login">Sign in</Link>
+          <div className="hub-header__nav">
+            <Link to="/login" className="hub-header__pill">
+              Sign in
+            </Link>
+            <span className="hub-header__pill hub-header__pill--active">
+              Sign up
+            </span>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="auth-shell">
-        <div className="auth-layout">
-          <div className="auth-brand-card">
-            <div className="auth-badge">SMART CAMPUS HUB</div>
-            <h1>Create account</h1>
-            <p>
-              Register as a USER or ADMIN to access booking, notification, and
-              role-based features in the Smart Campus platform.
-            </p>
+      <main className="hub-main hub-main--auth">
+        <section className="hub-auth-grid">
+          <div className="hub-auth-showcase">
+            <div>
+              <div className="hub-auth-kicker">SMART CAMPUS HUB</div>
+              <h1>Create your campus account.</h1>
+              <p className="hub-lead">
+                Join the Smart Campus platform to access resources, manage bookings,
+                receive notifications, and use role-based services from one place.
+              </p>
+
+              <div className="hub-auth-pills">
+                <span>Register Fast</span>
+                <span>Role Based Access</span>
+                <span>Campus Services</span>
+              </div>
+            </div>
+
+            <div className="hub-auth-stats">
+              <article>
+                <p>Account</p>
+                <strong>Create</strong>
+              </article>
+              <article>
+                <p>Access</p>
+                <strong>Secure</strong>
+              </article>
+              <article>
+                <p>Start</p>
+                <strong>Now</strong>
+              </article>
+            </div>
           </div>
 
-          <div className="auth-card">
-            <h2>Register</h2>
+          <div className="hub-auth-card hub-auth-card--clean">
+            <div className="hub-auth-panel">
+              <div className="hub-auth-panel__orb"></div>
 
-            <form onSubmit={handleSubmit} className="auth-form">
-              <div className="auth-field">
-                <label>Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  placeholder="Enter your name"
-                  value={form.name}
-                  onChange={handleChange}
-                />
+              <div className="hub-auth-heading">
+                <div className="hub-auth-kicker">Register</div>
+                <h2>Create account</h2>
+                <p>
+                  Fill in your details to create a Smart Campus account and continue
+                  to the platform.
+                </p>
               </div>
 
-              <div className="auth-field">
-                <label>Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="Enter your email"
-                  value={form.email}
-                  onChange={handleChange}
-                />
-              </div>
+              <form onSubmit={handleSubmit} className="hub-auth-form">
+                <label className="hub-field">
+                  <span>Name</span>
+                  <input
+                    type="text"
+                    name="name"
+                    placeholder="Enter your full name"
+                    value={form.name}
+                    onChange={handleChange}
+                  />
+                </label>
 
-              <div className="auth-field">
-                <label>Password</label>
-                <input
-                  type="password"
-                  name="password"
-                  placeholder="Create a password"
-                  value={form.password}
-                  onChange={handleChange}
-                />
-              </div>
+                <label className="hub-field">
+                  <span>Email</span>
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="Enter your email"
+                    value={form.email}
+                    onChange={handleChange}
+                  />
+                </label>
 
-              <div className="auth-field">
-                <label>Role</label>
-                <select name="role" value={form.role} onChange={handleChange}>
-                  <option value="USER">USER</option>
-                  <option value="ADMIN">ADMIN</option>
-                </select>
-              </div>
+                <label className="hub-field">
+                  <span>Password</span>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      placeholder="Create a password"
+                      value={form.password}
+                      onChange={handleChange}
+                      style={{ paddingRight: '90px' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      style={{
+                        position: 'absolute',
+                        right: '14px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        border: 'none',
+                        background: 'transparent',
+                        color: '#6366f1',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {showPassword ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                </label>
 
-              {error && <p className="auth-error">{error}</p>}
-              {success && <p className="auth-success">{success}</p>}
+              
 
-              <button type="submit" className="auth-primary-btn" disabled={loading}>
-                {loading ? 'Registering...' : 'Create account'}
-              </button>
-            </form>
+                {error && <p className="hub-alert hub-alert--error">{error}</p>}
 
-            <p className="auth-footer">
-              Already have an account? <Link to="/login">Sign in</Link>
-            </p>
+                {success && <p className="hub-alert hub-alert--success">{success}</p>}
+
+                <div className="hub-auth-actions">
+                  <button
+                    type="submit"
+                    className="hub-btn hub-btn--primary hub-btn--full"
+                    disabled={loading}
+                  >
+                    {loading ? 'Registering...' : 'Create account'}
+                  </button>
+                </div>
+              </form>
+
+              <p className="hub-auth-note">
+                Already have an account? <Link to="/login">Sign in</Link>
+              </p>
+            </div>
           </div>
-        </div>
-      </div>
-    </>
+        </section>
+      </main>
+    </div>
   )
 }
-

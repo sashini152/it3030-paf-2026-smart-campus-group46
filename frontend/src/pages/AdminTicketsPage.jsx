@@ -156,7 +156,7 @@ export default function AdminTicketsPage() {
         <AdminSidebar currentPage={location.pathname} />
       </aside>
 
-      <main className="flex-1 overflow-y-auto overflow-x-hidden">
+      <main className="flex-1 overflow-y-auto">
         <div className="hub-page hub-ticket-flow space-y-8 rounded-[36px] bg-[linear-gradient(180deg,#181A2F_0%,#242E49_52%,#37415C_100%)] p-6 text-white sm:p-8">
           <Reveal delay={30}>
             <section className="space-y-4">

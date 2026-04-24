@@ -741,4 +741,3 @@ export default function AdminBookingsDashboard() {
     </div>
   )
 }
-

@@ -6,7 +6,6 @@ import BookingsPage from './pages/BookingsPage'
 import UserBookingsPage from './pages/UserBookingsPage'
 import AdminResourcesPage from './pages/AdminResourcesPage'
 import AdminBookingsDashboard from './pages/AdminBookingsDashboard'
-import AdminBookingChartsPage from './pages/AdminBookingChartsPage'
 import AdminTicketsPage from './pages/AdminTicketsPage'
 import TicketsPage from './pages/TicketsPage'
 import TicketList from './pages/TicketList'
@@ -215,7 +214,7 @@ function AppRoutes() {
           path="admin-bookings"
           element={
             <AdminRoute>
-              <AdminBookingChartsPage />
+              <AdminBookingsDashboard />
             </AdminRoute>
           }
         />
