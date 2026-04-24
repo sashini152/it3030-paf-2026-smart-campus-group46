@@ -1,26 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { deleteJson, getJson, patchJson, postJson, putJson } from '../api/client'
+import { getJson, patchJson } from '../api/client'
 import { useAuth } from '../hooks/useAuth'
 import { useTickets } from '../hooks/useTickets'
-import { deleteAnyTicket, updateAnyTicketStatus } from '../services/ticketService'
-import { getTicketReporterLabel } from '../utils/studentIdentity'
 import { normalizeTicketWorkflowStatus } from '../utils/ticketPresentation'
 import AdminSidebar from '../components/AdminSidebar'
+import BookingCharts from '../components/BookingCharts'
 
 const RESOURCE_TYPES = ['LECTURE_HALL', 'LAB', 'MEETING_ROOM', 'EQUIPMENT']
 const RESOURCE_STATUSES = ['ACTIVE', 'OUT_OF_SERVICE']
 const BOOKING_FILTERS = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']
 const TICKET_STATUSES = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED']
 const NOTIFICATION_TYPES = ['BOOKING', 'TICKET', 'COMMENT', 'SYSTEM']
-const emptyResource = {
-  type: 'LECTURE_HALL',
-  name: '',
-  capacity: 0,
-  location: '',
-  availabilityWindows: '',
-  status: 'ACTIVE',
-}
-const emptyNotice = { title: '', message: '', type: 'SYSTEM', targetUserId: '' }
 const ADMIN_REQUEST_TIMEOUT_MS = 4000
 const TICKET_GRAPH_COLORS = {
   OPEN: 'bg-sky-500',
@@ -56,11 +46,6 @@ function withTimeout(request, labelText) {
   ]).finally(() => clearTimeout(timeoutId))
 }
 
-function dt(value) {
-  if (!value) return '-'
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString()
-}
 
 function minutesBetween(start, end) {
   if (!start || !end) return null
@@ -89,13 +74,6 @@ function formatShortDate(value) {
   if (Number.isNaN(date.getTime())) return '-'
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
-
-function isToday(date) {
-  const today = new Date()
-  const checkDate = new Date(date)
-  return checkDate.toDateString() === today.toDateString()
-}
-
 export default function AdminDashboard() {
   const { user } = useAuth()
   const {
@@ -108,22 +86,18 @@ export default function AdminDashboard() {
   const [menuOpen, setMenuOpen] = useState(false)
 
   const [resources, setResources] = useState([])
-  const [resourcesLoading, setResourcesLoading] = useState(true)
+  const [RESOURCES_LOADING, setResourcesLoading] = useState(true)
   const [resourcesError, setResourcesError] = useState(null)
-  const [resourceForm, setResourceForm] = useState(emptyResource)
-  const [resourceEditId, setResourceEditId] = useState(null)
 
   const [bookings, setBookings] = useState([])
   const [bookingsLoading, setBookingsLoading] = useState(true)
   const [bookingsError, setBookingsError] = useState(null)
-  const [bookingFilter, setBookingFilter] = useState('ALL')
   const [bookingViewMode, setBookingViewMode] = useState('table')
 
   const [notifications, setNotifications] = useState([])
   const [notificationsLoading, setNotificationsLoading] = useState(true)
   const [notificationsError, setNotificationsError] = useState(null)
-  const [notificationForm, setNotificationForm] = useState(emptyNotice)
-
+  
   const [analytics, setAnalytics] = useState({
     topResources: [],
     peakBookingHours: [],
@@ -131,8 +105,6 @@ export default function AdminDashboard() {
   const [analyticsLoading, setAnalyticsLoading] = useState(true)
   const [analyticsError, setAnalyticsError] = useState(null)
 
-  const [busyId, setBusyId] = useState(null)
-  const [ticketQuery, setTicketQuery] = useState('')
 
   const loadResources = useCallback(async () => {
     setResourcesLoading(true)
@@ -214,26 +186,8 @@ export default function AdminDashboard() {
     [bookings]
   )
 
-  const visibleBookings = useMemo(
-    () =>
-      bookingFilter === 'ALL'
-        ? bookings
-        : bookings.filter((item) => item.status === bookingFilter),
-    [bookingFilter, bookings]
-  )
-
-  const visibleTickets = useMemo(() => {
-    const query = ticketQuery.trim().toLowerCase()
-    if (!query) return tickets
-    return tickets.filter((item) =>
-      [item.title, item.description, item.createdBy, item.status]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-        .includes(query)
-    )
-  }, [ticketQuery, tickets])
-
+  
+  
   const ticketSummary = useMemo(() => {
     let active = 0
     let firstResponseTotal = 0
@@ -337,140 +291,13 @@ export default function AdminDashboard() {
     return { points, max, path }
   }, [tickets])
 
-  async function saveResource(event) {
-    event.preventDefault()
-    setResourcesError(null)
-
-    try {
-      const payload = {
-        type: resourceForm.type,
-        name: resourceForm.name.trim(),
-        capacity: Number(resourceForm.capacity),
-        location: resourceForm.location.trim(),
-        availabilityWindows: resourceForm.availabilityWindows.trim() || null,
-        status: resourceForm.status,
-      }
-
-      if (resourceEditId) {
-        await putJson(`/api/resources/${resourceEditId}`, payload)
-      } else {
-        await postJson('/api/resources', payload)
-      }
-
-      setResourceEditId(null)
-      setResourceForm(emptyResource)
-      await loadResources()
-      await loadAnalytics()
-    } catch (error) {
-      setResourcesError(error.message)
-    }
-  }
-
-  async function deleteResource(id) {
-    if (!window.confirm('Delete this resource?')) return
-    try {
-      await deleteJson(`/api/resources/${id}`)
-      await loadResources()
-      await loadAnalytics()
-    } catch (error) {
-      setResourcesError(error.message)
-    }
-  }
-
-  async function runBookingAction(id, action, body = {}) {
-    setBusyId(id)
-    setBookingsError(null)
-    try {
-      await putJson(`/api/bookings/${id}/${action}`, body)
-      await loadBookings()
-      await loadNotifications()
-      await loadAnalytics()
-    } catch (error) {
-      setBookingsError(error.message)
-    } finally {
-      setBusyId(null)
-    }
-  }
-
-  async function deleteBooking(id) {
-    if (!window.confirm('Delete this booking?')) return
-    setBusyId(id)
-    try {
-      await deleteJson(`/api/bookings/${id}`)
-      await loadBookings()
-      await loadAnalytics()
-    } catch (error) {
-      setBookingsError(error.message)
-    } finally {
-      setBusyId(null)
-    }
-  }
-
-  async function updateTicketStatus(ticket, status) {
-    setBusyId(ticket.id)
-    try {
-      await updateAnyTicketStatus(ticket, status)
-      await reloadTickets()
-      await loadNotifications()
-    } finally {
-      setBusyId(null)
-    }
-  }
-
-  async function deleteTicket(ticket) {
-    if (!window.confirm('Delete this ticket?')) return
-    setBusyId(ticket.id)
-    try {
-      await deleteAnyTicket(ticket)
-      await reloadTickets()
-    } finally {
-      setBusyId(null)
-    }
-  }
-
-  async function createNotification(event) {
-    event.preventDefault()
-    try {
-      await postJson('/api/admin/notifications', {
-        title: notificationForm.title.trim(),
-        message: notificationForm.message.trim(),
-        type: notificationForm.type,
-        targetUserId: notificationForm.targetUserId.trim() || null,
-      })
-      setNotificationForm(emptyNotice)
-      await loadNotifications()
-    } catch (error) {
-      setNotificationsError(error.message)
-    }
-  }
-
-  async function toggleRead(notification) {
-    setBusyId(notification.id)
-    try {
-      await patchJson(`/api/admin/notifications/${notification.id}/read`, {
-        read: !notification.read,
-      })
-      await loadNotifications()
-    } catch (error) {
-      setNotificationsError(error.message)
-    } finally {
-      setBusyId(null)
-    }
-  }
-
-  async function deleteNotification(id) {
-    if (!window.confirm('Delete this notification?')) return
-    setBusyId(id)
-    try {
-      await deleteJson(`/api/admin/notifications/${id}`)
-      await loadNotifications()
-    } catch (error) {
-      setNotificationsError(error.message)
-    } finally {
-      setBusyId(null)
-    }
-  }
-
+  
+  
+  
+  
+  
+  
+  
   async function markAllRead() {
     try {
       await patchJson('/api/admin/notifications/read-all', {})
@@ -511,8 +338,8 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        <main className="flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
-          <div className="mx-auto max-w-[1480px] rounded-[36px] border border-white/70 bg-white/70 p-4 shadow-[0_30px_80px_rgba(148,163,184,0.28)] md:p-6 lg:p-8">
+        <main className="flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 overflow-x-hidden">
+          <div className="w-full rounded-[36px] border border-white/70 bg-white/70 p-4 shadow-[0_30px_80px_rgba(148,163,184,0.28)] md:p-6 lg:p-8">
             <header className="mb-8 flex items-start justify-between gap-4">
               <div className="flex items-start gap-3">
                 <button
@@ -557,10 +384,16 @@ export default function AdminDashboard() {
 
                 <article className="hub-quarter-fade rounded-[24px] bg-emerald-50 p-5">
                   <p>Resources</p>
-                  <p className="mt-2 text-3xl font-semibold">{resources.length}</p>
-                  <p className="text-sm text-slate-500">
-                    {resources.filter((item) => item.status === 'ACTIVE').length} active
-                  </p>
+                  {resourcesError ? (
+                    <p className="mt-2 text-sm text-rose-600">{resourcesError}</p>
+                  ) : (
+                    <>
+                      <p className="mt-2 text-3xl font-semibold">{resources.length}</p>
+                      <p className="text-sm text-slate-500">
+                        {resources.filter((item) => item.status === 'ACTIVE').length} active
+                      </p>
+                    </>
+                  )}
                 </article>
 
                 <article className="hub-quarter-fade rounded-[24px] bg-sky-50 p-5">
@@ -572,11 +405,31 @@ export default function AdminDashboard() {
                 </article>
 
                 <article className="hub-quarter-fade rounded-[24px] bg-amber-50 p-5">
-                  <p>Unread notifications</p>
-                  <p className="mt-2 text-3xl font-semibold">
-                    {notifications.filter((item) => !item.read).length}
-                  </p>
-                  <p className="text-sm text-slate-500">Admin inbox</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p>Unread notifications</p>
+                      {notificationsLoading ? (
+                        <p className="mt-2 text-sm text-slate-500">Loading notifications...</p>
+                      ) : notificationsError ? (
+                        <p className="mt-2 text-sm text-rose-600">{notificationsError}</p>
+                      ) : (
+                        <>
+                          <p className="mt-2 text-3xl font-semibold">
+                            {notifications.filter((item) => !item.read).length}
+                          </p>
+                          <p className="text-sm text-slate-500">Admin inbox</p>
+                        </>
+                      )}
+                    </div>
+                    {!notificationsLoading && !notificationsError && notifications.filter((item) => !item.read).length > 0 && (
+                      <button
+                        onClick={markAllRead}
+                        className="rounded-2xl border border-amber-200 bg-amber-100 px-3 py-2 text-sm font-medium text-amber-700 hover:bg-amber-200 transition-colors"
+                      >
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
                 </article>
               </div>
 
@@ -591,6 +444,8 @@ export default function AdminDashboard() {
                     <p className="mt-3 text-sm text-slate-500">
                       Loading tickets...
                     </p>
+                  ) : ticketsError ? (
+                    <p className="mt-3 text-sm text-rose-600">{ticketsError}</p>
                   ) : (
                     <div className="mt-4 space-y-4">
                       <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
@@ -700,6 +555,8 @@ export default function AdminDashboard() {
                     <p className="mt-3 text-sm text-slate-500">
                       Loading tickets...
                     </p>
+                  ) : ticketsError ? (
+                    <p className="mt-3 text-sm text-rose-600">{ticketsError}</p>
                   ) : (
                     <div className="mt-4 space-y-4">
                       {ticketStatusChart.counts.length === 0 ? (
@@ -879,6 +736,50 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   )}
+                </section>
+
+                <section className="hub-quarter-fade rounded-[30px] border border-blue-100 bg-[linear-gradient(180deg,#ffffff_0%,#f0f9ff_100%)] p-6 shadow-[0_20px_45px_rgba(59,130,246,0.08)]">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.26em] text-blue-500">
+                        Booking analytics
+                      </p>
+                      <h2 className="mt-2 text-2xl font-semibold text-slate-900">
+                        Comprehensive charts
+                      </h2>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Visual insights into booking patterns, resource utilization, and trends.
+                      </p>
+                    </div>
+                    <div className="hidden h-14 w-14 rounded-[20px] bg-[radial-gradient(circle_at_30%_30%,#93c5fd,transparent_58%),linear-gradient(135deg,#eff6ff,#dbeafe)] sm:block" />
+                  </div>
+
+                  <div className="mt-4">
+                    {bookingsLoading ? (
+                      <p className="text-sm text-slate-500">Loading booking data...</p>
+                    ) : bookingsError ? (
+                      <p className="text-sm text-rose-600">{bookingsError}</p>
+                    ) : (
+                      <div className="rounded-[24px] border border-blue-100 bg-white p-4">
+                        <BookingCharts bookings={bookings} resources={resources} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-4 flex gap-2">
+                    <button
+                      onClick={() => window.open('/admin-bookings', '_blank')}
+                      className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+                    >
+                      View detailed charts
+                    </button>
+                    <button
+                      onClick={() => setBookingViewMode(bookingViewMode === 'table' ? 'charts' : 'table')}
+                      className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      {bookingViewMode === 'table' ? 'Show charts' : 'Show table'}
+                    </button>
+                  </div>
                 </section>
 
                 <section className="hub-quarter-fade rounded-[30px] border border-rose-100 bg-[linear-gradient(180deg,#ffffff_0%,#fff7fb_100%)] p-6 shadow-[0_20px_45px_rgba(244,114,182,0.08)]">

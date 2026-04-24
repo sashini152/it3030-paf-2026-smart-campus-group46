@@ -1,4 +1,5 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
+import { useLocation } from 'react-router-dom'
 import { buildQuery, getJson, putJson } from '../api/client'
 import BookingCharts from '../components/BookingCharts'
 import EmptyState from '../components/EmptyState'
@@ -7,6 +8,7 @@ import ParallaxPanel from '../components/ParallaxPanel'
 import Reveal from '../components/Reveal'
 import SurfaceCard from '../components/SurfaceCard'
 import Tooltip from '../components/Tooltip'
+import AdminSidebar from '../components/AdminSidebar'
 
 const STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']
 
@@ -49,7 +51,8 @@ function isThisWeek(date) {
 }
 
 export default function AdminBookingsDashboard() {
-    const [items, setItems] = useState([])
+  const location = useLocation()
+  const [items, setItems] = useState([])
   const [resources, setResources] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -61,6 +64,7 @@ export default function AdminBookingsDashboard() {
   })
   const [hoveredBookingId, setHoveredBookingId] = useState(null)
   const [processing, setProcessing] = useState({})
+  const [dropdownOpen, setDropdownOpen] = useState(null)
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -121,7 +125,7 @@ export default function AdminBookingsDashboard() {
     }
   }
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -146,7 +150,7 @@ export default function AdminBookingsDashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters])
 
   const handleApprove = async (bookingId) => {
     setProcessing(prev => ({ ...prev, [bookingId]: 'approving' }))
@@ -196,10 +200,15 @@ export default function AdminBookingsDashboard() {
   useEffect(() => {
     load()
     loadResources()
-  }, [])
+  }, [load])
 
   return (
-      <main className="flex-1 overflow-y-auto">
+    <div className="flex min-h-screen">
+      <aside className="hidden w-72 shrink-0 border-r border-white/70 bg-white/85 px-6 py-8 backdrop-blur xl:block">
+        <AdminSidebar currentPage={location.pathname} />
+      </aside>
+
+      <main className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="w-full space-y-8 rounded-[36px] bg-[linear-gradient(180deg,#181A2F_0%,#242E49_52%,#37415C_100%)] p-6 text-white sm:p-8">
           <Reveal delay={30}>
             <section className="space-y-4">
@@ -331,15 +340,15 @@ export default function AdminBookingsDashboard() {
               <>
                 {viewMode === 'table' ? (
                   <div className="overflow-x-auto rounded-[24px] border border-[#37415C] bg-[#242E49] p-2">
-                    <table className="min-w-full border-separate border-spacing-y-2">
+                    <table className="w-full border-separate border-spacing-y-2">
                       <thead>
                         <tr className="text-left text-sm text-[#FDA481]">
-                          <th className="px-4 py-3 font-semibold">Booking</th>
-                          <th className="px-4 py-3 font-semibold">Resource</th>
-                          <th className="px-4 py-3 font-semibold">Booked by</th>
-                          <th className="px-4 py-3 font-semibold">Time</th>
-                          <th className="px-4 py-3 font-semibold">Status</th>
-                          <th className="px-4 py-3 font-semibold">Actions</th>
+                          <th className="px-2 py-2 font-semibold">Booking</th>
+                          <th className="px-2 py-2 font-semibold">Resource</th>
+                          <th className="px-2 py-2 font-semibold">User</th>
+                          <th className="px-2 py-2 font-semibold">Time</th>
+                          <th className="px-2 py-2 font-semibold">Status</th>
+                          <th className="px-2 py-2 font-semibold">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -355,109 +364,97 @@ export default function AdminBookingsDashboard() {
                               className={`hub-ticket-list-row align-top transition ${hovered ? 'hub-ticket-list-row--active' : ''}`}
                               style={{ animationDelay: `${index * 55}ms` }}
                             >
-                              <td className="rounded-l-[18px] bg-white px-4 py-4">
-                                <div className="text-sm font-semibold text-[#181A2F]">
-                                  {booking.purpose || 'Resource Booking'}
+                              <td className="rounded-l-[12px] bg-white px-2 py-2">
+                                <div className="text-xs font-semibold text-[#181A2F] truncate">
+                                  {booking.purpose || 'Booking'}
                                 </div>
-                                <p className="mt-1 max-w-[28ch] text-xs leading-5 text-[#37415C]">
-                                  {booking.notes || 'No additional notes'}
-                                </p>
                               </td>
-                              <td className="bg-white px-4 py-4 text-sm text-[#181A2F]">
-                                <div className="font-medium">{booking.resourceName || 'Unknown Resource'}</div>
-                                <div className="text-xs text-[#37415C]">{booking.resourceType || ''}</div>
+                              <td className="bg-white px-2 py-2 text-xs text-[#181A2F]">
+                                <div className="font-medium truncate">{booking.resourceName || 'Unknown'}</div>
                               </td>
-                              <td className="bg-white px-4 py-4 text-sm text-[#181A2F]">
-                                <div className="font-medium">{booking.bookedBy || 'Unknown User'}</div>
-                                <div className="text-xs text-[#37415C]">{booking.bookedEmail || ''}</div>
+                              <td className="bg-white px-2 py-2 text-xs text-[#181A2F]">
+                                <div className="font-medium truncate">{booking.bookedBy || 'Unknown'}</div>
                               </td>
-                              <td className="bg-white px-4 py-4 text-sm text-[#181A2F]">
+                              <td className="bg-white px-2 py-2 text-xs text-[#181A2F]">
                                 <div className="font-medium">{formatDate(booking.startDateTime)}</div>
-                                <div className="text-xs text-[#37415C]">to {formatDate(booking.endDateTime)}</div>
                               </td>
-                              <td className="bg-white px-4 py-4">
-                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                                  booking.status === 'APPROVED' ? 'bg-green-100 text-green-800 border border-green-200' :
-                                  booking.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
-                                  booking.status === 'REJECTED' ? 'bg-red-100 text-red-800 border border-red-200' :
-                                  booking.status === 'CANCELLED' ? 'bg-gray-100 text-gray-800 border border-gray-200' :
-                                  'bg-gray-100 text-gray-800 border border-gray-200'
+                              <td className="bg-white px-2 py-2">
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                  booking.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                                  booking.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                                  booking.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                                  booking.status === 'CANCELLED' ? 'bg-gray-100 text-gray-800' :
+                                  'bg-gray-100 text-gray-800'
                                 }`}>
-                                  <span className="w-2 h-2 rounded-full mr-1.5 ${
-                                    booking.status === 'APPROVED' ? 'bg-green-500' :
-                                    booking.status === 'PENDING' ? 'bg-yellow-500' :
-                                    booking.status === 'REJECTED' ? 'bg-red-500' :
-                                    booking.status === 'CANCELLED' ? 'bg-gray-500' :
-                                    'bg-gray-500'
-                                  }"></span>
                                   {booking.status}
                                 </span>
                               </td>
-                              <td className="rounded-r-[18px] bg-white px-4 py-4">
-                                <div className="flex gap-2 flex-wrap">
-                                  {booking.status === 'PENDING' && (
-                                    <>
-                                      <button
-                                        onClick={() => handleApprove(booking.id)}
-                                        disabled={isProcessing === 'approving'}
-                                        className="text-xs px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-sm"
-                                      >
-                                        {isProcessing === 'approving' ? (
-                                          <span className="flex items-center gap-1">
-                                            <span className="animate-spin">⏳</span> Processing...
-                                          </span>
-                                        ) : (
-                                          <span>Approve</span>
+                              <td className="rounded-r-[12px] bg-white px-2 py-2">
+                                <div className="relative">
+                                  <button
+                                    onClick={() => setDropdownOpen(dropdownOpen === booking.id ? null : booking.id)}
+                                    className="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                  >
+                                    Actions
+                                  </button>
+                                  
+                                  {dropdownOpen === booking.id && (
+                                    <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                                      <div className="py-1">
+                                        {booking.status === 'PENDING' && (
+                                          <>
+                                            <button
+                                              onClick={() => {
+                                                handleApprove(booking.id);
+                                                setDropdownOpen(null);
+                                              }}
+                                              disabled={isProcessing === 'approving'}
+                                              className="w-full text-left px-3 py-2 text-xs text-green-700 hover:bg-green-50 disabled:opacity-50"
+                                            >
+                                              {isProcessing === 'approving' ? 'Approving...' : 'Approve'}
+                                            </button>
+                                            <button
+                                              onClick={() => {
+                                                const reason = window.prompt('Please provide a reason for rejection:');
+                                                if (reason && reason.trim()) {
+                                                  handleReject(booking.id, reason.trim());
+                                                  setDropdownOpen(null);
+                                                }
+                                              }}
+                                              disabled={isProcessing === 'rejecting'}
+                                              className="w-full text-left px-3 py-2 text-xs text-red-700 hover:bg-red-50 disabled:opacity-50"
+                                            >
+                                              {isProcessing === 'rejecting' ? 'Rejecting...' : 'Reject'}
+                                            </button>
+                                          </>
                                         )}
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          const reason = window.prompt('Please provide a reason for rejection:');
-                                          if (reason && reason.trim()) {
-                                            handleReject(booking.id, reason.trim());
-                                          }
-                                        }}
-                                        disabled={isProcessing === 'rejecting'}
-                                        className="text-xs px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-sm"
-                                      >
-                                        {isProcessing === 'rejecting' ? (
-                                          <span className="flex items-center gap-1">
-                                            <span className="animate-spin">⏳</span> Processing...
-                                          </span>
-                                        ) : (
-                                          <span>Reject</span>
+                                        {(booking.status === 'APPROVED' || booking.status === 'PENDING') && (
+                                          <button
+                                            onClick={() => {
+                                              if (window.confirm('Are you sure you want to cancel this booking?')) {
+                                                handleCancel(booking.id);
+                                                setDropdownOpen(null);
+                                              }
+                                            }}
+                                            disabled={isProcessing === 'cancelling'}
+                                            className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                                          >
+                                            {isProcessing === 'cancelling' ? 'Cancelling...' : 'Cancel'}
+                                          </button>
                                         )}
-                                      </button>
-                                    </>
-                                  )}
-                                  {(booking.status === 'APPROVED' || booking.status === 'PENDING') && (
-                                    <button
-                                      onClick={() => {
-                                        if (window.confirm('Are you sure you want to cancel this booking?')) {
-                                          handleCancel(booking.id);
-                                        }
-                                      }}
-                                      disabled={isProcessing === 'cancelling'}
-                                      className="text-xs px-3 py-1.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-sm"
-                                    >
-                                      {isProcessing === 'cancelling' ? (
-                                        <span className="flex items-center gap-1">
-                                          <span className="animate-spin">⏳</span> Processing...
-                                        </span>
-                                      ) : (
-                                        <span>Cancel</span>
-                                      )}
-                                    </button>
-                                  )}
-                                  {booking.status === 'APPROVED' && (
-                                    <button
-                                      onClick={() => {
-                                        window.open(`/booking-check-in?booking=${booking.id}`, '_blank');
-                                      }}
-                                      className="text-xs px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium shadow-sm"
-                                    >
-                                      <span>Check-in</span>
-                                    </button>
+                                        {booking.status === 'APPROVED' && (
+                                          <button
+                                            onClick={() => {
+                                              window.open(`/booking-check-in?booking=${booking.id}`, '_blank');
+                                              setDropdownOpen(null);
+                                            }}
+                                            className="w-full text-left px-3 py-2 text-xs text-blue-700 hover:bg-blue-50"
+                                          >
+                                            Check-in
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
                                   )}
                                 </div>
                               </td>
@@ -741,6 +738,6 @@ export default function AdminBookingsDashboard() {
       </section>
         </div>
       </main>
+    </div>
   )
 }
-
