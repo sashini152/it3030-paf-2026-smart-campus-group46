@@ -42,7 +42,7 @@ export default function AdminAccessPage() {
         Granting Admin Access...
       </h1>
       <p style={{ color: '#15803d', fontSize: '18px', marginBottom: '30px' }}>
-        Setting up admin permissions for sashini.unilocatelk@gmail.com
+        Setting up admin permissions for motionarts.lk@gmail.com
       </p>
       <div style={{ 
         width: '60px', 

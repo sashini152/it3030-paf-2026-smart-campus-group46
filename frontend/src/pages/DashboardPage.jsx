@@ -21,7 +21,7 @@ export default function DashboardPage() {
 
   // Check if current user needs admin access
  if (
-  (user?.email === 'sashini.unilocatelk@gmail.com' ||
+  (user?.email === 'motionarts.lk@gmail.com' ||
    user?.email === 'it23220492@my.sliit.lk' ||
    user?.email === 'isinduyuwaneka@gmail.com' ||
    user?.email === 'it23207936@my.sliit.lk' ||

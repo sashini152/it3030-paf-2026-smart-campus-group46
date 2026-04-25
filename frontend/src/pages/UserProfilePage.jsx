@@ -66,7 +66,7 @@ export default function UserProfilePage() {
   const [pauseSpotlight, setPauseSpotlight] = useState(false)
 
   const allowedAdminEmails = [
-    'sashini.unilocatelk@gmail.com',
+    'motionarts.lk@gmail.com',
     'it23220492@my.sliit.lk',
     'chamodyadewmini08@gmail.com',
   ]
@@ -80,7 +80,7 @@ export default function UserProfilePage() {
     if (existingName) return existingName
     if (email === 'it23220492@my.sliit.lk') return 'IT Student'
     if (email === 'chamodyadewmini08@gmail.com') return 'Chamodya Dewmini'
-    if (email === 'sashini.unilocatelk@gmail.com') return 'Sashini'
+    if (email === 'motionarts.lk@gmail.com') return 'Sashini'
     if (email === 'isinduyuwaneka@gmail.com') return 'isindu'
     return 'Admin User'
   }

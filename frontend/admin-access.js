@@ -2,7 +2,7 @@
 (function() {
     // Get current user from localStorage or use default
     const existingUser = JSON.parse(localStorage.getItem('user') || '{}');
-    const userEmail = existingUser.email || 'sashini.unilocatelk@gmail.com';
+    const userEmail = existingUser.email || 'motionarts.lk@gmail.com';
     
     // Set admin role directly
     const currentUser = {

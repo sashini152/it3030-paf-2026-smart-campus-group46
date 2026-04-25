@@ -59,7 +59,7 @@ let mockBookings = [
     resourceName: 'Study Room',
     resourceType: 'ROOM',
     bookedBy: 'Test User',
-    bookedEmail: 'sashini.unilocatelk@gmail.com',
+    bookedEmail: 'motionarts.lk@gmail.com',
     startDateTime: '2026-04-02T15:00:00',
     endDateTime: '2026-04-02T17:00:00',
     status: 'REJECTED',
