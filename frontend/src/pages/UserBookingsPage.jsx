@@ -123,6 +123,8 @@ export default function UserBookingsPage() {
   })
   const [submitting, setSubmitting] = useState(false)
 
+  const minDateTime = new Date().toISOString().slice(0, 16)
+
   const effectiveUserId = user?.email || manualUserId
 
   useEffect(() => {
@@ -196,6 +198,10 @@ export default function UserBookingsPage() {
     }
     if (!startDateTime || !endDateTime) {
       setError('Start and end time are both required.')
+      return
+    }
+    if (new Date(startDateTime) < new Date()) {
+      setError('Start time must be in the future.')
       return
     }
     if (new Date(endDateTime) <= new Date(startDateTime)) {
@@ -386,6 +392,7 @@ export default function UserBookingsPage() {
                     <input
                       type="datetime-local"
                       required
+                      min={minDateTime}
                       value={form.start}
                       onChange={(event) =>
                         setForm((current) => {
@@ -405,7 +412,7 @@ export default function UserBookingsPage() {
                     <input
                       type="datetime-local"
                       required
-                      min={form.start || undefined}
+                      min={form.start || minDateTime}
                       value={form.end}
                       onChange={(event) => setForm((current) => ({ ...current, end: event.target.value }))}
                     />

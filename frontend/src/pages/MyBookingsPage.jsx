@@ -269,6 +269,7 @@ export default function MyBookingsPage() {
                     type="datetime-local"
                     name="startDateTime"
                     required
+                    min={new Date().toISOString().slice(0, 16)}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-300"
                   />
                 </div>
@@ -283,6 +284,7 @@ export default function MyBookingsPage() {
                     type="datetime-local"
                     name="endDateTime"
                     required
+                    min={new Date().toISOString().slice(0, 16)}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-300"
                   />
                 </div>
