@@ -47,7 +47,7 @@ export default function AdminAccessPage() {
       <div style={{ 
         width: '60px', 
         height: '60px', 
-        border: '6px solid #dcfce7', 
+        border: '6px solid #050b07', 
         borderTop: '6px solid #16a34a', 
         borderRadius: '50%', 
         animation: 'spin 1s linear infinite' 
