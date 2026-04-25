@@ -81,6 +81,7 @@ export default function UserProfilePage() {
     if (email === 'it23220492@my.sliit.lk') return 'IT Student'
     if (email === 'chamodyadewmini08@gmail.com') return 'Chamodya Dewmini'
     if (email === 'sashini.unilocatelk@gmail.com') return 'Sashini'
+    if (email === 'isinduyuwaneka@gmail.com') return 'isindu'
     return 'Admin User'
   }
 

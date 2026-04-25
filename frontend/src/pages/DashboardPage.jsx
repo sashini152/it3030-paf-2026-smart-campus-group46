@@ -23,6 +23,8 @@ export default function DashboardPage() {
  if (
   (user?.email === 'sashini.unilocatelk@gmail.com' ||
    user?.email === 'it23220492@my.sliit.lk' ||
+   user?.email === 'isinduyuwaneka@gmail.com' ||
+   user?.email === 'it23207936@my.sliit.lk' ||
    user?.email === 'chamodyadewmini08@gmail.com') &&
   user.role !== 'ADMIN'
 ) {
